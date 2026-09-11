@@ -1,0 +1,19 @@
+{
+  "outlet": "The Magic Bottle",
+  "cachedAt": "2026-09-11T19:24:35.911Z",
+  "categories": [
+    {
+      "id": "cat-shakes",
+      "name": "Thick Shakes"
+    }
+  ],
+  "items": [
+    {
+      "id": "m1",
+      "name": "Alphonso Mango Shake",
+      "price": 180,
+      "isVeg": true
+    }
+  ],
+  "offlineOrdersQueued": []
+}

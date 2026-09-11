@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PetBharke — Enterprise Restaurant OS & Desktop Suite</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --emerald: #10b981;
+      --emerald-light: #ecfdf5;
+      --amber: #f59e0b;
+      --amber-light: #fffbeb;
+      --rose: #f43f5e;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      --shadow-lg: 0 20px 35px -8px rgba(79, 70, 229, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.5rem;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(79, 70, 229, 0.05), transparent 300px),
+        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.05), transparent 300px);
+    }
+    .container {
+      max-width: 980px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      box-shadow: var(--shadow-lg);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .logo-badge {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25);
+    }
+    .brand-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.2rem;
+      font-weight: 500;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--emerald-light);
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      padding: 0.45rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .status-dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    }
+    .notice-bar {
+      background: var(--primary-light);
+      border: 1px solid #c7d2fe;
+      color: #3730a3;
+      padding: 0.85rem 1.25rem;
+      border-radius: 0.75rem;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .port-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+    .port-select {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text);
+      padding: 0.35rem 0.65rem;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.35rem;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .card:hover {
+      border-color: #818cf8;
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 0.75rem;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .card-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.55rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .badge-pos { background: var(--primary-light); color: #4338ca; }
+    .badge-kds { background: var(--amber-light); color: #b45309; }
+    .badge-mobile { background: #fdf2f8; color: #be185d; }
+    .badge-desktop { background: #f0fdf4; color: #15803d; }
+    .badge-api { background: #f5f3ff; color: #6d28d9; }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .card-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .card-action {
+      margin-top: auto;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .footer-actions {
+      margin-top: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .btn-main {
+      flex: 1;
+      min-width: 200px;
+      text-align: center;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 0.9rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+      transition: all 0.2s ease;
+    }
+    .btn-main:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      flex: 1;
+      min-width: 200px;
+      text-align: center;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.9rem 1.5rem;
+      border-radius: 0.75rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand-left">
+        <div class="logo-badge">🍽️</div>
+        <div>
+          <div class="brand-title">PetBharke Restaurant Suite</div>
+          <div class="brand-sub">Multi-Tenant Cloud POS, Real-Time SignalR & Multi-Platform Ecosystem</div>
+        </div>
+      </div>
+      <div class="status-pill">
+        <span class="status-dot-pulse"></span>
+        <span>Light Mode • .NET 8 Live</span>
+      </div>
+    </div>
+
+    <div class="notice-bar">
+      <div>
+        <strong>⚡ Live Real-Time Sync Active:</strong> Waiter orders on mobile reflect immediately on Desktop POS, Tables & KDS.
+      </div>
+      <div class="active-env-badge">
+        <span>🌐 Target Host:</span>
+        <strong id="activeHostLabel" style="font-family: monospace; font-size: 0.95rem; color: #4338ca;">Auto-Detecting...</strong>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- 1. Desktop POS Register -->
+      <a id="posLink" href="/billing" class="card">
+        <div class="card-top">
+          <div class="card-icon">🧾</div>
+          <span class="card-badge badge-pos">Desktop POS</span>
+        </div>
+        <div class="card-title">Cashier Billing & Register</div>
+        <div class="card-desc">High-speed barcode/name search, split & merge bills, direct discount presets, UPI QR generation.</div>
+        <div class="card-action">Launch POS Register →</div>
+      </a>
+
+      <!-- 2. Tables Manager -->
+      <a id="tablesLink" href="/tables" class="card">
+        <div class="card-top">
+          <div class="card-icon">🪑</div>
+          <span class="card-badge badge-pos">Floor Sync</span>
+        </div>
+        <div class="card-title">Table Floor Map & Status</div>
+        <div class="card-desc">Real-time table occupancy, table shifts, bill settlement and live status synced with phone orders.</div>
+        <div class="card-action">Open Table Map →</div>
+      </a>
+
+      <!-- 3. Kitchen KDS -->
+      <a id="kdsLink" href="/kds" class="card">
+        <div class="card-top">
+          <div class="card-icon">👨‍🍳</div>
+          <span class="card-badge badge-kds">Kitchen KDS</span>
+        </div>
+        <div class="card-title">Kitchen Display System (KDS)</div>
+        <div class="card-desc">100% light theme tickets, live audio chimes, urgency indicators, and bump-bar dispatching.</div>
+        <div class="card-action">Open KDS Screen →</div>
+      </a>
+
+      <!-- 4. Dedicated Desktop Electron -->
+      <a href="desktop-electron/README.md" class="card">
+        <div class="card-top">
+          <div class="card-icon">💻</div>
+          <span class="card-badge badge-desktop">Dedicated Desktop</span>
+        </div>
+        <div class="card-title">Desktop Electron Module</div>
+        <div class="card-desc">Isolated Electron container in <code>desktop-electron/</code> with ESC/POS thermal printing & cash drawer kick.</div>
+        <div class="card-action">View Electron Setup →</div>
+      </a>
+
+      <!-- 5. Mobile Waiter App -->
+      <a href="waiter-mobile/README.md" class="card">
+        <div class="card-top">
+          <div class="card-icon">📱</div>
+          <span class="card-badge badge-mobile">React Native Expo</span>
+        </div>
+        <div class="card-title">Handheld Waiter Mobile App</div>
+        <div class="card-desc">Separated Expo mobile module in <code>waiter-mobile/</code>. Waiters fire KOTs directly from smartphone.</div>
+        <div class="card-action">View Waiter App Guide →</div>
+      </a>
+
+      <!-- 6. Owner Portal -->
+      <a id="ownerLink" href="/owner/login" class="card">
+        <div class="card-top">
+          <div class="card-icon">📊</div>
+          <span class="card-badge badge-api">Owner Admin</span>
+        </div>
+        <div class="card-title">Restaurant Owner Portal</div>
+        <div class="card-desc">Live sales metrics, Z-Reports, raw inventory depletion tracking, and staff attendance control.</div>
+        <div class="card-action">Open Owner Portal →</div>
+      </a>
+
+      <!-- 7. SuperAdmin SaaS -->
+      <a id="superadminLink" href="/superadmin/login" class="card">
+        <div class="card-top">
+          <div class="card-icon">🏢</div>
+          <span class="card-badge badge-api">SaaS SuperAdmin</span>
+        </div>
+        <div class="card-title">Tenant & Franchise Suite</div>
+        <div class="card-desc">Manage all restaurant tenants, subscription renewals, add-on feature toggles, and multi-outlet setups.</div>
+        <div class="card-action">Open SuperAdmin Portal →</div>
+      </a>
+
+      <!-- 8. Backend Swagger API -->
+      <a id="swaggerLink" href="http://localhost:5000/swagger" target="_blank" class="card">
+        <div class="card-top">
+          <div class="card-icon">⚡</div>
+          <span class="card-badge badge-api">.NET 8 API</span>
+        </div>
+        <div class="card-title">Live Swagger REST & Hub</div>
+        <div class="card-desc">Explore live .NET 8 endpoints, MongoDB Atlas collections, and SignalR hub connections on port 5000.</div>
+        <div class="card-action">Open Swagger Docs →</div>
+      </a>
+
+      <!-- 9. Project Tracker -->
+      <a id="trackerLink" href="docs/project_tracker.html" class="card">
+        <div class="card-top">
+          <div class="card-icon">📋</div>
+          <span class="card-badge badge-pos">System Tracker</span>
+        </div>
+        <div class="card-title">Interactive Project Tracker</div>
+        <div class="card-desc">Comprehensive architecture overview, roadmap completion, and interactive visual demo flow.</div>
+        <div class="card-action">Open Project Tracker →</div>
+      </a>
+    </div>
+
+    <div class="footer-actions">
+      <a id="mainLaunchBtn" href="/billing" class="btn-main">🚀 Launch POS Billing</a>
+      <a href="docs/project_tracker.html" class="btn-outline">📊 View Project Tracker & Roadmap</a>
+    </div>
+  </div>
+
+  <script>
+    // Completely dynamic URL resolution:
+    // If hosted on any domain or reverse-proxy, automatically routes through current origin.
+    // If opened directly via local file:/// protocol, defaults to local dev server.
+    const isLocalFile = window.location.protocol === 'file:';
+    const baseOrigin = isLocalFile ? 'http://localhost:5173' : window.location.origin;
+
+    const hostLabel = document.getElementById('activeHostLabel');
+    if (hostLabel) {
+      hostLabel.innerText = isLocalFile ? 'Local File (Target: http://localhost:5173)' : window.location.host;
+    }
+
+    document.getElementById('posLink').href = `${baseOrigin}/billing`;
+    document.getElementById('tablesLink').href = `${baseOrigin}/tables`;
+    document.getElementById('kdsLink').href = `${baseOrigin}/kds`;
+    document.getElementById('ownerLink').href = `${baseOrigin}/owner/login`;
+    document.getElementById('superadminLink').href = `${baseOrigin}/superadmin/login`;
+    document.getElementById('mainLaunchBtn').href = `${baseOrigin}/billing`;
+
+    // If on a custom production domain, update swagger link to /swagger on current origin
+    if (!isLocalFile && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const swaggerEl = document.getElementById('swaggerLink');
+      if (swaggerEl) swaggerEl.href = `${window.location.origin}/swagger`;
+    }
+  </script>
+</body>
+</html>

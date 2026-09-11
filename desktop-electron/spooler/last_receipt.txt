@@ -1,0 +1,18 @@
+THE MAGIC BOTTLE
+Wakad, Pune, Maharashtra
+Ph: 07969 223344
+--------------------------------
+Bill No: BILL-TEST-101 | KOT: KOT-104
+Date: 12/09/2026 12:45
+Type: DineIn | Table: T-1
+--------------------------------
+ITEM                 QTY  RATE   AMT
+Alphonso Mango Shake   2   180    360
+Paneer Tikka Grill     1   160    160
+--------------------------------
+Sub Total:            Rs.520.00
+CGST (2.5%):          Rs.13.00
+SGST (2.5%):          Rs.13.00
+GRAND TOTAL:          Rs.546.00
+Payment: Cash (PAID)
+--------------------------------

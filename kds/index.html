@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting to Kitchen KDS...</title>
+  <script>
+    const isLiveServer = window.location.port === '5500' || window.location.protocol === 'file:';
+    const targetUrl = isLiveServer ? ('http://localhost:5173/kds' + window.location.search + window.location.hash) : ('/kds' + window.location.search + window.location.hash);
+    window.location.replace(targetUrl);
+  </script>
+</head>
+<body style="background:#f8fafc;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:1rem;padding:2rem;text-align:center;box-shadow:0 10px 15px -3px rgba(0,0,0,0.05);max-width:400px;">
+    <div style="font-size:2.5rem;margin-bottom:0.5rem;">👨‍🍳</div>
+    <h2 style="font-size:1.25rem;margin-bottom:0.5rem;color:#0f172a;">Redirecting...</h2>
+    <p style="color:#64748b;font-size:0.9rem;margin-bottom:1rem;">Navigating to Kitchen Display System (KDS)</p>
+    <a id="link" href="/kds" style="display:inline-block;background:#4f46e5;color:#ffffff;padding:0.5rem 1rem;border-radius:0.5rem;text-decoration:none;font-weight:600;font-size:0.875rem;">Click here if not redirected</a>
+  </div>
+  <script>
+    const isLive = window.location.port === '5500' || window.location.protocol === 'file:';
+    document.getElementById('link').href = isLive ? 'http://localhost:5173/kds' : '/kds';
+  </script>
+</body>
+</html>

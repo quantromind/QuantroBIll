@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuantroBill POS — Master Engineering Tracker & Live Flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --primary: #4f46e5;
+      --primary-glow: rgba(79, 70, 229, 0.15);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.15);
+      --amber: #d97706;
+      --rose: #e11d48;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --font-main: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      padding: 2rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4338ca;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #0f172a;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+      box-shadow: 0 4px 14px var(--primary-glow);
+    }
+
+    .btn-primary:hover {
+      background: #4338ca;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    /* Overall Stats Card */
+    .hero-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--emerald));
+    }
+
+    .stat-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 2.25rem;
+      font-weight: 800;
+      margin: 0.5rem 0;
+      font-family: var(--font-mono);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 0.75rem;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4f46e5, #10b981);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* Quick Launch Bar */
+    .quick-launch-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .launch-title {
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .launch-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .launch-chip {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #334155;
+      padding: 0.4rem 0.85rem;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .launch-chip:hover {
+      background: #eef2ff;
+      border-color: #818cf8;
+      color: #4338ca;
+      transform: translateY(-1px);
+    }
+
+    /* Interactive Live Flow Diagram */
+    .flow-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      padding: 1.75rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .flow-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      position: relative;
+    }
+
+    .flow-node {
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      text-align: center;
+      position: relative;
+      transition: all 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .flow-node:hover {
+      border-color: #4f46e5;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(79, 70, 229, 0.12);
+    }
+
+    .flow-node-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .flow-node-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+
+    .flow-node-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .flow-badge {
+      display: inline-block;
+      margin-top: 0.75rem;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.25rem;
+      background: #eef2ff;
+      color: #4338ca;
+      font-weight: 600;
+    }
+
+    /* Filter Tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active, .tab-btn:hover {
+      background: #4f46e5;
+      color: white;
+      border-color: #4f46e5;
+    }
+
+    /* Module Accordion & Task Cards */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .module-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .module-card-header {
+      padding: 1.25rem 1.5rem;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .module-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .module-status {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-completed {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .status-inprogress {
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .status-planned {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .task-list {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex-grow: 1;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    .task-item:hover {
+      background: #f8fafc;
+    }
+
+    .task-checkbox {
+      margin-top: 0.2rem;
+      width: 1.1rem;
+      height: 1.1rem;
+      cursor: pointer;
+      accent-color: #4f46e5;
+    }
+
+    .task-label {
+      font-size: 0.875rem;
+      cursor: pointer;
+      flex-grow: 1;
+      color: #1e293b;
+    }
+
+    .task-item.checked .task-label {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+
+    .task-tag {
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      color: #94a3b8;
+    }
+
+    .module-card-footer {
+      padding: 1rem 1.5rem;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Documentation Links Grid */
+    .docs-section {
+      margin-top: 3rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1rem;
+      padding: 1.75rem;
+    }
+
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .doc-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+      display: block;
+    }
+
+    .doc-card:hover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .doc-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.25rem;
+      color: #f1f5f9;
+    }
+
+    .doc-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    footer {
+      margin-top: 4rem;
+      text-align: center;
+      padding-top: 2rem;
+      border-top: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+      .modules-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Header -->
+    <header>
+      <div>
+        <div class="logo-badge">⚡ Petpooja-Equivalent Architecture</div>
+        <h1>QuantroBill Engineering Dashboard</h1>
+        <p class="subtitle">Solo Developer Live Tracker & Architecture Flow — React 19 • .NET 8 • MongoDB • SignalR • React Native</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" onclick="exportProgress()">📥 Export Status</button>
+        <button class="btn btn-secondary" onclick="resetProgress()">↺ Reset Checkmarks</button>
+        <a href="/billing" target="_blank" class="btn btn-primary">🚀 Launch Web POS</a>
+      </div>
+    </header>
+
+    <!-- Live Server Port Banner -->
+    <div id="liveServerWarning" style="display:none; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15)); border: 1px solid #f59e0b; border-radius: 12px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="font-size: 0.85rem; color: #fde68a;">
+        ⚡ <strong>Local Dev Helper (Port 5500)</strong>: Directing requests to your active POS app: <a id="activeViteLink" href="/billing" target="_blank" style="color: #67e8f9; font-weight: bold; text-decoration: underline;">Open POS</a>
+      </div>
+    </div>
+
+    <!-- Overall Stats Grid -->
+    <div class="hero-stats-grid">
+      <div class="stat-card">
+        <div class="stat-title">Overall System Completion</div>
+        <div class="stat-value" id="progressPercentage">0%</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-title">Tasks Completed</div>
+        <div class="stat-value" style="color: #34d399;" id="completedTasksCount">0</div>
+        <span class="subtitle" id="remainingTasksCount">0 tasks remaining</span>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-title">Real-Time Core</div>
+        <div class="stat-value" style="color: #818cf8;">SignalR</div>
+        <span class="subtitle">Active WebSockets Hub: /hubs/order</span>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-title">Target Ecosystem</div>
+        <div class="stat-value" style="color: #f59e0b;">5 Clients</div>
+        <span class="subtitle">Web POS • Desktop • Waiter • KDS • SuperAdmin</span>
+      </div>
+    </div>
+
+    <!-- Quick Launch Bar (Redirect Directly to Existing Pages) -->
+    <div class="quick-launch-bar">
+      <div class="launch-title">
+        <span>🔗</span> Quick Redirects to Live App Pages:
+      </div>
+      <div class="launch-links">
+        <a href="/demo.html" target="_blank" class="launch-chip" style="border-color:#818cf8; color:#818cf8; background: rgba(99,102,241,0.15); font-weight: 700;">🌐 Interactive Flow & Client Demo Portal</a>
+        <a href="/login" target="_blank" class="launch-chip" style="border-color:#f43f5e; color:#f43f5e;">🔑 Staff POS Login</a>
+        <a href="/billing" target="_blank" class="launch-chip">🧾 Billing POS</a>
+        <a href="/tables" target="_blank" class="launch-chip">🪑 Table Manager</a>
+        <a href="/kds" target="_blank" class="launch-chip">👨‍🍳 Kitchen KDS</a>
+        <a href="/owner/login" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">👑 Owner Portal Login</a>
+        <a href="/owner/dashboard" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">📊 Owner Live Operations</a>
+        <a href="/owner/employees" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">👥 Staff 15-Permissions</a>
+        <a href="/owner/inventory" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">📦 Owner Inventory</a>
+        <a href="/owner/menu" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">🍔 Menu & 86 Out</a>
+        <a href="/owner/sales" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">💳 Sales & Cashier Audit</a>
+        <a href="/owner/reports" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">📑 Day-End Z-Report</a>
+        <a href="/owner/expenses" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">💵 Petty Cash & Vouchers</a>
+        <a href="/owner/receipt" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">🖨️ Thermal Receipt Customizer</a>
+        <a href="/owner/credit" target="_blank" class="launch-chip" style="border-color:#38bdf8; color:#38bdf8;">🤝 Credit Khata Ledger</a>
+        <a href="/superadmin/login" target="_blank" class="launch-chip">🛡️ SuperAdmin Portal</a>
+        <a href="http://localhost:5000/swagger" target="_blank" class="launch-chip">📖 Swagger API Docs</a>
+      </div>
+    </div>
+
+    <!-- Interactive Live Synchronization Flow -->
+    <section class="flow-section">
+      <div class="section-header">
+        <div class="section-title">
+          <span>🔄</span> Real-Time Multi-Client Synchronization Flow
+        </div>
+        <span class="subtitle">SignalR WebSockets Group: <code style="font-family: var(--font-mono); color: #a5b4fc;">outlet_{tenantId}_{outletId}</code></span>
+      </div>
+
+      <div class="flow-container">
+        <!-- Node 1 -->
+        <div class="flow-node">
+          <div class="flow-node-icon">📱</div>
+          <div class="flow-node-title">Waiter Mobile App</div>
+          <div class="flow-node-desc">Punches KOT at table (React Native)</div>
+          <div class="flow-badge">POST /api/orders</div>
+        </div>
+
+        <!-- Node 2 -->
+        <div class="flow-node" style="border-color: rgba(99, 102, 241, 0.4);">
+          <div class="flow-node-icon">⚡</div>
+          <div class="flow-node-title">ASP.NET Core & SignalR</div>
+          <div class="flow-node-desc">Saves to Mongo & broadcasts event</div>
+          <div class="flow-badge">:5000/hubs/order</div>
+        </div>
+
+        <!-- Node 3 -->
+        <div class="flow-node">
+          <div class="flow-node-icon">🖥️</div>
+          <div class="flow-node-title">Desktop / Web POS</div>
+          <div class="flow-node-desc">Table turns RED, live total updates</div>
+          <div class="flow-badge">ReceiveOrderUpdate</div>
+        </div>
+
+        <!-- Node 4 -->
+        <div class="flow-node">
+          <div class="flow-node-icon">👨‍🍳</div>
+          <div class="flow-node-title">Kitchen KDS Screen</div>
+          <div class="flow-node-desc">Plays chime sound, timer starts</div>
+          <div class="flow-badge">Audio Alert + Card</div>
+        </div>
+
+        <!-- Node 5 -->
+        <div class="flow-node">
+          <div class="flow-node-icon">🖨️</div>
+          <div class="flow-node-title">Thermal Printer</div>
+          <div class="flow-node-desc">Prints 80mm KOT ticket silently</div>
+          <div class="flow-badge">ESC/POS LAN:9100</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+      <button class="tab-btn active" onclick="filterModules('all')">All Modules</button>
+      <button class="tab-btn" onclick="filterModules('owner')">👑 Owner / Admin Portal</button>
+      <button class="tab-btn" onclick="filterModules('pos')">🧾 Web & Desktop POS</button>
+      <button class="tab-btn" onclick="filterModules('superadmin')">🛡️ SuperAdmin SaaS</button>
+      <button class="tab-btn" onclick="filterModules('mobile')">📱 Waiter Mobile (RN)</button>
+      <button class="tab-btn" onclick="filterModules('kitchen')">👨‍🍳 Kitchen (KDS & Print)</button>
+      <button class="tab-btn" onclick="filterModules('backend')">🗄️ Backend & DB</button>
+    </div>
+
+    <!-- Modules Grid -->
+    <div class="modules-grid" id="modulesGrid">
+
+      <!-- Module 1: Core Backend & Database -->
+      <div class="module-card" data-category="backend">
+        <div class="module-card-header">
+          <div class="module-title"><span>🗄️</span> 1. Backend & Database Foundation</div>
+          <span class="module-status status-completed">Built & Verified</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">ASP.NET Core .NET 8 Clean Onion Architecture</label>
+            <span class="task-tag">C# API</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">MongoDB Driver multi-tenant collection indexing</label>
+            <span class="task-tag">MongoDB</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">JWT Bearer Authentication & Token Generation</label>
+            <span class="task-tag">Auth</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Multi-Tenant Header Isolation (X-Tenant-Id, X-Outlet-Id)</label>
+            <span class="task-tag">Security</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">SignalR OrderHub for real-time WebSocket broadcasting</label>
+            <span class="task-tag">WebSockets</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <a href="http://localhost:5000/swagger" target="_blank" style="color:#a5b4fc;">Swagger UI</a></span>
+          <span class="completion-pill">5 / 5 Done</span>
+        </div>
+      </div>
+
+      <!-- Module 2: Cashier Billing POS -->
+      <div class="module-card" data-category="pos">
+        <div class="module-card-header">
+          <div class="module-title"><span>🧾</span> 2. Cashier POS Billing Engine</div>
+          <span class="module-status status-completed">Built & Verified</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Dine-in, Takeaway, and Direct Delivery toggle</label>
+            <span class="task-tag">UI</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Item search & Veg/Non-Veg category filtering</label>
+            <span class="task-tag">Catalog</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">GST tax calculation (2.5% CGST + 2.5% SGST)</label>
+            <span class="task-tag">Math</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Split Billing modal (Equal split & Item-wise split with multi-tenders)</label>
+            <span class="task-tag">Feature</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">POS Keyboard Hotkeys (F1 Cash, F2 Card, F3 UPI, F4 Split, Space Search)</label>
+            <span class="task-tag">UX</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <a href="/billing" target="_blank" style="color:#a5b4fc;">/billing</a></span>
+          <span class="completion-pill">5 / 5 Done</span>
+        </div>
+      </div>
+
+      <!-- Module 3: Table Management & Floor Plan -->
+      <div class="module-card" data-category="pos">
+        <div class="module-card-header">
+          <div class="module-title"><span>🪑</span> 3. Interactive Table Floor Plan</div>
+          <span class="module-status status-completed">Built & Verified</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Section tabs (Main Hall, AC Section, Outdoor Patio)</label>
+            <span class="task-tag">UI</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Visual occupancy color indicators (Green, Red, Yellow)</label>
+            <span class="task-tag">State</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Live table order total and running duration timer</label>
+            <span class="task-tag">Store</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Shift Table modal (Transfer running KOT from T-1 to T-4)</label>
+            <span class="task-tag">Table Engine</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Merge Tables modal (Combine T-2 and T-3 into single bill)</label>
+            <span class="task-tag">Feature</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <a href="/tables" target="_blank" style="color:#a5b4fc;">/tables</a></span>
+          <span class="completion-pill">5 / 5 Done</span>
+        </div>
+      </div>
+
+      <!-- Module 4: SuperAdmin SaaS Portal (Isolated) -->
+      <div class="module-card" data-category="superadmin">
+        <div class="module-card-header">
+          <div class="module-title"><span>🛡️</span> 4. SuperAdmin SaaS Portal (Isolated)</div>
+          <span class="module-status status-completed">Built & Verified</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Dedicated isolated login page (/superadmin/login)</label>
+            <span class="task-tag">Route</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Restaurant Tenant Onboarding (Legal Name, GSTIN, Owner)</label>
+            <span class="task-tag">SaaS</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Subscription Tier Engine (Starter, Pro, Enterprise expiry)</label>
+            <span class="task-tag">License</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Feature Flag Toggles per restaurant (Enable KDS, Waiter App)</label>
+            <span class="task-tag">Control</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Global platform analytics & active tenant counters</label>
+            <span class="task-tag">Telemetry</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <a href="/superadmin/login" target="_blank" style="color:#a5b4fc;">/superadmin/login</a></span>
+          <span class="completion-pill">5 / 5 Done</span>
+        </div>
+      </div>
+
+      <!-- Module 5: Kitchen Execution: KDS Touch Screen OR Kitchen Thermal Printer -->
+      <div class="module-card" data-category="kitchen">
+        <div class="module-card-header">
+          <div class="module-title"><span>👨‍🍳</span> 5. Dual Kitchen Execution (KDS Screen OR Thermal Printer)</div>
+          <span class="module-status status-completed">Built & Verified</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Paperless Kitchen Screen (KDS) live order cards display</label>
+            <span class="task-tag">KDS</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Hardware Thermal KOT Printer output (ESC/POS LAN port 9100 / USB)</label>
+            <span class="task-tag">Printer</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Hybrid Mode toggle (Chef sees on screen AND paper KOT prints)</label>
+            <span class="task-tag">Hybrid</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Audio chime alert on incoming order ticket & color urgency timer</label>
+            <span class="task-tag">Sound</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">"Mark Ready / Bump" button notifying waiter's phone immediately</label>
+            <span class="task-tag">SignalR</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <a href="/kds" target="_blank" style="color:#a5b4fc;">/kds</a></span>
+          <span class="completion-pill">5 / 5 Done</span>
+        </div>
+      </div>
+
+      <!-- Module 5B: Restaurant Owner / Admin Executive Portal (Level 2 Login) -->
+      <div class="module-card" data-category="owner">
+        <div class="module-card-header">
+          <div class="module-title"><span>👑</span> 5B. Restaurant Owner / Admin Portal (Level 2 Login)</div>
+          <span class="module-status status-completed">Built & Verified</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Executive Live Tables Breakdown (Dine Fine, Custom, Takeaway, Delivery)</label>
+            <span class="task-tag">Screenshot 1</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Live Running Orders KPI Bar (Dine-in, Parcel, Delivery count & ₹ total)</label>
+            <span class="task-tag">Screenshot 1</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Multi-Dimension Filters (All Cashiers, Date Range, Time 00:00 - 23:59)</label>
+            <span class="task-tag">Screenshot 1</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Employee Login & 15-Feature Permission Toggle Matrix (Green/Red icons)</label>
+            <span class="task-tag">Screenshot 3</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Raw Ingredients Inventory & Par Stock (Load Stock, Stock Issue, UOM)</label>
+            <span class="task-tag">Screenshot 4</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Customer CRM: Guest-visit history & Credit Khata Book</label>
+            <span class="task-tag">Screenshot 2</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <a href="/owner/login" target="_blank" style="color:#a5b4fc;">/owner/login</a></span>
+          <span class="completion-pill">6 / 6 Done</span>
+        </div>
+      </div>
+
+      <!-- Module 6: React Native Waiter Mobile App -->
+      <div class="module-card" data-category="mobile">
+        <div class="module-card-header">
+          <div class="module-title"><span>📱</span> 6. React Native Waiter Mobile App</div>
+          <span class="module-status status-completed">Built & Scaffolded</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Initialize React Native Expo project in /waiter-mobile</label>
+            <span class="task-tag">RN</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">4-Digit Staff PIN Quick Authentication</label>
+            <span class="task-tag">Security</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Handheld Table Grid & Instant Occupancy sync</label>
+            <span class="task-tag">SignalR</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Punch KOT with cooking notes ("Extra Spicy") to Kitchen</label>
+            <span class="task-tag">Order</span>
+          </div>
+          <div class="task-item checked">
+            <input type="checkbox" class="task-checkbox" checked onchange="updateProgress()">
+            <label class="task-label">Vibration & Audio feedback on order confirmation</label>
+            <span class="task-tag">Haptics</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <code>/waiter-mobile</code></span>
+          <span class="completion-pill">5 / 5 Done</span>
+        </div>
+      </div>
+
+      <!-- Module 7: Desktop Packaging & ESC/POS Printers -->
+      <div class="module-card" data-category="hardware">
+        <div class="module-card-header">
+          <div class="module-title"><span>🖨️</span> 7. Desktop App & Hardware Printers</div>
+          <span class="module-status status-planned">Planned</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item">
+            <input type="checkbox" class="task-checkbox" onchange="updateProgress()">
+            <label class="task-label">Configure Tauri 2.0 desktop shell for Windows (.exe)</label>
+            <span class="task-tag">Tauri</span>
+          </div>
+          <div class="task-item">
+            <input type="checkbox" class="task-checkbox" onchange="updateProgress()">
+            <label class="task-label">Raw ESC/POS Thermal byte generation (80mm & 58mm)</label>
+            <span class="task-tag">ESC/POS</span>
+          </div>
+          <div class="task-item">
+            <input type="checkbox" class="task-checkbox" onchange="updateProgress()">
+            <label class="task-label">LAN Network Socket printing (port 9100) for kitchen</label>
+            <span class="task-tag">Socket</span>
+          </div>
+          <div class="task-item">
+            <input type="checkbox" class="task-checkbox" onchange="updateProgress()">
+            <label class="task-label">Cash drawer kick pulse command on cash settlement</label>
+            <span class="task-tag">Hardware</span>
+          </div>
+          <div class="task-item">
+            <input type="checkbox" class="task-checkbox" onchange="updateProgress()">
+            <label class="task-label">Offline billing cache with IndexedDB sync queue</label>
+            <span class="task-tag">Offline</span>
+          </div>
+        </div>
+        <div class="module-card-footer">
+          <span>Target: <code>Tauri / ESC/POS</code></span>
+          <span class="completion-pill">0 / 5 Done</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Documentation & Blueprints Section -->
+    <section class="docs-section">
+      <div class="section-title">
+        <span>📚</span> Generated Master Architecture & Blueprint Documents
+      </div>
+      <p class="subtitle">Detailed engineering specifications created for this project:</p>
+
+      <div class="docs-grid">
+        <a href="01_PETPOOJA_REQUIREMENTS_SPECIFICATION.md" class="doc-card">
+          <div class="doc-title">01. Complete PRD Specification</div>
+          <div class="doc-desc">Exhaustive Petpooja-equivalent requirements for billing, KOT, KDS, inventory & CRM.</div>
+        </a>
+
+        <a href="02_ARCHITECTURE_REALTIME_AND_DESKTOP.md" class="doc-card">
+          <div class="doc-title">02. Real-Time & Desktop Architecture</div>
+          <div class="doc-desc">SignalR WebSockets pipeline, multi-tenancy, and ESC/POS thermal printing.</div>
+        </a>
+
+        <a href="03_SUPERADMIN_ISOLATION_AND_RBAC.md" class="doc-card">
+          <div class="doc-title">03. SuperAdmin & RBAC Matrix</div>
+          <div class="doc-desc">Isolated SaaS portal, subscription engine, and staff permissions matrix.</div>
+        </a>
+
+        <a href="04_REACT_NATIVE_WAITER_APP_BLUEPRINT.md" class="doc-card">
+          <div class="doc-title">04. React Native Waiter App</div>
+          <div class="doc-desc">Handheld table order puncher, SignalR mobile listener, and offline queue.</div>
+        </a>
+
+        <a href="05_REUSABLE_SHARED_FOUNDATION.md" class="doc-card">
+          <div class="doc-title">05. Shared Engine & Reusable Types</div>
+          <div class="doc-desc">Pure math billingEngine.ts, GST calculators, shared DTOs & SignalR events.</div>
+        </a>
+
+        <a href="06_SOLO_DEVELOPER_EXECUTION_ROADMAP.md" class="doc-card">
+          <div class="doc-title">06. Solo Developer Playbook</div>
+          <div class="doc-desc">Exact phase-by-phase copy-paste prompts for pairing with the AI agent.</div>
+        </a>
+      </div>
+    </section>
+
+    <footer>
+      QuantroBill POS SaaS • Built with React 19, .NET 8 & MongoDB • Designed for Enterprise Restaurant Operations
+    </footer>
+  </div>
+
+  <script>
+    // LocalStorage Key for persisting progress
+    const STORAGE_KEY = 'quantrobill_tracker_progress_v2';
+
+    function initTracker() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        try {
+          const checkedIndices = JSON.parse(savedData);
+          const checkboxes = document.querySelectorAll('.task-checkbox');
+          checkboxes.forEach((cb, index) => {
+            cb.checked = !!checkedIndices[index];
+            const item = cb.closest('.task-item');
+            if (cb.checked) {
+              item.classList.add('checked');
+            } else {
+              item.classList.remove('checked');
+            }
+          });
+        } catch (e) {
+          console.error('Error loading saved progress:', e);
+        }
+      }
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const checkboxes = document.querySelectorAll('.task-checkbox');
+      const totalTasks = checkboxes.length;
+      let completedTasks = 0;
+      const checkedStates = [];
+
+      checkboxes.forEach((cb) => {
+        const item = cb.closest('.task-item');
+        if (cb.checked) {
+          completedTasks++;
+          item.classList.add('checked');
+          checkedStates.push(true);
+        } else {
+          item.classList.remove('checked');
+          checkedStates.push(false);
+        }
+      });
+
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedStates));
+
+      // Calculate percentage
+      const percentage = Math.round((completedTasks / totalTasks) * 100);
+
+      // Update UI elements
+      document.getElementById('progressPercentage').innerText = percentage + '%';
+      document.getElementById('progressBarFill').style.width = percentage + '%';
+      document.getElementById('completedTasksCount').innerText = completedTasks + ' / ' + totalTasks;
+      document.getElementById('remainingTasksCount').innerText = (totalTasks - completedTasks) + ' tasks remaining';
+
+      // Update individual card completion pills
+      document.querySelectorAll('.module-card').forEach(card => {
+        const cardChecks = card.querySelectorAll('.task-checkbox');
+        let cardDone = 0;
+        cardChecks.forEach(c => { if(c.checked) cardDone++; });
+        const pill = card.querySelector('.completion-pill');
+        if (pill) {
+          pill.innerText = `${cardDone} / ${cardChecks.length} Done`;
+        }
+      });
+    }
+
+    function filterModules(category) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const cards = document.querySelectorAll('.module-card');
+      cards.forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function resetProgress() {
+      if (confirm('Are you sure you want to reset all task checkboxes to default?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      }
+    }
+
+    function exportProgress() {
+      const checkboxes = document.querySelectorAll('.task-checkbox');
+      const completed = Array.from(checkboxes).filter(c => c.checked).length;
+      const total = checkboxes.length;
+      const percent = Math.round((completed / total) * 100);
+
+      const report = `📊 QuantroBill POS Progress Report\nTotal Completion: ${percent}%\nTasks Done: ${completed}/${total}\nGenerated on: ${new Date().toLocaleString()}`;
+      navigator.clipboard.writeText(report).then(() => {
+        alert('Copied Progress Report to Clipboard!\n\n' + report);
+      });
+    }
+
+    // Dynamic Link Resolver (domain-agnostic)
+    function getViteBaseUrl() {
+      if (window.location.protocol === 'file:') {
+        return 'http://localhost:5173';
+      }
+      if (window.location.port === '5500') {
+        return 'http://localhost:5173';
+      }
+      return ''; // Production domain or Vite server: use relative paths
+    }
+
+    function fixAppLinks() {
+      const isLiveServerOrFile = window.location.port === '5500' || window.location.protocol === 'file:';
+      const warningEl = document.getElementById('liveServerWarning');
+
+      if (warningEl && isLiveServerOrFile) {
+        warningEl.style.display = 'flex';
+        const activeLink = document.getElementById('activeViteLink');
+        if (activeLink) activeLink.href = `http://localhost:5173/billing`;
+      }
+
+      const baseUrl = getViteBaseUrl();
+      if (!baseUrl) return;
+
+      const appPaths = [
+        '/billing', '/tables', '/kds', '/login', '/online-orders',
+        '/owner', '/superadmin', '/receipt-settings', '/demo.html', '/tracker.html'
+      ];
+
+      document.querySelectorAll('a').forEach(anchor => {
+        const href = anchor.getAttribute('href');
+        if (!href) return;
+        const isAppPath = appPaths.some(p => href === p || href.startsWith(p + '/') || href.startsWith(p + '?') || href.startsWith(p + '#'));
+        if (isAppPath && !href.startsWith('http')) {
+          anchor.href = baseUrl + href;
+        }
+      });
+    }
+
+    // Intercept clicks immediately anywhere on the page
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      const isLiveServerOrFile = window.location.port === '5500' || window.location.protocol === 'file:';
+      if (isLiveServerOrFile) {
+        const baseUrl = getViteBaseUrl();
+        if (href.startsWith('/') && !href.startsWith('//') && !href.endsWith('.html')) {
+          e.preventDefault();
+          window.open(baseUrl + href, link.target || '_blank');
+        }
+      }
+    }, true);
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initTracker();
+      fixAppLinks();
+    });
+    fixAppLinks();
+  </script>
+</body>
+</html>

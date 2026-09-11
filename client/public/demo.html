@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuantroBill • Interactive Architecture Flow & Client Demo Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(99, 102, 241, 0.35);
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.18), transparent 70%),
+        radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.10), transparent 50%),
+        radial-gradient(circle at 10% 90%, rgba(244, 63, 94, 0.08), transparent 40%);
+    }
+
+    /* Live Server Notice Banner */
+    #liveServerBanner {
+      display: none;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.25));
+      border-bottom: 1px solid #f59e0b;
+      padding: 0.65rem 2rem;
+      font-size: 0.85rem;
+      color: #fef3c7;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      backdrop-filter: blur(12px);
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 11, 20, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: white;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--primary-light);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.3rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      gap: 0.25rem;
+    }
+
+    .tab-btn {
+      padding: 0.55rem 1.15rem;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      color: white;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(6, 182, 212, 0.8));
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .action-btn {
+      padding: 0.55rem 1.1rem;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Tab Panels */
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.7));
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 2.2rem 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .hero-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content h1 {
+      font-size: 2.1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.65rem;
+      background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-content p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 780px;
+      line-height: 1.6;
+    }
+
+    .hero-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+    }
+
+    .hero-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .section-subtitle {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-top: 0.25rem;
+    }
+
+    /* 1. INTERACTIVE ARCHITECTURE DIAGRAM CANVAS */
+    .diagram-container {
+      background: rgba(11, 17, 33, 0.85);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+
+    .diagram-legend {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .arch-flow-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2.2rem;
+      position: relative;
+      padding: 1rem 0;
+    }
+
+    .flow-row {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      width: 100%;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 2;
+    }
+
+    .arch-node {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.25rem 1.4rem;
+      width: 250px;
+      min-height: 120px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+    }
+
+    .arch-node:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-glow);
+      background: var(--bg-card-hover);
+      box-shadow: 0 12px 30px rgba(99, 102, 241, 0.2);
+    }
+
+    .arch-node.selected {
+      border-color: #818cf8;
+      background: rgba(30, 41, 59, 0.95);
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.35);
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .node-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+
+    .node-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      line-height: 1.3;
+    }
+
+    .node-route {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--cyan);
+      display: block;
+      margin-top: 0.2rem;
+    }
+
+    .node-desc {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 0.75rem;
+    }
+
+    .node-action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .node-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .node-link-btn {
+      font-size: 0.72rem;
+      color: var(--primary-light);
+      text-decoration: none;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: color 0.2s;
+    }
+
+    .node-link-btn:hover {
+      color: white;
+      text-decoration: underline;
+    }
+
+    .bus-node {
+      width: 440px;
+      border-color: rgba(99, 102, 241, 0.6);
+      background: linear-gradient(135deg, rgba(30, 27, 75, 0.7), rgba(15, 23, 42, 0.85));
+      box-shadow: 0 0 35px rgba(99, 102, 241, 0.25);
+    }
+
+    .bus-node .node-icon {
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      color: white;
+    }
+
+    /* Node Inspector Drawer */
+    .inspector-drawer {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      display: none;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .inspector-drawer.active {
+      display: block;
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .drawer-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .drawer-badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--primary-light);
+    }
+
+    .drawer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .drawer-block {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .block-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .code-snippet {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    /* 2. ROLE GUIDES */
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .role-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 1.75rem;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .role-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .role-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+    }
+
+    .role-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .role-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .role-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .role-subtitle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--primary-light);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+      font-family: var(--font-mono);
+    }
+
+    .step-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .step-text strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .kbd-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--amber);
+    }
+
+    .role-footer {
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* 3. CLIENT PITCH SHOWCASE */
+    .pitch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .pitch-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .pitch-card:hover {
+      border-color: rgba(99, 102, 241, 0.45);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .pitch-badge-pill {
+      align-self: flex-start;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      margin-bottom: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .pitch-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .pitch-tagline {
+      font-size: 0.88rem;
+      color: var(--cyan);
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+    }
+
+    .pitch-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .pitch-feat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .pitch-feat-item span.icon {
+      color: var(--emerald);
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .pitch-roi-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .roi-icon {
+      font-size: 1.4rem;
+    }
+
+    .roi-text {
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+
+    .pitch-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .launch-btn {
+      flex: 1;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    /* 4. SIMULATOR */
+    .sim-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .sim-bar {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .sim-btn {
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .sim-btn:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .sim-console {
+      background: #040711;
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      min-height: 200px;
+      max-height: 350px;
+      overflow-y: auto;
+      color: #94a3b8;
+      line-height: 1.6;
+    }
+
+    .sim-log-entry {
+      margin-bottom: 0.4rem;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .sim-log-time {
+      color: var(--text-dim);
+    }
+
+    .sim-log-tag {
+      font-weight: 700;
+    }
+
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      margin-top: 4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--primary-light);
+    }
+
+    @media (max-width: 900px) {
+      header {
+        flex-direction: column;
+        padding: 1rem;
+      }
+      .nav-tabs {
+        width: 100%;
+        overflow-x: auto;
+      }
+      .hero-banner {
+        flex-direction: column;
+        padding: 1.5rem;
+      }
+      .drawer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Live Server Auto-Detection Notice Banner -->
+  <div id="liveServerBanner" style="display: none;">
+    <div>
+      ⚡ <strong>Local Dev Helper (Port 5500)</strong>: Directing requests to your active POS app (<a id="liveServerViteLink" href="/billing" target="_blank" style="color: #67e8f9; font-weight: bold; text-decoration: underline;">Open POS</a>).
+    </div>
+  </div>
+
+  <!-- Top Sticky Navigation Header -->
+  <header>
+    <a href="#" class="brand-group">
+      <div class="brand-badge">Q</div>
+      <div>
+        <div class="brand-title">
+          QuantroBill
+          <span class="brand-tag">Ecosystem Master</span>
+        </div>
+        <span style="font-size: 0.72rem; color: var(--text-dim);">Enterprise Multi-Tenant Restaurant SaaS</span>
+      </div>
+    </a>
+
+    <!-- Top Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-diagram')">
+        <span>🌐</span> Interactive Architecture
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-guides')">
+        <span>📖</span> Step-by-Step Usage Guides
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-showcase')">
+        <span>💼</span> Client Pitch & Demos
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-simulator')">
+        <span>⚡</span> Live Sandbox Simulator
+      </button>
+    </div>
+
+    <!-- Direct Launcher Actions -->
+    <div class="header-actions">
+      <a href="/tracker.html" target="_blank" class="action-btn btn-secondary">
+        <span>📋</span> Master Tracker
+      </a>
+      <a href="/billing" target="_blank" class="action-btn btn-primary">
+        <span>🚀</span> Launch POS Live
+      </a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Top Hero Banner -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <h1>Interactive Ecosystem & Screen Flow Portal</h1>
+        <p>
+          QuantroBill connects handheld Waiter Mobile order punching, front-desk Cashier POS billing, Paperless Kitchen KDS screens, and Executive Owner Analytics into a single reactive real-time data bus with automated recipe inventory depletion.
+        </p>
+        <div class="hero-chips">
+          <span class="hero-chip">⚡ SignalR OrderHub</span>
+          <span class="hero-chip">📦 Mongo Multi-Tenancy</span>
+          <span class="hero-chip">🔔 Web Audio API Dual Chimes</span>
+          <span class="hero-chip">📱 React Native Waiter</span>
+          <span class="hero-chip">🧾 ESC/POS Thermal Printing</span>
+        </div>
+      </div>
+      <div>
+        <button onclick="playDemoSound()" class="action-btn btn-secondary" style="border-color: rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.15);">
+          <span>🔔</span> Test KDS Chime
+        </button>
+      </div>
+    </div>
+
+    <!-- =================================================== -->
+    <!-- TAB 1: INTERACTIVE ARCHITECTURE DIAGRAM            -->
+    <!-- =================================================== -->
+    <section id="tab-diagram" class="tab-panel active">
+      <div class="section-header">
+        <div>
+          <div class="section-title">
+            <span>🌐</span> Reactive Multi-Client Architecture Flow
+          </div>
+          <div class="section-subtitle">
+            Click on any module node below to inspect its live data packets, reactive store bindings, and launch its live screen.
+          </div>
+        </div>
+        <div class="diagram-legend">
+          <div class="legend-item"><span class="legend-dot" style="background:#818cf8;"></span> Order Ingress (Punchers)</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#06b6d4;"></span> Reactive Data Bus</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Execution & Output</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Executive Analytics</div>
+        </div>
+      </div>
+
+      <div class="diagram-container">
+        <div class="arch-flow-wrapper">
+
+          <!-- Level 1: Ingress Clients -->
+          <div class="flow-row">
+            <!-- Node: Waiter Mobile -->
+            <div class="arch-node" onclick="inspectNode('waiter-mobile')" id="node-waiter">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">📱</div>
+                  <div>
+                    <div class="node-title">Waiter Mobile App</div>
+                    <span class="node-route">waiter-mobile/ (RN)</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Handheld order puncher with 4-digit PIN, floor grid, cooking notes & 1-tap KOT fire.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">POST /api/orders</span>
+                <a href="#tab-guides" onclick="switchTab('tab-guides')" class="node-link-btn">How to use →</a>
+              </div>
+            </div>
+
+            <!-- Node: Cashier POS -->
+            <div class="arch-node" onclick="inspectNode('staff-pos')" id="node-pos">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(244, 63, 94, 0.15); color: #fb7185;">🧾</div>
+                  <div>
+                    <div class="node-title">Staff POS Billing</div>
+                    <span class="node-route">/billing</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  High-speed cashier register, F1-F4 hotkeys, table merge/split, and invoice settlement.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">Billing.tsx</span>
+                <a href="/billing" target="_blank" class="node-link-btn">Launch Screen ↗</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connecting Arrow -->
+          <div style="color: var(--primary-light); font-size: 1.4rem; animation: bounce 1.5s infinite;">
+            ⬇️ <span style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-dim);">Fires KOT / Settles Bill</span> ⬇️
+          </div>
+
+          <!-- Level 2: Central Reactive Bus -->
+          <div class="flow-row">
+            <div class="arch-node bus-node selected" onclick="inspectNode('pos-sync-bus')" id="node-bus">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon">⚡</div>
+                  <div>
+                    <div class="node-title" style="font-size: 1.15rem;">Central Reactive Data Bus</div>
+                    <span class="node-route" style="color:#a5b4fc;">client/src/store/posSyncStore.ts</span>
+                  </div>
+                </div>
+                <div class="node-desc" style="font-size: 0.82rem;">
+                  Core coordination engine. Dispatches KOTs, plays dual-tone Web Audio chimes, manages active kitchen timers, settles invoices, and runs recipe ingredient auto-depletion.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe;">Zustand Reactive Bus</span>
+                <span style="font-size: 0.72rem; color: #34d399; font-weight: 700;">● Active Synchronizer</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connecting Split Arrow -->
+          <div style="color: var(--cyan); font-size: 1.4rem;">
+            ⮋ ⮋ ⮋ <span style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-dim);">Instant Multi-Module Reactive Broadcast</span> ⮋ ⮋ ⮋
+          </div>
+
+          <!-- Level 3: Reactive Consumer Outlets -->
+          <div class="flow-row">
+            <!-- Node: Kitchen KDS -->
+            <div class="arch-node" onclick="inspectNode('kitchen-kds')" id="node-kds">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">👨‍🍳</div>
+                  <div>
+                    <div class="node-title">Kitchen KDS</div>
+                    <span class="node-route">/kds</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Paperless kitchen display with urgency timers (<10m, 10-20m, >20m red pulsing), bump & chime.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">Web Audio + ESC/POS</span>
+                <a href="/kds" target="_blank" class="node-link-btn">Launch ↗</a>
+              </div>
+            </div>
+
+            <!-- Node: Table Floor Plan -->
+            <div class="arch-node" onclick="inspectNode('table-manager')" id="node-tables">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🪑</div>
+                  <div>
+                    <div class="node-title">Floor Tables</div>
+                    <span class="node-route">/tables</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Real-time occupancy colors (Green/Red/Yellow), running bill amounts & Shift/Merge operations.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">tableStore.ts</span>
+                <a href="/tables" target="_blank" class="node-link-btn">Launch ↗</a>
+              </div>
+            </div>
+
+            <!-- Node: Owner Sales Register -->
+            <div class="arch-node" onclick="inspectNode('owner-sales')" id="node-sales">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">💳</div>
+                  <div>
+                    <div class="node-title">Owner Sales</div>
+                    <span class="node-route">/owner/sales</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Real-time cashier audit register updating instantly on every settled transaction.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">Sales Register</span>
+                <a href="/owner/sales" target="_blank" class="node-link-btn">Launch ↗</a>
+              </div>
+            </div>
+
+            <!-- Node: Owner Reports -->
+            <div class="arch-node" onclick="inspectNode('owner-reports')" id="node-reports">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">📑</div>
+                  <div>
+                    <div class="node-title">Day-End Z-Report</div>
+                    <span class="node-route">/owner/reports</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Daily closing audit, GST breakdowns (CGST + SGST) and Cash/Card/UPI tender reconciliation.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">Z-Report Audit</span>
+                <a href="/owner/reports" target="_blank" class="node-link-btn">Launch ↗</a>
+              </div>
+            </div>
+
+            <!-- Node: Owner Inventory -->
+            <div class="arch-node" onclick="inspectNode('owner-inventory')" id="node-inventory">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(236, 72, 153, 0.15); color: #f472b6;">📦</div>
+                  <div>
+                    <div class="node-title">Recipe Inventory</div>
+                    <span class="node-route">/owner/inventory</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Auto-decrements raw materials (Paneer, Rice, Cream, Beverage bottles) when bills are paid.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">Auto-Depletion</span>
+                <a href="/owner/inventory" target="_blank" class="node-link-btn">Launch ↗</a>
+              </div>
+            </div>
+
+            <!-- Node: Owner Dashboard -->
+            <div class="arch-node" onclick="inspectNode('owner-dashboard')" id="node-dashboard">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(251, 146, 60, 0.15); color: #fb923c;">📊</div>
+                  <div>
+                    <div class="node-title">Owner Executive</div>
+                    <span class="node-route">/owner/dashboard</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Live Tables breakdown (Dine Fine, Custom, Takeaway, Delivery) & Running Orders KPI bar.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">Live KPI Bar</span>
+                <a href="/owner/dashboard" target="_blank" class="node-link-btn">Launch ↗</a>
+              </div>
+            </div>
+
+            <!-- Node: SuperAdmin SaaS -->
+            <div class="arch-node" onclick="inspectNode('superadmin')" id="node-superadmin">
+              <div>
+                <div class="node-header">
+                  <div class="node-icon" style="background: rgba(52, 211, 153, 0.15); color: #6ee7b7;">🛡️</div>
+                  <div>
+                    <div class="node-title">SuperAdmin SaaS</div>
+                    <span class="node-route">/superadmin/login</span>
+                  </div>
+                </div>
+                <div class="node-desc">
+                  Isolated multi-tenant SaaS controller, restaurant onboarding, subscriptions & feature flags.
+                </div>
+              </div>
+              <div class="node-action-bar">
+                <span class="node-tag">Isolated Portal</span>
+                <a href="/superadmin/login" target="_blank" class="node-link-btn">Launch ↗</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Node Inspector Drawer -->
+        <div class="inspector-drawer active" id="inspectorDrawer">
+          <div class="drawer-header">
+            <div class="drawer-title-group">
+              <span id="drawerIcon" style="font-size: 1.5rem;">⚡</span>
+              <div>
+                <h3 id="drawerTitle" style="font-size: 1.15rem; font-weight: 700;">Central Reactive Data Bus</h3>
+                <span id="drawerRoute" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--cyan);">client/src/store/posSyncStore.ts</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <span class="drawer-badge" id="drawerBadge">Zustand Reactive Bus</span>
+              <a href="/billing" target="_blank" class="action-btn btn-primary" id="drawerLaunchBtn">
+                <span>🚀</span> Open Live Screen
+              </a>
+            </div>
+          </div>
+          <div class="drawer-grid">
+            <div class="drawer-block">
+              <div class="block-title">Reactive Actions & Store Methods</div>
+              <div class="code-snippet" id="drawerMethods">addKOT(tableNo, items, notes, serverName)
+startPrepKOT(kotId)
+bumpKOT(kotId)
+recallLastKOT()
+recordSettledBill(tableNo, orderType, paymentMode, subtotal, tax, finalTotal, items)
+deductInventoryForItems(items)
+playKitchenKdsChime()</div>
+            </div>
+            <div class="drawer-block">
+              <div class="block-title">Real-Time Data Payload Contract</div>
+              <div class="code-snippet" id="drawerPayload">{
+  "id": "KOT-104",
+  "tableNo": "T-3",
+  "items": [{ "name": "Paneer Butter Masala", "quantity": 2, "rate": 280 }],
+  "specialNotes": "Extra spicy, less oil",
+  "urgency": "normal",
+  "server": "Ramesh Waiter"
+}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================== -->
+    <!-- TAB 2: STEP-BY-STEP SCREEN USAGE GUIDES             -->
+    <!-- =================================================== -->
+    <section id="tab-guides" class="tab-panel">
+      <div class="section-header">
+        <div>
+          <div class="section-title">
+            <span>📖</span> Role-Based Screen Usage Guides
+          </div>
+          <div class="section-subtitle">
+            Clear, step-by-step instructions for each restaurant operational role. Use this for training staff or demonstrating to clients.
+          </div>
+        </div>
+      </div>
+
+      <div class="roles-grid">
+
+        <!-- Role 1: Waiter Mobile -->
+        <div class="role-card">
+          <div>
+            <div class="role-header">
+              <div class="role-badge">
+                <div class="role-avatar" style="color: #c084fc;">📱</div>
+                <div>
+                  <div class="role-title">1. Waiter (Handheld Mobile)</div>
+                  <div class="role-subtitle">React Native Table-Side Ordering</div>
+                </div>
+              </div>
+              <span class="node-tag">waiter-mobile/</span>
+            </div>
+
+            <div class="steps-list">
+              <div class="step-item">
+                <span class="step-num">1</span>
+                <div class="step-text"><strong>4-Digit PIN Authentication:</strong> Enter your server PIN (e.g. <span class="kbd-chip">1234</span>) on the touch dial pad.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">2</span>
+                <div class="step-text"><strong>Select Table:</strong> Tap any vacant green table (e.g. <span class="kbd-chip">T-3</span>) on the handheld floor plan.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">3</span>
+                <div class="step-text"><strong>Punch Dishes & Notes:</strong> Browse category chips, tap items, and type custom instructions (e.g., <em>"Extra Spicy, No Garlic"</em>).</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">4</span>
+                <div class="step-text"><strong>Fire KOT to Kitchen:</strong> Tap the large red <strong>"FIRE KOT TO KITCHEN"</strong> button. The device vibrates with haptic feedback and sends the ticket straight to the chef's KDS.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="role-footer">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Target: Android / iOS Handheld</span>
+            <a href="/kds" target="_blank" class="action-btn btn-secondary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+              See KDS Receiver ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Role 2: Kitchen Chef / KDS -->
+        <div class="role-card">
+          <div>
+            <div class="role-header">
+              <div class="role-badge">
+                <div class="role-avatar" style="color: #fbbf24;">👨‍🍳</div>
+                <div>
+                  <div class="role-title">2. Kitchen Chef & Expeditor</div>
+                  <div class="role-subtitle">Paperless Touch KDS & Thermal Print</div>
+                </div>
+              </div>
+              <span class="node-tag">/kds</span>
+            </div>
+
+            <div class="steps-list">
+              <div class="step-item">
+                <span class="step-num">1</span>
+                <div class="step-text"><strong>Hear Incoming Chime:</strong> When an order is punched, KDS sounds a musical dual-tone chime (880Hz / 1046.5Hz) and flashes the new ticket card.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">2</span>
+                <div class="step-text"><strong>Track Urgency Timers:</strong> Tickets start in <span style="color:#34d399;">Green (&lt;10m)</span>, shift to <span style="color:#fbbf24;">Amber (10-20m)</span>, and pulse in <span style="color:#f43f5e;">Red (&gt;20m)</span> if delayed.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">3</span>
+                <div class="step-text"><strong>Start Prep & Filter:</strong> Tap <strong>"Start Prep"</strong> to notify the floor captain, or filter by station (<em>Tandoor, Main Kitchen, Bar</em>).</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">4</span>
+                <div class="step-text"><strong>Bump / Print:</strong> Click <strong>"Mark Ready / Bump"</strong> when dishes are plated, or click <strong>"KOT Print Preview"</strong> for ESC/POS thermal paper tickets.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="role-footer">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Station: Kitchen Touchscreen</span>
+            <a href="/kds" target="_blank" class="action-btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+              Launch Live KDS ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Role 3: Cashier POS Billing -->
+        <div class="role-card">
+          <div>
+            <div class="role-header">
+              <div class="role-badge">
+                <div class="role-avatar" style="color: #fb7185;">🧾</div>
+                <div>
+                  <div class="role-title">3. Front Counter Cashier</div>
+                  <div class="role-subtitle">Web POS Billing & Hotkeys</div>
+                </div>
+              </div>
+              <span class="node-tag">/billing</span>
+            </div>
+
+            <div class="steps-list">
+              <div class="step-item">
+                <span class="step-num">1</span>
+                <div class="step-text"><strong>Rapid Item Search:</strong> Press <span class="kbd-chip">Space</span> to instantly focus the dish search bar and type dish initials (e.g. <em>"PBM"</em>).</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">2</span>
+                <div class="step-text"><strong>Hold / Recall / Shift:</strong> Transfer orders to another table or merge bills directly with 1 click beside the table selector.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">3</span>
+                <div class="step-text"><strong>Split Billing Modal:</strong> Press <span class="kbd-chip">F4</span> to open the Split Bill modal for Equal Splits (2x, 3x, 4x) or item-wise splits with separate tender modes.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">4</span>
+                <div class="step-text"><strong>1-Key Settlement:</strong> Press <span class="kbd-chip">F1</span> for Cash, <span class="kbd-chip">F2</span> for Card, <span class="kbd-chip">F3</span> for UPI. Auto-generates receipt and updates Owner Sales.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="role-footer">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Station: Front Desk Cash Counter</span>
+            <a href="/billing" target="_blank" class="action-btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+              Launch Live POS ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Role 4: Floor Manager / Captain -->
+        <div class="role-card">
+          <div>
+            <div class="role-header">
+              <div class="role-badge">
+                <div class="role-avatar" style="color: #34d399;">🪑</div>
+                <div>
+                  <div class="role-title">4. Restaurant Floor Captain</div>
+                  <div class="role-subtitle">Interactive Table Floor Plan</div>
+                </div>
+              </div>
+              <span class="node-tag">/tables</span>
+            </div>
+
+            <div class="steps-list">
+              <div class="step-item">
+                <span class="step-num">1</span>
+                <div class="step-text"><strong>Section Tabs:</strong> Switch between <em>Main Hall, AC Section, Outdoor Patio</em>, and <em>First Floor</em>.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">2</span>
+                <div class="step-text"><strong>Color-Coded Status:</strong> <span style="color:#34d399;">Green (Vacant)</span>, <span style="color:#f43f5e;">Red (Occupied with running total & time)</span>, <span style="color:#fbbf24;">Yellow (Billed)</span>.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">3</span>
+                <div class="step-text"><strong>Shift Running Table:</strong> Click the <strong>Shift Table</strong> icon to transfer an active order from T-1 to any vacant table (e.g. T-4) seamlessly.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">4</span>
+                <div class="step-text"><strong>Merge Party Tables:</strong> Click <strong>Merge Tables</strong> to combine two separate tables into a consolidated single bill.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="role-footer">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Station: Hostess / Captain Desk</span>
+            <a href="/tables" target="_blank" class="action-btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+              Launch Table Manager ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Role 5: Restaurant Owner / General Manager -->
+        <div class="role-card">
+          <div>
+            <div class="role-header">
+              <div class="role-badge">
+                <div class="role-avatar" style="color: #fb923c;">👑</div>
+                <div>
+                  <div class="role-title">5. Owner & General Manager</div>
+                  <div class="role-subtitle">Executive Portal & Controls</div>
+                </div>
+              </div>
+              <span class="node-tag">/owner/*</span>
+            </div>
+
+            <div class="steps-list">
+              <div class="step-item">
+                <span class="step-num">1</span>
+                <div class="step-text"><strong>Live KPI & Running Orders:</strong> Open <a href="/owner/dashboard" target="_blank" style="color:#38bdf8;">/owner/dashboard</a> to monitor live tables breakdown and parcel/delivery revenue in real-time.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">2</span>
+                <div class="step-text"><strong>15-Permission Staff Matrix:</strong> Open <a href="/owner/employees" target="_blank" style="color:#38bdf8;">/owner/employees</a> to configure exact role privileges (e.g. Can Void Bill, Can Give Discount).</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">3</span>
+                <div class="step-text"><strong>Auto-Depleted Inventory:</strong> Open <a href="/owner/inventory" target="_blank" style="color:#38bdf8;">/owner/inventory</a> to view raw ingredient consumption updated automatically on each bill.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">4</span>
+                <div class="step-text"><strong>Z-Report Day-End Audit:</strong> Open <a href="/owner/reports" target="_blank" style="color:#38bdf8;">/owner/reports</a> for one-click day closing, tax reports & credit Khata ledgers.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="role-footer">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Station: Owner Mobile / Office PC</span>
+            <a href="/owner/dashboard" target="_blank" class="action-btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+              Launch Owner Portal ↗
+            </a>
+          </div>
+        </div>
+
+        <!-- Role 6: SaaS Platform SuperAdmin -->
+        <div class="role-card">
+          <div>
+            <div class="role-header">
+              <div class="role-badge">
+                <div class="role-avatar" style="color: #6ee7b7;">🛡️</div>
+                <div>
+                  <div class="role-title">6. SaaS SuperAdmin Platform</div>
+                  <div class="role-subtitle">Multi-Tenant Management</div>
+                </div>
+              </div>
+              <span class="node-tag">/superadmin/login</span>
+            </div>
+
+            <div class="steps-list">
+              <div class="step-item">
+                <span class="step-num">1</span>
+                <div class="step-text"><strong>Isolated Login:</strong> Login securely at <a href="/superadmin/login" target="_blank" style="color:#6ee7b7;">/superadmin/login</a> completely isolated from restaurant staff portals.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">2</span>
+                <div class="step-text"><strong>Tenant Onboarding:</strong> Register new restaurant brands, assign GSTIN, specify outlets, and issue owner credentials.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">3</span>
+                <div class="step-text"><strong>Subscription Engine:</strong> Manage Starter, Pro, and Enterprise subscription tiers with expiry alerts.</div>
+              </div>
+              <div class="step-item">
+                <span class="step-num">4</span>
+                <div class="step-text"><strong>Feature Flag Toggles:</strong> Enable or disable KDS, Waiter App, or Khata books per client on demand.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="role-footer">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Station: SaaS Operations Team</span>
+            <a href="/superadmin/login" target="_blank" class="action-btn btn-primary" style="font-size: 0.75rem; padding: 0.4rem 0.8rem;">
+              Launch SuperAdmin ↗
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================== -->
+    <!-- TAB 3: CLIENT PITCH & DEMO SHOWCASE                 -->
+    <!-- =================================================== -->
+    <section id="tab-showcase" class="tab-panel">
+      <div class="section-header">
+        <div>
+          <div class="section-title">
+            <span>💼</span> Client Pitch & Module Feature Showcase
+          </div>
+          <div class="section-subtitle">
+            Demonstrate QuantroBill's enterprise capabilities to restaurant owners, franchise operators, and F&B investors.
+          </div>
+        </div>
+      </div>
+
+      <div class="pitch-grid">
+
+        <!-- Showcase 1: Staff POS Billing -->
+        <div class="pitch-card">
+          <div>
+            <span class="pitch-badge-pill" style="background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3);">
+              ⚡ Lightning Fast Checkout
+            </span>
+            <div class="pitch-title">Cashier Billing & Multi-Tender POS</div>
+            <div class="pitch-tagline">3-Second Checkout with Zero Mouse Navigation Needed</div>
+            
+            <ul class="pitch-features">
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Keyboard Hotkeys:</strong> F1 Cash, F2 Card, F3 UPI, F4 Split, Space dish search.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>N-Way & Item-Wise Split:</strong> Split bills equally among 2-4 guests or drag items between bills with independent payment modes.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Automatic Indian GST:</strong> Pre-configured 2.5% CGST + 2.5% SGST compliance math.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Offline-Resilient Billing:</strong> Keeps punching bills even during internet outages.</span>
+              </li>
+            </ul>
+
+            <div class="pitch-roi-box">
+              <div class="roi-icon">📈</div>
+              <div class="roi-text">
+                <strong>Business ROI:</strong> Eliminates counter queues during peak lunch/dinner rushes. Processes up to 180 bills/hour per counter.
+              </div>
+            </div>
+          </div>
+
+          <div class="pitch-actions">
+            <a href="/billing" target="_blank" class="launch-btn btn-primary">
+              <span>🚀</span> Launch Cashier POS Live
+            </a>
+          </div>
+        </div>
+
+        <!-- Showcase 2: Table Manager -->
+        <div class="pitch-card">
+          <div>
+            <span class="pitch-badge-pill" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
+              🪑 Floor Operations
+            </span>
+            <div class="pitch-title">Interactive Table Floor Plan & Shift/Merge</div>
+            <div class="pitch-tagline">Complete Real-Time Visibility Over Every Seat & Section</div>
+            
+            <ul class="pitch-features">
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Multi-Section Layouts:</strong> Filter by Main Dining, AC Lounge, Garden Terrace, First Floor.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Live Occupancy Heatmap:</strong> Green (Vacant), Red (Occupied with running total ₹ and seating timer), Yellow (Bill printed).</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>1-Click Table Shift:</strong> Transfer running KOTs to any vacant table instantly.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Multi-Table Merge:</strong> Combine adjoining tables for large birthday or corporate parties.</span>
+              </li>
+            </ul>
+
+            <div class="pitch-roi-box">
+              <div class="roi-icon">⏱️</div>
+              <div class="roi-text">
+                <strong>Business ROI:</strong> Increases table turnover by 22% and prevents server mix-ups across different floors.
+              </div>
+            </div>
+          </div>
+
+          <div class="pitch-actions">
+            <a href="/tables" target="_blank" class="launch-btn btn-primary">
+              <span>🚀</span> Launch Table Manager Live
+            </a>
+          </div>
+        </div>
+
+        <!-- Showcase 3: Kitchen KDS -->
+        <div class="pitch-card">
+          <div>
+            <span class="pitch-badge-pill" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">
+              👨‍🍳 Paperless Kitchen
+            </span>
+            <div class="pitch-title">Touch KDS & Dual-Tone Audio Alert</div>
+            <div class="pitch-tagline">Zero Lost Tickets & Instant Chef-to-Server Communication</div>
+            
+            <ul class="pitch-features">
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Dual-Tone Web Audio Chime:</strong> Loud musical alerts notify cooks the instant an order is punched.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Urgency Color Timers:</strong> Dynamic Green (<10m), Amber (10-20m), Pulsing Red (>20m) keeps kitchen pacing under control.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Station Routing:</strong> Send Tandoor items to tandoor chefs, drinks to the bar, and curries to the main range.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>1-Tap Food Ready Bump:</strong> Bumps prepared tickets and alerts the waiter's handheld device.</span>
+              </li>
+            </ul>
+
+            <div class="pitch-roi-box">
+              <div class="roi-icon">🌱</div>
+              <div class="roi-text">
+                <strong>Business ROI:</strong> Saves ₹12,000+ monthly in thermal paper rolls while reducing kitchen order prep delays by 35%.
+              </div>
+            </div>
+          </div>
+
+          <div class="pitch-actions">
+            <a href="/kds" target="_blank" class="launch-btn btn-primary">
+              <span>🚀</span> Launch Kitchen KDS Live
+            </a>
+          </div>
+        </div>
+
+        <!-- Showcase 4: Restaurant Owner Portal -->
+        <div class="pitch-card">
+          <div>
+            <span class="pitch-badge-pill" style="background: rgba(251, 146, 60, 0.15); color: #fb923c; border: 1px solid rgba(251, 146, 60, 0.3);">
+              👑 Executive Control
+            </span>
+            <div class="pitch-title">Restaurant Owner / Admin Executive Portal</div>
+            <div class="pitch-tagline">Anti-Theft Cashier Audits, Recipe Depletion & Day-End Z-Reports</div>
+            
+            <ul class="pitch-features">
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Live Running Orders Bar:</strong> Monitor Dine-In, Takeaway, and Delivery order counts and revenue on your phone in real time.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>15-Permission Staff Toggle Matrix:</strong> Lock down critical capabilities (Void Bill, Reprint KOT, Give Discount, Delete Item) per staff member.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Automatic Recipe Depletion:</strong> Selling a Paneer Butter Masala automatically decrements 200g Paneer and 50ml Cream from stock.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Day-End Z-Report:</strong> 1-click comprehensive day closure with tender reconciliation (Cash vs. UPI vs. Card).</span>
+              </li>
+            </ul>
+
+            <div class="pitch-roi-box">
+              <div class="roi-icon">🛡️</div>
+              <div class="roi-text">
+                <strong>Business ROI:</strong> Stops pilferage and cash leakage, cuts raw material wastage by 18%, and automates daily accounts closing.
+              </div>
+            </div>
+          </div>
+
+          <div class="pitch-actions">
+            <a href="/owner/dashboard" target="_blank" class="launch-btn btn-primary">
+              <span>🚀</span> Launch Owner Portal Live
+            </a>
+          </div>
+        </div>
+
+        <!-- Showcase 5: Waiter Handheld Mobile App -->
+        <div class="pitch-card">
+          <div>
+            <span class="pitch-badge-pill" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">
+              📱 Mobile Waiter App
+            </span>
+            <div class="pitch-title">React Native Handheld Waiter App</div>
+            <div class="pitch-tagline">Table-Side Order Punching with Zero Miscommunication</div>
+            
+            <ul class="pitch-features">
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>4-Digit Staff PIN:</strong> Fast staff switching between servers on shared Android handheld terminals.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Visual Table Map:</strong> Instant check of occupied vs. free tables on the floor.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Cooking Notes Input:</strong> Tag dishes with custom customer notes (<em>"Less sugar", "Jain prep", "Extra crispy"</em>).</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Tactile Haptic Confirmation:</strong> Physical vibration feedback confirms KOT arrival in the kitchen.</span>
+              </li>
+            </ul>
+
+            <div class="pitch-roi-box">
+              <div class="roi-icon">⚡</div>
+              <div class="roi-text">
+                <strong>Business ROI:</strong> Waiters spend 100% of their time attending to guests rather than running paper slips back and forth to the kitchen.
+              </div>
+            </div>
+          </div>
+
+          <div class="pitch-actions">
+            <a href="/billing" target="_blank" class="launch-btn btn-secondary">
+              <span>🖥️</span> Open Web POS
+            </a>
+            <a href="/kds" target="_blank" class="launch-btn btn-primary">
+              <span>👨‍🍳</span> View Kitchen Receiver
+            </a>
+          </div>
+        </div>
+
+        <!-- Showcase 6: SuperAdmin SaaS Portal -->
+        <div class="pitch-card">
+          <div>
+            <span class="pitch-badge-pill" style="background: rgba(52, 211, 153, 0.15); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.3);">
+              🛡️ SaaS Scalability
+            </span>
+            <div class="pitch-title">SuperAdmin Multi-Tenant Control Hub</div>
+            <div class="pitch-tagline">Onboard 1,000+ Restaurant Brands with Complete Data Isolation</div>
+            
+            <ul class="pitch-features">
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Isolated Administrative Portal:</strong> Dedicated secure route (<span class="kbd-chip">/superadmin/login</span>) isolated from restaurant operators.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Tenant Provisioning:</strong> 1-click restaurant onboarding with GSTIN, outlets, and custom domains.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Tiered Subscription Engine:</strong> Manage Starter, Pro, and Enterprise licenses with automated renewal locks.</span>
+              </li>
+              <li class="pitch-feat-item">
+                <span class="icon">✓</span>
+                <span><strong>Granular Feature Toggles:</strong> Enable or disable KDS, Waiter App, or Khata books per client.</span>
+              </li>
+            </ul>
+
+            <div class="pitch-roi-box">
+              <div class="roi-icon">🏢</div>
+              <div class="roi-text">
+                <strong>Business ROI:</strong> Built from day one to scale as a commercial B2B SaaS platform commanding monthly recurring subscription revenue.
+              </div>
+            </div>
+          </div>
+
+          <div class="pitch-actions">
+            <a href="/superadmin/login" target="_blank" class="launch-btn btn-primary">
+              <span>🚀</span> Launch SuperAdmin Live
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================== -->
+    <!-- TAB 4: INTERACTIVE DATA SIMULATOR SANDBOX           -->
+    <!-- =================================================== -->
+    <section id="tab-simulator" class="tab-panel">
+      <div class="section-header">
+        <div>
+          <div class="section-title">
+            <span>⚡</span> Interactive Multi-Module Simulator
+          </div>
+          <div class="section-subtitle">
+            Simulate live events across the ecosystem to verify real-time SignalR packet routing and auto-depletion logic.
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-card">
+        <div class="sim-bar">
+          <button class="sim-btn" onclick="simulateKOTPunch()">
+            <span>📱</span> 1. Simulate Waiter Punches KOT
+          </button>
+          <button class="sim-btn" onclick="simulateChefStartPrep()">
+            <span>👨‍🍳</span> 2. Simulate Chef Starts Prep
+          </button>
+          <button class="sim-btn" onclick="simulateFoodReadyBump()">
+            <span>🔔</span> 3. Simulate Mark Ready / Bump
+          </button>
+          <button class="sim-btn" onclick="simulateBillSettlement()">
+            <span>🧾</span> 4. Simulate POS Settlement & Stock Depletion
+          </button>
+          <button class="sim-btn" onclick="clearConsole()" style="margin-left: auto; color: var(--rose);">
+            <span>🗑️</span> Clear Logs
+          </button>
+        </div>
+
+        <div class="sim-console" id="simConsole">
+          <div class="sim-log-entry">
+            <span class="sim-log-time">[11:00:00]</span>
+            <span class="sim-log-tag" style="color: #34d399;">[SYSTEM_INIT]</span>
+            <span>QuantroBill Reactive Simulator online. Ready to fire sample ecosystem events.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer>
+    <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+      QuantroBill • Enterprise Restaurant POS & Management SaaS
+    </div>
+    <div>
+      Built with ASP.NET Core .NET 8, React 19, SignalR WebSockets, Zustand Reactive Bus & React Native Expo
+    </div>
+    <div class="footer-links">
+      <a href="/billing" target="_blank">🧾 Cashier POS</a>
+      <a href="/tables" target="_blank">🪑 Floor Tables</a>
+      <a href="/kds" target="_blank">👨‍🍳 Kitchen KDS</a>
+      <a href="/owner/dashboard" target="_blank">📊 Owner Portal</a>
+      <a href="/owner/sales" target="_blank">💳 Sales Register</a>
+      <a href="/owner/reports" target="_blank">📑 Z-Report</a>
+      <a href="/owner/inventory" target="_blank">📦 Raw Inventory</a>
+      <a href="/superadmin/login" target="_blank">🛡️ SuperAdmin SaaS</a>
+      <a href="/tracker.html" target="_blank">📋 Project Tracker</a>
+    </div>
+  </footer>
+
+  <!-- Script for Interactivity, Tab Switching, Audio Synthesis, Port Resolution & Simulator -->
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      
+      const targetPanel = document.getElementById(tabId);
+      if (targetPanel) targetPanel.classList.add('active');
+
+      const buttons = document.querySelectorAll('.tab-btn');
+      if (tabId === 'tab-diagram') buttons[0].classList.add('active');
+      if (tabId === 'tab-guides') buttons[1].classList.add('active');
+      if (tabId === 'tab-showcase') buttons[2].classList.add('active');
+      if (tabId === 'tab-simulator') buttons[3].classList.add('active');
+    }
+
+    // Dynamic Link Resolver (domain-agnostic)
+    function getViteBaseUrl() {
+      // If opened via local file protocol, fallback to dev server
+      if (window.location.protocol === 'file:') {
+        return 'http://localhost:5173';
+      }
+      // If running on local VS Code Live Server (port 5500)
+      if (window.location.port === '5500') {
+        return 'http://localhost:5173';
+      }
+      // Production domain or Vite server: use relative paths directly
+      return '';
+    }
+
+    function fixAppLinks() {
+      const isLiveServerOrFile = window.location.port === '5500' || window.location.protocol === 'file:';
+      const banner = document.getElementById('liveServerBanner');
+
+      if (banner && isLiveServerOrFile) {
+        banner.style.display = 'flex';
+        const link = document.getElementById('liveServerViteLink');
+        if (link) link.href = `http://localhost:5173/billing`;
+      }
+
+      const baseUrl = getViteBaseUrl();
+      if (!baseUrl) return;
+
+      const appPaths = [
+        '/billing', '/tables', '/kds', '/login', '/online-orders',
+        '/owner', '/superadmin', '/receipt-settings', '/demo.html', '/tracker.html'
+      ];
+
+      document.querySelectorAll('a').forEach(anchor => {
+        const href = anchor.getAttribute('href');
+        if (!href) return;
+        const isAppPath = appPaths.some(p => href === p || href.startsWith(p + '/') || href.startsWith(p + '?') || href.startsWith(p + '#'));
+        if (isAppPath && !href.startsWith('http')) {
+          anchor.href = baseUrl + href;
+        }
+      });
+    }
+
+    // Node Inspector Data
+    const nodeDetails = {
+      'waiter-mobile': {
+        icon: '📱',
+        title: 'Waiter Mobile Handheld App',
+        route: 'waiter-mobile/ (React Native Expo 52)',
+        badge: 'Order Ingress',
+        launchUrl: '/billing',
+        methods: `apiClient.post('/api/orders', { tableNo, items, notes, serverPin })\nuseWaiterStore.punchKOT()\nHaptics.notificationAsync()`,
+        payload: `{\n  "tableNo": "T-3",\n  "serverPin": "1234",\n  "items": [\n    { "name": "Butter Naan", "quantity": 4, "rate": 45 },\n    { "name": "Dal Makhani", "quantity": 1, "rate": 240 }\n  ],\n  "specialNotes": "Well done naan, crisp"\n}`
+      },
+      'staff-pos': {
+        icon: '🧾',
+        title: 'Staff POS Billing Engine',
+        route: '/billing',
+        badge: 'Cashier Register',
+        launchUrl: '/billing',
+        methods: `handleKOT() -> posSyncStore.addKOT()\nhandleSaveBill() -> posSyncStore.recordSettledBill()\nhandleSplitComplete() -> multi-tender settlement\nKeyboard shortcuts: [Space], [F1], [F2], [F3], [F4]`,
+        payload: `{\n  "billNo": "INV-0104",\n  "tableNo": "T-1",\n  "orderType": "Dine In",\n  "paymentMode": "UPI",\n  "subtotal": 520,\n  "cgst": 13,\n  "sgst": 13,\n  "grandTotal": 546\n}`
+      },
+      'pos-sync-bus': {
+        icon: '⚡',
+        title: 'Central Reactive Data Bus',
+        route: 'client/src/store/posSyncStore.ts',
+        badge: 'Zustand Reactive Bus',
+        launchUrl: '/billing',
+        methods: `addKOT(tableNo, items, notes, serverName)\nstartPrepKOT(kotId)\nbumpKOT(kotId)\nrecallLastKOT()\nrecordSettledBill(tableNo, orderType, paymentMode, subtotal, tax, finalTotal, items)\ndeductInventoryForItems(items)\nplayKitchenKdsChime()`,
+        payload: `{\n  "id": "KOT-104",\n  "tableNo": "T-3",\n  "items": [{ "name": "Paneer Butter Masala", "quantity": 2, "rate": 280 }],\n  "specialNotes": "Extra spicy, less oil",\n  "urgency": "normal",\n  "server": "Ramesh Waiter"\n}`
+      },
+      'kitchen-kds': {
+        icon: '👨‍🍳',
+        title: 'Kitchen Display System (KDS)',
+        route: '/kds',
+        badge: 'Touch KDS Screen',
+        launchUrl: '/kds',
+        methods: `posSyncStore.subscribe(kots)\nplayKitchenKdsChime() (Dual-tone Web Audio 880Hz/1046.5Hz)\nstartPrepKOT()\nbumpKOT() -> archives ticket\npreviewThermalReceipt() -> ESC/POS modal`,
+        payload: `{\n  "kotId": "KOT-104",\n  "prepTimeRemaining": "08:42",\n  "status": "Preparing",\n  "station": "Main Kitchen",\n  "urgencyBadge": "normal"\n}`
+      },
+      'table-manager': {
+        icon: '🪑',
+        title: 'Table Management Floor Plan',
+        route: '/tables',
+        badge: 'Floor Operations',
+        launchUrl: '/tables',
+        methods: `occupyTable(tableId, total, guests)\nshiftTable(sourceTableId, destTableId)\nmergeTables(sourceTableId, destTableId)\nvacateTable(tableId)`,
+        payload: `{\n  "tableId": "T-2",\n  "status": "occupied",\n  "runningTotal": 780,\n  "occupiedSince": "24 mins ago",\n  "section": "Main Hall"\n}`
+      },
+      'owner-sales': {
+        icon: '💳',
+        title: 'Owner Real-Time Sales Register',
+        route: '/owner/sales',
+        badge: 'Audit Register',
+        launchUrl: '/owner/sales',
+        methods: `posSyncStore.subscribe(sales)\nfilterSales(cashierId, dateRange, paymentMode)\nexportSalesCSV()`,
+        payload: `{\n  "id": "SALE-0104",\n  "invoiceNumber": "INV-0104",\n  "timestamp": "2026-09-11T11:15:00Z",\n  "orderType": "Dine In",\n  "paymentMode": "Cash",\n  "finalAmount": 780\n}`
+      },
+      'owner-reports': {
+        icon: '📑',
+        title: 'Owner Day-End Z-Report',
+        route: '/owner/reports',
+        badge: 'Closing Audit',
+        launchUrl: '/owner/reports',
+        methods: `computeZReportMetrics(sales)\ncalculateTaxBreakdown()\ntenderReconciliation(cash, card, upi)`,
+        payload: `{\n  "date": "2026-09-11",\n  "grossSales": 48250,\n  "cgstCollected": 1206.25,\n  "sgstCollected": 1206.25,\n  "cashTender": 18400,\n  "upiTender": 24350,\n  "cardTender": 5500\n}`
+      },
+      'owner-inventory': {
+        icon: '📦',
+        title: 'Raw Inventory Stock & Auto-Depletion',
+        route: '/owner/inventory',
+        badge: 'Recipe Linked',
+        launchUrl: '/owner/inventory',
+        methods: `deductInventoryForItems(items)\ncheckParStockAlerts()\nloadStockReceipt()`,
+        payload: `{\n  "item": "Fresh Paneer",\n  "unit": "KG",\n  "currentStock": 14.8,\n  "deduction": "-0.200 KG",\n  "trigger": "INV-0104 (1x Paneer Butter Masala)"\n}`
+      },
+      'owner-dashboard': {
+        icon: '📊',
+        title: 'Owner Executive Operations Dashboard',
+        route: '/owner/dashboard',
+        badge: 'Executive View',
+        launchUrl: '/owner/dashboard',
+        methods: `computeLiveTablesBreakdown(tables)\naggregateRunningOrdersKPI(kots)\nmonitorStaffActivity()`,
+        payload: `{\n  "liveDineInTables": 6,\n  "liveTakeawayOrders": 2,\n  "liveDeliveryOrders": 1,\n  "runningRevenue": 5640\n}`
+      },
+      'superadmin': {
+        icon: '🛡️',
+        title: 'SuperAdmin SaaS Platform Hub',
+        route: '/superadmin/login',
+        badge: 'Platform SaaS',
+        launchUrl: '/superadmin/login',
+        methods: `onboardTenant(brandName, gstin, outlets)\nupdateSubscriptionTier(tenantId, tier)\ntoggleFeatures(tenantId, featureFlags)`,
+        payload: `{\n  "tenantId": "t-petpooja-demo",\n  "subscription": "Enterprise",\n  "expiry": "2027-09-11",\n  "features": { "kds": true, "waiterMobile": true, "khata": true }\n}`
+      }
+    };
+
+    function inspectNode(nodeKey) {
+      const data = nodeDetails[nodeKey];
+      if (!data) return;
+
+      document.querySelectorAll('.arch-node').forEach(node => node.classList.remove('selected'));
+      const activeEl = document.querySelector(`.arch-node[onclick="inspectNode('${nodeKey}')"]`);
+      if (activeEl) activeEl.classList.add('selected');
+
+      document.getElementById('drawerIcon').innerText = data.icon;
+      document.getElementById('drawerTitle').innerText = data.title;
+      document.getElementById('drawerRoute').innerText = data.route;
+      document.getElementById('drawerBadge').innerText = data.badge;
+      document.getElementById('drawerMethods').innerText = data.methods;
+      document.getElementById('drawerPayload').innerText = data.payload;
+
+      const baseUrl = getViteBaseUrl();
+      document.getElementById('drawerLaunchBtn').href = baseUrl + data.launchUrl;
+
+      const drawer = document.getElementById('inspectorDrawer');
+      drawer.classList.add('active');
+    }
+
+    // Pure Web Audio API Kitchen Chime
+    function playDemoSound() {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const now = ctx.currentTime;
+        
+        // Osc 1 (880 Hz - A5)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.35);
+
+        // Osc 2 (1046.5 Hz - C6)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1046.5, now + 0.18);
+        gain2.gain.setValueAtTime(0.35, now + 0.18);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.18);
+        osc2.stop(now + 0.65);
+
+        logSim('SOUND', 'Played dual-tone synthesized kitchen chime (880Hz -> 1046.5Hz)');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Simulator Console Logger
+    function logSim(tag, message) {
+      const consoleEl = document.getElementById('simConsole');
+      if (!consoleEl) return;
+      const now = new Date().toTimeString().split(' ')[0];
+      const entry = document.createElement('div');
+      entry.className = 'sim-log-entry';
+      
+      let tagColor = '#818cf8';
+      if (tag === 'KOT') tagColor = '#c084fc';
+      if (tag === 'KDS') tagColor = '#fbbf24';
+      if (tag === 'BUMP') tagColor = '#34d399';
+      if (tag === 'SETTLE') tagColor = '#22d3ee';
+      if (tag === 'STOCK') tagColor = '#f472b6';
+      if (tag === 'SOUND') tagColor = '#f59e0b';
+
+      entry.innerHTML = `
+        <span class="sim-log-time">[${now}]</span>
+        <span class="sim-log-tag" style="color: ${tagColor};">[${tag}]</span>
+        <span>${message}</span>
+      `;
+      consoleEl.appendChild(entry);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function clearConsole() {
+      const consoleEl = document.getElementById('simConsole');
+      if (consoleEl) consoleEl.innerHTML = '';
+      logSim('SYSTEM', 'Console cleared.');
+    }
+
+    function simulateKOTPunch() {
+      playDemoSound();
+      logSim('KOT', 'Waiter (Ramesh) punched KOT for Table T-3: 2x Paneer Butter Masala (₹560), 4x Butter Naan (₹180). Notes: "Less spicy".');
+      logSim('TABLE', 'Table T-3 marked OCCUPIED. Running total updated to ₹740.');
+      logSim('KDS', 'KDS Screen received ticket #KOT-105. Urgency timer started: 15:00 remaining.');
+    }
+
+    function simulateChefStartPrep() {
+      logSim('KDS', 'Chef clicked "Start Prep" on #KOT-105. Status changed to PREPARING. Expeditor station notified.');
+    }
+
+    function simulateFoodReadyBump() {
+      logSim('BUMP', 'Chef completed ticket #KOT-105. Clicked "Mark Ready / Bump". Ticket archived to recall cache.');
+      logSim('WAITER', 'SignalR sent notification to Waiter Ramesh: "Food ready for Table T-3! Pick up from Hot Range."');
+    }
+
+    function simulateBillSettlement() {
+      logSim('SETTLE', 'Cashier settled Table T-3 via UPI [F3]. Generated Invoice #INV-0105 for ₹777 (incl 5% GST).');
+      logSim('STOCK', 'Recipe Auto-Depletion Triggered: Deducted 400g Fresh Paneer, 100ml Cream, 600g Maida from raw stock.');
+      logSim('SALES', 'Invoice #INV-0105 appended to Owner Real-Time Sales Register and Day-End Z-Report.');
+      logSim('TABLE', 'Table T-3 status reset to VACANT (Green). Floor plan ready for next guest.');
+    }
+
+    // Intercept clicks immediately anywhere on the page
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      const isLiveServerOrFile = window.location.port === '5500' || window.location.protocol === 'file:';
+      if (isLiveServerOrFile) {
+        const baseUrl = getViteBaseUrl();
+        if (href.startsWith('/') && !href.startsWith('//') && !href.endsWith('.html')) {
+          e.preventDefault();
+          window.open(baseUrl + href, link.target || '_blank');
+        }
+      }
+    }, true);
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      fixAppLinks();
+    });
+    fixAppLinks();
+  </script>
+</body>
+</html>

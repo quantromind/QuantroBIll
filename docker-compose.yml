@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/PetBharke.API/Dockerfile
+    container_name: petbharke-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MongoDB__ConnectionString=mongodb+srv://prathameshsm0425:prathamesh123@cluster0.atbnfrf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - MongoDB__DatabaseName=petbharke
+      - Jwt__Key=PetBharkeSuperSecretSecureLongEnterpriseKey2026!@#$%^778899
+      - Jwt__Issuer=PetBharkeAPI
+      - Jwt__Audience=PetBharkeClient
+    ports:
+      - "5000:8080"
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: petbharke-client
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
