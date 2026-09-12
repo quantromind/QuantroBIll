@@ -29,9 +29,15 @@ export const apiClient = axios.create({
 // Attach token & tenant headers to every outgoing request
 apiClient.interceptors.request.use((config) => {
   const isSuperAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/superadmin');
+  const isOwnerRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/owner');
   const superAdminToken = localStorage.getItem('quantrobill_superadmin_token') || localStorage.getItem('petbharke_superadmin_token');
+  const ownerToken = localStorage.getItem('quantrobill_owner_token');
   const staffToken = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
-  const token = isSuperAdminRoute ? (superAdminToken || staffToken) : (staffToken || superAdminToken);
+  const token = isSuperAdminRoute
+    ? (superAdminToken || staffToken)
+    : isOwnerRoute
+      ? (ownerToken || staffToken || superAdminToken)
+      : (staffToken || ownerToken || superAdminToken);
   const activeOutlet = localStorage.getItem('quantrobill_active_outlet') || localStorage.getItem('petbharke_active_outlet');
   const tenantId = localStorage.getItem('quantrobill_tenant_id') || localStorage.getItem('petbharke_tenant_id');
 

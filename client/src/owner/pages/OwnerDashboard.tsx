@@ -12,12 +12,14 @@ import {
 import type { LiveTableChip, LiveRunningOrdersSummary } from '../types';
 import { useTableStore } from '../../store/tableStore';
 import { usePosSyncStore } from '../../store/posSyncStore';
+import { useOwnerAuthStore } from '../store/ownerAuthStore';
 
 export const OwnerDashboard: React.FC = () => {
+  const { user } = useOwnerAuthStore();
   const { tables } = useTableStore();
   const { activeKOTs } = usePosSyncStore();
 
-  // Cashier & Time Filters (As per Screenshot 1)
+  // Cashier & Time Filters
   const [selectedCashier, setSelectedCashier] = useState('All Cashiers');
   const [dateRange, setDateRange] = useState('Today (Live)');
   const [timeFrom, setTimeFrom] = useState('00:00');
@@ -28,7 +30,7 @@ export const OwnerDashboard: React.FC = () => {
     'Dine Fine' | 'Custom Tables' | 'Take Away' | 'Home Delivery'
   >('Dine Fine');
 
-  // Compute live Dine Fine Tables combining tableStore occupied tables
+  // Compute live Dine Fine Tables combining tableStore occupied tables only
   const occupiedFromStore: LiveTableChip[] = tables
     .filter((t) => t.isOccupied)
     .map((t) => {
@@ -40,37 +42,47 @@ export const OwnerDashboard: React.FC = () => {
         section: sec,
         orderTotal: t.orderTotal || 0,
         isOccupied: true,
-        runningDuration: t.orderTime ? `${Math.max(1, Math.floor((Date.now() - new Date(t.orderTime).getTime()) / 60000))}m` : '5m',
+        runningDuration: t.orderTime ? `${Math.max(1, Math.floor((Date.now() - new Date(t.orderTime).getTime()) / 60000))}m` : '1m',
       };
     });
 
-  const dineFineTables: LiveTableChip[] = [
-    ...occupiedFromStore,
-    { id: '1', tableNumber: 'RM3', section: 'Dine Fine', orderTotal: 1890, isOccupied: true, runningDuration: '32m' },
-    { id: '2', tableNumber: 'RM6', section: 'Dine Fine', orderTotal: 1404, isOccupied: true, runningDuration: '18m' },
-    { id: '3', tableNumber: 'RM4', section: 'Dine Fine', orderTotal: 446, isOccupied: true, runningDuration: '12m' },
-    { id: '4', tableNumber: 'RM9', section: 'Dine Fine', orderTotal: 646, isOccupied: true, runningDuration: '45m' },
-    { id: '5', tableNumber: 'RM15', section: 'Dine Fine', orderTotal: 975, isOccupied: true, runningDuration: '24m' },
-    { id: '6', tableNumber: 'RM11', section: 'Dine Fine', orderTotal: 1477, isOccupied: true, runningDuration: '50m' },
-  ];
-
-  const homeDeliveryTables: LiveTableChip[] = [
-    { id: 'hd-1', tableNumber: 'RMH-D1', section: 'Home Delivery', orderTotal: 1154, isOccupied: true, runningDuration: '22m' },
-  ];
+  const dineFineTables: LiveTableChip[] = occupiedFromStore.filter((t) => t.section === 'Dine Fine');
+  const customTables: LiveTableChip[] = occupiedFromStore.filter((t) => t.section === 'Custom Tables');
+  const takeAwayOrders: LiveTableChip[] = activeKOTs
+    .filter((k) => k.orderType?.toLowerCase().includes('take') || k.orderType?.toLowerCase().includes('pick'))
+    .map((k) => ({
+      id: `kot-${k.kotNo}`,
+      tableNumber: `TakeAway #${(k.kotNo || '001').slice(-3)}`,
+      section: 'Take Away' as const,
+      orderTotal: k.items.reduce((sum, i) => sum + (i.qty * 150), 0),
+      isOccupied: true,
+      runningDuration: `${Math.max(1, Math.floor((Date.now() - (k.createdAt || Date.now())) / 60000))}m`,
+    }));
+  const homeDeliveryTables: LiveTableChip[] = activeKOTs
+    .filter((k) => k.orderType?.toLowerCase().includes('deliv'))
+    .map((k) => ({
+      id: `deliv-${k.kotNo}`,
+      tableNumber: `Delivery #${(k.kotNo || '001').slice(-3)}`,
+      section: 'Home Delivery' as const,
+      orderTotal: k.items.reduce((sum, i) => sum + (i.qty * 180), 0),
+      isOccupied: true,
+      runningDuration: `${Math.max(1, Math.floor((Date.now() - (k.createdAt || Date.now())) / 60000))}m`,
+    }));
 
   // Dynamic Live Running Orders KPI Metrics
   const dineTotal = dineFineTables.reduce((acc, t) => acc + (t.orderTotal || 0), 0);
+  const parcelTotal = takeAwayOrders.reduce((acc, t) => acc + (t.orderTotal || 0), 0);
   const deliveryTotal = homeDeliveryTables.reduce((acc, t) => acc + (t.orderTotal || 0), 0);
 
   const runningOrdersSummary: LiveRunningOrdersSummary = {
     dineInCount: dineFineTables.length,
     dineInTotal: dineTotal,
-    parcelCount: activeKOTs.filter((k) => k.orderType.toLowerCase().includes('pick')).length,
-    parcelTotal: 0.0,
+    parcelCount: takeAwayOrders.length,
+    parcelTotal: parcelTotal,
     deliveryCount: homeDeliveryTables.length,
     deliveryTotal: deliveryTotal,
-    overallCount: dineFineTables.length + homeDeliveryTables.length,
-    overallTotal: dineTotal + deliveryTotal,
+    overallCount: dineFineTables.length + takeAwayOrders.length + homeDeliveryTables.length,
+    overallTotal: dineTotal + parcelTotal + deliveryTotal,
   };
 
   return (
@@ -81,11 +93,11 @@ export const OwnerDashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="text-xl">👑</span>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-              Welcome, AjayYadav!
+              Welcome, {user?.name || 'Restaurant Owner'}!
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time restaurant operations dashboard • RR RESTAURANT • Executive Hub
+            Real-time restaurant operations dashboard • {user?.restaurantName || 'Restaurant Operations'} • Executive Hub
           </p>
         </div>
 
@@ -113,10 +125,9 @@ export const OwnerDashboard: React.FC = () => {
               className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
             >
               <option value="All Cashiers">All Cashiers</option>
-              <option value="raju">raju</option>
-              <option value="naveenk">naveenk</option>
-              <option value="Harini">Harini</option>
-              <option value="Nizam">Nizam</option>
+              {user?.name && <option value={user.name}>{user.name} (Owner)</option>}
+              <option value="Cashier Desk">Cashier Station</option>
+              <option value="Waiter Captain">Floor Captain</option>
             </select>
           </div>
 
@@ -233,46 +244,111 @@ export const OwnerDashboard: React.FC = () => {
         {/* Table Chips Grid */}
         <div className="p-4 sm:p-5">
           {activeTableTab === 'Dine Fine' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {dineFineTables.map((table) => (
-                <div
-                  key={table.id}
-                  className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:border-blue-300 hover:bg-blue-50/60 transition flex flex-col justify-between shadow-2xs hover:shadow-xs cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-blue-900">{table.tableNumber}</span>
-                    <span className="text-[10px] text-slate-500 font-mono font-medium">{table.runningDuration}</span>
+            dineFineTables.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {dineFineTables.map((table) => (
+                  <div
+                    key={table.id}
+                    className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:border-blue-300 hover:bg-blue-50/60 transition flex flex-col justify-between shadow-2xs hover:shadow-xs cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-blue-900">{table.tableNumber}</span>
+                      <span className="text-[10px] text-slate-500 font-mono font-medium">{table.runningDuration}</span>
+                    </div>
+                    <div className="mt-2.5 pt-2 border-t border-blue-100/60 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Total</span>
+                      <span className="text-xs font-black text-slate-900">₹{table.orderTotal}</span>
+                    </div>
                   </div>
-                  <div className="mt-2.5 pt-2 border-t border-blue-100/60 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Total</span>
-                    <span className="text-xs font-black text-slate-900">₹{table.orderTotal}</span>
-                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 px-4 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-3">
+                  🍽️
                 </div>
-              ))}
-            </div>
+                <h3 className="text-sm font-bold text-slate-800">Dining Floor is Fresh & Clear</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                  No tables are occupied right now. When orders are taken from POS Billing or the Waiter Mobile App, live tables and real-time order amounts will appear here automatically.
+                </p>
+                <a
+                  href="/billing"
+                  className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition shadow-xs"
+                >
+                  <span>Open POS Billing & Take First Order</span>
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            )
+          )}
+
+          {activeTableTab === 'Take Away' && (
+            takeAwayOrders.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {takeAwayOrders.map((d) => (
+                  <div
+                    key={d.id}
+                    className="p-3.5 rounded-xl border border-amber-100 bg-amber-50/30 hover:border-amber-300 transition flex flex-col justify-between shadow-2xs"
+                  >
+                    <span className="font-bold text-xs text-amber-900">{d.tableNumber}</span>
+                    <div className="mt-2.5 pt-2 border-t border-amber-100/60 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-bold">TOTAL</span>
+                      <span className="text-xs font-black text-slate-900">₹{d.orderTotal}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center text-slate-400 text-xs">
+                No active takeaway orders in progress.
+              </div>
+            )
           )}
 
           {activeTableTab === 'Home Delivery' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {homeDeliveryTables.map((d) => (
-                <div
-                  key={d.id}
-                  className="p-3.5 rounded-xl border border-indigo-100 bg-indigo-50/30 hover:border-indigo-300 transition flex flex-col justify-between shadow-2xs"
-                >
-                  <span className="font-bold text-xs text-indigo-900">{d.tableNumber}</span>
-                  <div className="mt-2.5 pt-2 border-t border-indigo-100/60 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-bold">DELIVERY DUE</span>
-                    <span className="text-xs font-black text-slate-900">₹{d.orderTotal}</span>
+            homeDeliveryTables.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {homeDeliveryTables.map((d) => (
+                  <div
+                    key={d.id}
+                    className="p-3.5 rounded-xl border border-indigo-100 bg-indigo-50/30 hover:border-indigo-300 transition flex flex-col justify-between shadow-2xs"
+                  >
+                    <span className="font-bold text-xs text-indigo-900">{d.tableNumber}</span>
+                    <div className="mt-2.5 pt-2 border-t border-indigo-100/60 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-bold">DELIVERY DUE</span>
+                      <span className="text-xs font-black text-slate-900">₹{d.orderTotal}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center text-slate-400 text-xs">
+                No active home deliveries currently dispatched.
+              </div>
+            )
           )}
 
-          {(activeTableTab === 'Custom Tables' || activeTableTab === 'Take Away') && (
-            <div className="py-10 text-center text-slate-400 text-xs">
-              No active orders currently in {activeTableTab}.
-            </div>
+          {activeTableTab === 'Custom Tables' && (
+            customTables.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {customTables.map((t) => (
+                  <div
+                    key={t.id}
+                    className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:border-blue-300 transition flex flex-col justify-between shadow-2xs"
+                  >
+                    <span className="font-bold text-xs text-blue-900">{t.tableNumber}</span>
+                    <div className="mt-2.5 pt-2 border-t border-blue-100/60 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-bold">TOTAL</span>
+                      <span className="text-xs font-black text-slate-900">₹{t.orderTotal}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center text-slate-400 text-xs">
+                No active custom tables currently open.
+              </div>
+            )
           )}
         </div>
       </div>

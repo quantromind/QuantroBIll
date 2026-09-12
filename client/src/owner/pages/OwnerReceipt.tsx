@@ -6,21 +6,31 @@ import {
 } from 'lucide-react';
 import type { OwnerReceiptConfig } from '../types';
 
+import { useOwnerAuthStore } from '../store/ownerAuthStore';
+
 export const OwnerReceipt: React.FC = () => {
-  const [config, setConfig] = useState<OwnerReceiptConfig>({
-    restaurantName: 'RR RESTAURANT & CAFE',
-    tagline: 'Authentic Flavours & Fine Dining',
-    address: 'Shop 14, High Street Avenue, Mumbai - 400001',
-    phone: '+91 98765 43210',
-    gstin: '27AAAAA0000A1Z5',
-    fssai: '11519014000123',
-    headerGreeting: 'WELCOME! WE ARE DELIGHTED TO SERVE YOU',
-    footerMessage: 'THANK YOU FOR DINING WITH US! PLEASE VISIT AGAIN',
-    showGstin: true,
-    showFssai: true,
-    showWifiPassword: true,
-    wifiDetails: 'SSID: RR_Guest | Pass: eatgood2026',
-    paperWidthMm: 80,
+  const { user } = useOwnerAuthStore();
+
+  const [config, setConfig] = useState<OwnerReceiptConfig>(() => {
+    const saved = localStorage.getItem('quantrobill_owner_receipt_config');
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return {
+      restaurantName: user?.restaurantName || 'Restaurant & Cafe',
+      tagline: 'Authentic Flavours & Fine Dining',
+      address: 'Main Branch',
+      phone: user?.phone || '',
+      gstin: '',
+      fssai: '',
+      headerGreeting: 'WELCOME! WE ARE DELIGHTED TO SERVE YOU',
+      footerMessage: 'THANK YOU FOR DINING WITH US! PLEASE VISIT AGAIN',
+      showGstin: false,
+      showFssai: false,
+      showWifiPassword: false,
+      wifiDetails: '',
+      paperWidthMm: 80,
+    };
   });
 
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -34,18 +44,18 @@ export const OwnerReceipt: React.FC = () => {
 
   const handleReset = () => {
     setConfig({
-      restaurantName: 'RR RESTAURANT & CAFE',
+      restaurantName: user?.restaurantName || 'Restaurant & Cafe',
       tagline: 'Authentic Flavours & Fine Dining',
-      address: 'Shop 14, High Street Avenue, Mumbai - 400001',
-      phone: '+91 98765 43210',
-      gstin: '27AAAAA0000A1Z5',
-      fssai: '11519014000123',
+      address: 'Main Branch',
+      phone: user?.phone || '',
+      gstin: '',
+      fssai: '',
       headerGreeting: 'WELCOME! WE ARE DELIGHTED TO SERVE YOU',
       footerMessage: 'THANK YOU FOR DINING WITH US! PLEASE VISIT AGAIN',
-      showGstin: true,
-      showFssai: true,
-      showWifiPassword: true,
-      wifiDetails: 'SSID: RR_Guest | Pass: eatgood2026',
+      showGstin: false,
+      showFssai: false,
+      showWifiPassword: false,
+      wifiDetails: '',
       paperWidthMm: 80,
     });
   };

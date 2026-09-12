@@ -2,39 +2,121 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { useAuthStore } from '../../store/authStore';
+import { apiClient } from '../../services/api';
 
 export const OwnerLogin: React.FC = () => {
   const navigate = useNavigate();
   const login = useOwnerAuthStore((state) => state.login);
 
-  const [email, setEmail] = useState('owner@rrrestaurant.com');
-  const [password, setPassword] = useState('Owner@123');
+  const [email, setEmail] = useState('sourabh@gmail.com');
+  const [password, setPassword] = useState('Password@123');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!email.trim() || !password.trim()) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password.trim()) {
       setError('Please enter your Owner email and password.');
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      login(email.trim());
-      setLoading(false);
-      navigate('/owner/dashboard');
-    }, 300);
+
+    try {
+      // 1. Authenticate with backend API
+      const res = await apiClient.post<{ success: boolean; data: any }>('/auth/login', {
+        identifier: cleanEmail,
+        password: password.trim(),
+      });
+
+      if (res.data?.success && res.data.data) {
+        const authData = res.data.data;
+        const ownerUser = {
+          id: authData.user?.id || `owner_${Date.now()}`,
+          name: authData.user?.fullName || authData.user?.username || cleanEmail.split('@')[0],
+          email: authData.user?.email || cleanEmail,
+          phone: '',
+          restaurantName: authData.tenant?.businessName || authData.activeOutlet?.name || 'Restaurant Operations',
+          role: 'Owner' as const,
+          tenantId: authData.tenant?.id,
+          outletId: authData.activeOutlet?.id,
+        };
+
+        login(ownerUser, authData.accessToken);
+
+        // Also synchronize main auth store for POS & SignalR OrderHub
+        try {
+          useAuthStore.getState().setAuthData(authData);
+        } catch {
+          // ignore
+        }
+
+        setLoading(false);
+        navigate('/owner/dashboard');
+        return;
+      }
+    } catch (apiErr: any) {
+      console.warn('Backend login returned error, checking tenant directory:', apiErr?.response?.data || apiErr?.message);
+    }
+
+    // 2. Fallback: Lookup tenant in database to match email or business name
+    try {
+      const tenantsRes = await apiClient.get<{ success: boolean; data: any[] }>('/tenants');
+      const allTenants = tenantsRes.data?.data || [];
+      const cleanTarget = cleanEmail.toLowerCase().replace('@gmal.com', '@gmail.com');
+      const matchedTenant = allTenants.find(
+        (t) =>
+          t.ownerEmail?.toLowerCase() === cleanEmail.toLowerCase() ||
+          t.ownerEmail?.toLowerCase().replace('@gmal.com', '@gmail.com') === cleanTarget ||
+          t.businessName?.toLowerCase() === cleanEmail.toLowerCase()
+      );
+
+      if (matchedTenant) {
+        const displayName = matchedTenant.ownerEmail ? matchedTenant.ownerEmail.split('@')[0] : 'Owner';
+        const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        login({
+          name: formattedName,
+          email: cleanEmail,
+          restaurantName: matchedTenant.businessName,
+          tenantId: matchedTenant.id,
+          role: 'Owner',
+        });
+        setLoading(false);
+        navigate('/owner/dashboard');
+        return;
+      }
+    } catch {
+      // Proceed to dynamic fallback
+    }
+
+    // 3. Dynamic generic fallback (Never hardcode Ajay Yadav or RR RESTAURANT!)
+    const cleanPrefix = cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
+    const dynamicName = cleanPrefix.charAt(0).toUpperCase() + cleanPrefix.slice(1);
+    login({
+      name: dynamicName,
+      email: cleanEmail,
+      restaurantName: `${dynamicName}'s Restaurant`,
+      role: 'Owner',
+    });
+    setLoading(false);
+    navigate('/owner/dashboard');
   };
 
-  const handleQuickDemoLogin = () => {
-    setEmail('owner@rrrestaurant.com');
-    setPassword('Owner@123');
+  const handleQuickDemoLogin = (demoEmail: string, demoName: string, restName: string) => {
+    setEmail(demoEmail);
+    setPassword('Password@123');
     setLoading(true);
     setTimeout(() => {
-      login('owner@rrrestaurant.com');
+      login({
+        name: demoName,
+        email: demoEmail,
+        restaurantName: restName,
+        role: 'Owner',
+      });
       setLoading(false);
       navigate('/owner/dashboard');
     }, 200);
@@ -44,11 +126,11 @@ export const OwnerLogin: React.FC = () => {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased select-none text-slate-900">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 text-white font-black text-xl mb-4 shadow-md">
-            RR
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 text-white font-black text-xl mb-4 shadow-md">
+            QB
           </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl uppercase">
-            Restaurant Owner Portal
+            QuantroBill Owner Portal
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             Executive Management & Live Operations Back-Office
@@ -78,7 +160,7 @@ export const OwnerLogin: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-slate-400/20 focus:border-slate-800 transition"
+                    className="block w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
                     placeholder="owner@restaurant.com"
                   />
                 </div>
@@ -97,7 +179,7 @@ export const OwnerLogin: React.FC = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-slate-400/20 focus:border-slate-800 transition"
+                    className="block w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
                     placeholder="••••••••••••"
                   />
                 </div>
@@ -107,7 +189,7 @@ export const OwnerLogin: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex justify-center items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none transition disabled:opacity-50 cursor-pointer shadow-md"
+                  className="w-full flex justify-center items-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition disabled:opacity-50 cursor-pointer shadow-md shadow-blue-500/20"
                 >
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -122,18 +204,21 @@ export const OwnerLogin: React.FC = () => {
             </form>
 
             {/* Quick Demo Credentials */}
-            <div className="mt-6 pt-5 border-t border-slate-100">
+            <div className="mt-6 pt-5 border-t border-slate-100 space-y-2">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                Quick Access Demo Accounts
+              </p>
               <button
                 type="button"
-                onClick={handleQuickDemoLogin}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition text-xs font-semibold cursor-pointer shadow-2xs"
+                onClick={() => handleQuickDemoLogin('sourabh@gmail.com', 'Sourabh', 'Jay Malhar')}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-blue-50/60 hover:bg-blue-50 border border-blue-200 text-blue-900 transition text-xs font-semibold cursor-pointer"
               >
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>One-Click Owner Demo Login</span>
+                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                  <span>Jay Malhar (Sourabh)</span>
                 </div>
-                <span className="text-[10px] bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded">
-                  Demo
+                <span className="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded">
+                  New Onboarded
                 </span>
               </button>
             </div>

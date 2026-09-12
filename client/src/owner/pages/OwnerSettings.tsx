@@ -7,20 +7,23 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
+import { useOwnerAuthStore } from '../store/ownerAuthStore';
+
 export const OwnerSettings: React.FC = () => {
+  const { user, setUserData } = useOwnerAuthStore();
   const [activeTab, setActiveTab] = useState<'GENERAL' | 'SECTIONS' | 'TAX' | 'HARDWARE'>('GENERAL');
 
   // General Settings State
-  const [restaurantName, setRestaurantName] = useState('RR RESTAURANT');
-  const [branchName, setBranchName] = useState('Main High Street Outlet');
-  const [phone, setPhone] = useState('+91 98765 43210');
-  const [email, setEmail] = useState('owner@rrrestaurant.com');
+  const [restaurantName, setRestaurantName] = useState(user?.restaurantName || 'My Restaurant');
+  const [branchName, setBranchName] = useState('Main Branch');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [email, setEmail] = useState(user?.email || 'owner@restaurant.com');
   const [currencySymbol, setCurrencySymbol] = useState('₹ (INR)');
 
   // Section Tables
-  const [fineDineTables, setFineDineTables] = useState(25);
-  const [takeAwayCounters, setTakeAwayCounters] = useState(5);
-  const [deliveryZones, setDeliveryZones] = useState(10);
+  const [fineDineTables, setFineDineTables] = useState(15);
+  const [takeAwayCounters, setTakeAwayCounters] = useState(2);
+  const [deliveryZones, setDeliveryZones] = useState(5);
 
   // Tax & Billing
   const [cgstRate, setCgstRate] = useState(2.5);
@@ -38,6 +41,11 @@ export const OwnerSettings: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    setUserData({
+      restaurantName,
+      phone,
+      email,
+    });
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };

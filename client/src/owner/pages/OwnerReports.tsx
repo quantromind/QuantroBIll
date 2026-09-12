@@ -6,19 +6,21 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { usePosSyncStore } from '../../store/posSyncStore';
+import { useOwnerAuthStore } from '../store/ownerAuthStore';
 
 export const OwnerReports: React.FC = () => {
+  const { user } = useOwnerAuthStore();
   const [activeTab, setActiveTab] = useState<'Z_REPORT' | 'ITEM_WISE' | 'TAX_REPORT' | 'VOIDS'>('Z_REPORT');
-  const [selectedDate, setSelectedDate] = useState('Today (11/09/2026)');
+  const [selectedDate, setSelectedDate] = useState('Today');
 
   const sales = usePosSyncStore((state) => state.sales);
 
   // Dynamic calculations from real POS sales
-  const liveGrossSales = useMemo(() => 30000 + sales.reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
-  const liveTaxAmount = useMemo(() => 1500 + sales.reduce((acc, s) => acc + s.taxAmount, 0), [sales]);
-  const liveUpi = useMemo(() => 18000 + sales.filter((s) => s.paymentMode.toLowerCase() === 'upi').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
-  const liveCash = useMemo(() => 8000 + sales.filter((s) => s.paymentMode.toLowerCase() === 'cash').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
-  const liveCard = useMemo(() => 4000 + sales.filter((s) => s.paymentMode.toLowerCase() === 'card').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
+  const liveGrossSales = useMemo(() => sales.reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
+  const liveTaxAmount = useMemo(() => sales.reduce((acc, s) => acc + s.taxAmount, 0), [sales]);
+  const liveUpi = useMemo(() => sales.filter((s) => s.paymentMode?.toLowerCase() === 'upi').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
+  const liveCash = useMemo(() => sales.filter((s) => s.paymentMode?.toLowerCase() === 'cash').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
+  const liveCard = useMemo(() => sales.filter((s) => s.paymentMode?.toLowerCase() === 'card').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
 
   // Mock item-wise sales
   const itemWiseData = [
@@ -132,7 +134,7 @@ export const OwnerReports: React.FC = () => {
           <div className="max-w-2xl mx-auto space-y-5">
             <div className="border border-dashed border-slate-300 rounded-xl p-6 font-mono text-xs bg-slate-50/50">
               <div className="text-center pb-4 border-b border-slate-200">
-                <p className="text-base font-black text-black">RR RESTAURANT</p>
+                <p className="text-base font-black text-black uppercase">{user?.restaurantName || 'RESTAURANT'}</p>
                 <p className="text-[11px] text-slate-500">Official Day-End Z-Report</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">Date: {selectedDate} | Shift 1 & 2</p>
               </div>

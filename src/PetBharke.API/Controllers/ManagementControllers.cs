@@ -93,6 +93,18 @@ public class TenantsController : ControllerBase
         return Ok(new { success = true, data = outlets });
     }
 
+    [HttpGet("{id}/users")]
+    public async Task<IActionResult> GetTenantUsers(string id)
+    {
+        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
+        {
+            return Forbid();
+        }
+
+        var users = await _context.Users.Find(u => u.TenantId == id).ToListAsync();
+        return Ok(new { success = true, data = users.Select(u => new { u.Id, u.Username, u.Email, u.FullName, u.Role, u.IsActive }) });
+    }
+
     [HttpPost]
     [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> CreateTenant([FromBody] CreateTenantDto request)
