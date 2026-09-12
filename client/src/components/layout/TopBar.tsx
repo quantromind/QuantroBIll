@@ -8,7 +8,6 @@ import {
   LogOut,
   Utensils,
   Receipt,
-  Users,
   BarChart3,
   Clock,
   CheckCircle2,
@@ -16,10 +15,15 @@ import {
   Download,
   Languages,
   Store,
+  SlidersHorizontal,
+  Banknote,
+  Crown,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useLangStore } from '../../store/langStore';
 import type { UserRole } from '../../types';
+import { clearAllAuthSessions } from '../../utils/authSession';
 import {
   ReprintModal,
   HelpModal,
@@ -29,7 +33,7 @@ import {
 export const TopBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, tenant, activeOutlet, availableOutlets, setActiveOutlet, toggleDrawer, logout, switchRole } = useAuthStore();
+  const { user, tenant, activeOutlet, availableOutlets, setActiveOutlet, toggleDrawer, switchRole } = useAuthStore();
   const { currentLang, setLanguage } = useLangStore();
   const [globalSearch, setGlobalSearch] = useState('');
   const [showOutletDropdown, setShowOutletDropdown] = useState(false);
@@ -43,6 +47,11 @@ export const TopBar: React.FC = () => {
   const [isStoreOpen, setIsStoreOpen] = useState(true);
 
   const activeRole: UserRole = user?.role || 'Cashier';
+
+  const handleLogout = () => {
+    clearAllAuthSessions();
+    navigate('/login', { replace: true });
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,19 +72,30 @@ export const TopBar: React.FC = () => {
     { label: 'Kitchen KDS', path: '/kds', icon: Radio },
     { label: 'Orders & History', path: '/online-orders', icon: Clock },
     { label: 'Menu & Stock', path: '/menu-manager', icon: Utensils },
-    { label: 'Reports', path: '/owner/analytics', icon: BarChart3 },
-    { label: 'Staff & Roles', path: '/owner/employees', icon: Users },
+    { label: 'Shift Cash', path: '/finance', icon: Banknote },
+    { label: 'Operations', path: '/operations', icon: SlidersHorizontal },
+    { label: 'Reports', path: '/reports', icon: BarChart3 },
   ];
 
   const filteredNavTabs = navTabs.filter((tab) => {
     if (activeRole === 'Waiter') {
       return tab.path === '/billing' || tab.path === '/tables' || tab.path === '/kds';
     }
-    if (activeRole === 'Cashier') {
-      return tab.path === '/billing' || tab.path === '/tables' || tab.path === '/kds' || tab.path === '/online-orders';
+    if (activeRole === 'KitchenStaff') {
+      return tab.path === '/kds';
     }
     return true;
   });
+
+  const isOwnerOrManager =
+    activeRole === 'Owner' ||
+    activeRole === 'Admin' ||
+    activeRole === 'Manager' ||
+    user?.role === 'Owner' ||
+    user?.role === 'Admin' ||
+    user?.role === 'Manager';
+
+  const isSuperAdminUser = activeRole === 'SuperAdmin' || user?.role === 'SuperAdmin';
 
   const roleLabels: Record<string, { label: string; icon: string; badge: string }> = {
     Owner: { label: 'Owner / Admin', icon: '👑', badge: 'bg-purple-50 text-purple-700 border-purple-200' },
@@ -133,13 +153,37 @@ export const TopBar: React.FC = () => {
           )}
         </div>
 
-        {/* Top Right: Live Role Switcher + Language + Status */}
+        {/* Top Right: Live Role Switcher + Portal Shortcuts + Language + Status */}
         <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Quick Cross-Portal Shortcut for Owner */}
+          {isOwnerOrManager && (
+            <button
+              onClick={() => navigate('/owner/dashboard')}
+              className="hidden sm:flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-[11px] font-bold transition shadow-2xs cursor-pointer"
+              title="Switch to Restaurant Owner Back-Office"
+            >
+              <Crown className="w-3 h-3 text-purple-600" />
+              <span>Owner Portal</span>
+            </button>
+          )}
+
+          {/* Quick Cross-Portal Shortcut for SuperAdmin */}
+          {isSuperAdminUser && (
+            <button
+              onClick={() => navigate('/superadmin/dashboard')}
+              className="hidden sm:flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-bold transition shadow-2xs cursor-pointer"
+              title="Switch to SaaS SuperAdmin Headquarters"
+            >
+              <ShieldCheck className="w-3 h-3 text-indigo-600" />
+              <span>SuperAdmin</span>
+            </button>
+          )}
+
           {/* Real-Time Role Switcher Badge */}
           <div className="relative">
             <button
               onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-              className={`flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold transition-all shadow-2xs ${currentRoleInfo.badge}`}
+              className={`flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${currentRoleInfo.badge}`}
               title="Click to switch active role for testing permissions"
             >
               <span>{currentRoleInfo.icon}</span>
@@ -162,7 +206,7 @@ export const TopBar: React.FC = () => {
                         switchRole(r);
                         setShowRoleDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition ${
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition cursor-pointer ${
                         isSelected ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -309,9 +353,9 @@ export const TopBar: React.FC = () => {
 
           {/* Clean Logout Pill Button (Reference CRM style: subtle red outline) */}
           <button
-            onClick={logout}
+            onClick={handleLogout}
             title="Logout"
-            className="flex items-center space-x-1 px-3 py-1 rounded-full border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-xs font-semibold touch-btn shadow-2xs transition"
+            className="flex items-center space-x-1 px-3 py-1 rounded-full border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 text-xs font-semibold touch-btn shadow-2xs transition cursor-pointer"
           >
             <LogOut className="w-3 h-3 text-rose-500" />
             <span>Logout</span>

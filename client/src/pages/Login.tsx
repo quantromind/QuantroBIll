@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../services/api';
 import { useAuthStore, getHomeRouteForRole } from '../store/authStore';
 import type { AuthResponse, UserRole } from '../types';
@@ -482,8 +482,21 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
+        {/* Dedicated Portal Direct Links */}
+        <div className="mt-4 flex items-center justify-center gap-4 text-xs font-semibold text-slate-500">
+          <Link to="/owner/login" className="hover:text-blue-600 transition flex items-center gap-1">
+            <span>👑</span>
+            <span>Owner Portal Login</span>
+          </Link>
+          <span className="text-slate-300">•</span>
+          <Link to="/superadmin/login" className="hover:text-blue-600 transition flex items-center gap-1">
+            <span>⚡</span>
+            <span>SuperAdmin Login</span>
+          </Link>
+        </div>
+
         {/* Multi-Tenant Security Footnote */}
-        <div className="text-center mt-4 text-xs text-slate-400 font-medium flex items-center justify-center gap-1.5">
+        <div className="text-center mt-3 text-xs text-slate-400 font-medium flex items-center justify-center gap-1.5">
           <Building2 className="w-3.5 h-3.5 text-slate-400" />
           <span>Multi-tenant data partitioning enabled via MongoDB Atlas</span>
         </div>

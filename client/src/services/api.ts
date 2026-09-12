@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { clearAllAuthSessions } from '../utils/authSession';
 
 export const getBaseApiUrl = (): string => {
   if (import.meta.env.VITE_API_BASE_URL) {
@@ -53,9 +54,34 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
-      useAuthStore.getState().logout();
-      window.location.href = '/login';
+    if (error.response?.status === 401) {
+      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+      const requestUrl = error.config?.url || '';
+
+      // Do not boot user out if a background POS query failed due to missing tenant context
+      if (
+        pathname.startsWith('/superadmin') &&
+        (requestUrl.includes('/orders') || requestUrl.includes('/inventory') || requestUrl.includes('/tables'))
+      ) {
+        return Promise.reject(error);
+      }
+
+      // If already on a login route, do not loop
+      if (!pathname.includes('/login')) {
+        const isSuperAdminRoute = pathname.startsWith('/superadmin');
+        const isOwnerRoute = pathname.startsWith('/owner');
+
+        if (isSuperAdminRoute) {
+          clearAllAuthSessions();
+          window.location.href = '/superadmin/login';
+        } else if (isOwnerRoute) {
+          clearAllAuthSessions();
+          window.location.href = '/owner/login';
+        } else {
+          clearAllAuthSessions();
+          window.location.href = '/login';
+        }
+      }
     }
     return Promise.reject(error);
   }

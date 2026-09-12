@@ -13,15 +13,16 @@ import {
   Store,
 } from 'lucide-react';
 import { useSuperAdminAuthStore } from '../store/superAdminAuthStore';
+import { clearAllAuthSessions } from '../../utils/authSession';
 
 export const SuperAdminLayout: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useSuperAdminAuthStore();
+  const { user } = useSuperAdminAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    clearAllAuthSessions();
+    navigate('/login', { replace: true });
   };
 
   const navItems = [
@@ -72,26 +73,22 @@ export const SuperAdminLayout: React.FC = () => {
             <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
           </a>
 
-          <a
-            href="/billing"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-200 shadow-2xs"
+          <button
+            onClick={() => navigate('/billing')}
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-200 shadow-2xs cursor-pointer"
           >
             <Store className="w-3.5 h-3.5 text-blue-600" />
             <span>Launch POS Billing</span>
             <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
-          </a>
+          </button>
 
-          <a
-            href="/owner/dashboard"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition border border-slate-200"
+          <button
+            onClick={() => navigate('/owner/dashboard')}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition border border-slate-200 cursor-pointer"
           >
             <span>Owner Portal</span>
             <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          </button>
 
           <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 

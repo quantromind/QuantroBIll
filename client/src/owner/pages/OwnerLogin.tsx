@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useOwnerAuthStore } from '../store/ownerAuthStore';
 import { useAuthStore } from '../../store/authStore';
@@ -227,13 +227,13 @@ export const OwnerLogin: React.FC = () => {
 
         {/* Back link */}
         <div className="text-center mt-6">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="text-xs text-slate-500 hover:text-slate-800 transition inline-flex items-center gap-1 font-medium"
           >
             <span>Go to Staff Billing POS Screen</span>
             <ArrowRight className="w-3.5 h-3.5" />
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -110,8 +110,19 @@ export const useOwnerAuthStore = create<OwnerAuthState>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem(STORAGE_TOKEN_KEY);
-    localStorage.removeItem(STORAGE_USER_KEY);
+    ['quantrobill_', 'petbharke_'].forEach((prefix) => {
+      localStorage.removeItem(`${prefix}access_token`);
+      localStorage.removeItem(`${prefix}refresh_token`);
+      localStorage.removeItem(`${prefix}user`);
+      localStorage.removeItem(`${prefix}tenant`);
+      localStorage.removeItem(`${prefix}tenant_id`);
+      localStorage.removeItem(`${prefix}active_outlet`);
+      localStorage.removeItem(`${prefix}available_outlets`);
+      localStorage.removeItem(`${prefix}superadmin_token`);
+      localStorage.removeItem(`${prefix}superadmin_user`);
+      localStorage.removeItem(`${prefix}owner_token`);
+      localStorage.removeItem(`${prefix}owner_user`);
+    });
     set({ token: null, user: null, isAuthenticated: false });
   },
 }));

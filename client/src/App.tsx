@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from './store/authStore';
-import { usePosSyncStore } from './store/posSyncStore';
-import { useTableStore } from './store/tableStore';
+import { useAuthStore, getHomeRouteForRole } from './store/authStore';
 import { AppLayout } from './components/layout/AppLayout';
 import { Login } from './pages/Login';
 import { Billing } from './pages/Billing';
@@ -19,6 +17,7 @@ import { ReceiptSettings } from './pages/ReceiptSettings';
 import { SuperAdminLayout } from './superadmin/components/SuperAdminLayout';
 import { SuperAdminPrivateRoute } from './superadmin/components/SuperAdminPrivateRoute';
 import { SuperAdminDashboard } from './superadmin/pages/SuperAdminDashboard';
+import { SuperAdminLogin } from './superadmin/pages/SuperAdminLogin';
 import { TenantManagement } from './superadmin/pages/TenantManagement';
 import { SubscriptionPlans } from './superadmin/pages/SubscriptionPlans';
 import { FeatureToggles } from './superadmin/pages/FeatureToggles';
@@ -26,6 +25,7 @@ import { FeatureToggles } from './superadmin/pages/FeatureToggles';
 import { OwnerLayout } from './owner/components/OwnerLayout';
 import { OwnerPrivateRoute } from './owner/components/OwnerPrivateRoute';
 import { OwnerDashboard } from './owner/pages/OwnerDashboard';
+import { OwnerLogin } from './owner/pages/OwnerLogin';
 import { OwnerMenu } from './owner/pages/OwnerMenu';
 import { OwnerSales } from './owner/pages/OwnerSales';
 import { OwnerReports } from './owner/pages/OwnerReports';
@@ -47,13 +47,32 @@ const queryClient = new QueryClient({
   },
 });
 
+const RootRedirect: React.FC = () => {
+  const { isAuthenticated, isLoading, user } = useAuthStore();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800">
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const target = getHomeRouteForRole(user?.role);
+  return <Navigate to={target} replace />;
+};
+
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800">
-        <div className="w-8 h-8 border-3 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -63,28 +82,42 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 export const App: React.FC = () => {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
-  const fetchInitialData = usePosSyncStore((state) => state.fetchInitialData);
-  const initializeSignalRSync = usePosSyncStore((state) => state.initializeSignalRSync);
-  const initializeTableSync = useTableStore((state) => state.initializeSignalRSync);
-  const fetchTablesFromApi = useTableStore((state) => state.fetchTablesFromApi);
 
   useEffect(() => {
     initializeAuth();
-    fetchInitialData();
-    initializeSignalRSync();
-    initializeTableSync();
-    fetchTablesFromApi();
-  }, [initializeAuth, fetchInitialData, initializeSignalRSync, initializeTableSync, fetchTablesFromApi]);
+  }, [initializeAuth]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
           {/* ========================================= */}
-          {/* 1. RESTAURANT STAFF POS (Cashier, Waiter) */}
+          {/* Universal Root Landing Redirection        */}
+          {/* ========================================= */}
+          <Route path="/" element={<RootRedirect />} />
+
+          {/* ========================================= */}
+          {/* Dedicated Login Portals                   */}
           {/* ========================================= */}
           <Route path="/login" element={<Login />} />
+          <Route path="/owner/login" element={<OwnerLogin />} />
+          <Route path="/superadmin/login" element={<SuperAdminLogin />} />
 
+          {/* ========================================= */}
+          {/* Quick Route Aliases                       */}
+          {/* ========================================= */}
+          <Route path="/pos" element={<Navigate to="/billing" replace />} />
+          <Route path="/orders" element={<Navigate to="/online-orders" replace />} />
+          <Route path="/table" element={<Navigate to="/tables" replace />} />
+          <Route path="/kitchen" element={<Navigate to="/kds" replace />} />
+          <Route path="/kot" element={<Navigate to="/kds" replace />} />
+          <Route path="/menu" element={<Navigate to="/menu-manager" replace />} />
+          <Route path="/admin" element={<Navigate to="/owner/dashboard" replace />} />
+          <Route path="/super-admin" element={<Navigate to="/superadmin/dashboard" replace />} />
+
+          {/* ========================================= */}
+          {/* 1. RESTAURANT STAFF POS (Cashier, Waiter) */}
+          {/* ========================================= */}
           <Route
             element={
               <PrivateRoute>
@@ -92,7 +125,6 @@ export const App: React.FC = () => {
               </PrivateRoute>
             }
           >
-            <Route path="/" element={<Navigate to="/billing" replace />} />
             <Route path="/billing" element={<Billing />} />
             <Route path="/online-orders" element={<OnlineOrders />} />
             <Route path="/tables" element={<TableManager />} />
@@ -102,15 +134,11 @@ export const App: React.FC = () => {
             <Route path="/operations" element={<Operations />} />
             <Route path="/kds" element={<KDS />} />
             <Route path="/receipt-settings" element={<ReceiptSettings />} />
-            {/* Backward compatibility redirect for old /super-admin link */}
-            <Route path="/super-admin" element={<Navigate to="/superadmin/dashboard" replace />} />
           </Route>
 
           {/* ========================================= */}
           {/* 2. ISOLATED SAAS SUPERADMIN PORTAL        */}
           {/* ========================================= */}
-          <Route path="/superadmin/login" element={<Navigate to="/login" replace />} />
-
           <Route
             path="/superadmin"
             element={
@@ -129,8 +157,6 @@ export const App: React.FC = () => {
           {/* =================================================== */}
           {/* 3. ISOLATED RESTAURANT OWNER / ADMIN PORTAL (LEVEL 2) */}
           {/* =================================================== */}
-          <Route path="/owner/login" element={<Navigate to="/login" replace />} />
-
           <Route
             path="/owner"
             element={
@@ -155,8 +181,10 @@ export const App: React.FC = () => {
             <Route path="settings" element={<OwnerSettings />} />
           </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/billing" replace />} />
+          {/* ========================================= */}
+          {/* Dynamic Catch-All Fallback                */}
+          {/* ========================================= */}
+          <Route path="*" element={<RootRedirect />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

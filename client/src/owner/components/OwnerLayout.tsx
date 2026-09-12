@@ -16,17 +16,19 @@ import {
   LogOut,
   Menu,
   X,
+  Store,
 } from 'lucide-react';
 import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { clearAllAuthSessions } from '../../utils/authSession';
 
 export const OwnerLayout: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useOwnerAuthStore();
+  const { user } = useOwnerAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    clearAllAuthSessions();
+    navigate('/login', { replace: true });
   };
 
   // Exactly matching the sidebar from Screenshot 2
@@ -52,7 +54,7 @@ export const OwnerLayout: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden p-1.5 rounded-md text-slate-700 hover:bg-slate-100"
+            className="md:hidden p-1.5 rounded-md text-slate-700 hover:bg-slate-100 cursor-pointer"
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -84,10 +86,32 @@ export const OwnerLayout: React.FC = () => {
         </div>
 
         {/* Right Bar Actions */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Quick Switch to POS Billing Desk */}
+          <button
+            onClick={() => navigate('/billing')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 border border-blue-200 rounded-lg transition shadow-2xs cursor-pointer"
+            title="Open Live POS Billing Desk"
+          >
+            <Store className="w-3.5 h-3.5 text-blue-600" />
+            <span>Launch POS Billing</span>
+          </button>
+
+          {/* Quick Switch to Tables Floor Matrix */}
+          <button
+            onClick={() => navigate('/tables')}
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 rounded-lg transition cursor-pointer"
+            title="Open Live Floor Plan Matrix"
+          >
+            <Grid3X3 className="w-3.5 h-3.5 text-slate-600" />
+            <span>Floor Matrix</span>
+          </button>
+
+          <div className="h-5 w-px bg-slate-200 hidden sm:block" />
+
           {/* User Profile info */}
           <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
+            <div className="text-right hidden md:block">
               <p className="text-xs font-bold text-slate-900">{user?.name || 'Restaurant Owner'}</p>
               <p className="text-[10px] text-slate-500">{user?.email || 'owner@restaurant.com'}</p>
             </div>
@@ -143,6 +167,25 @@ export const OwnerLayout: React.FC = () => {
                 </NavLink>
               );
             })}
+
+            {/* Quick POS Terminal Shortcut in Sidebar */}
+            <div className="pt-2 mt-2 border-t border-slate-100">
+              <button
+                onClick={() => {
+                  setSidebarOpen(false);
+                  navigate('/billing');
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold text-blue-700 bg-blue-50/70 hover:bg-blue-100 border border-blue-200 transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Store className="w-4 h-4 text-blue-600" />
+                  <span>Launch POS Desk</span>
+                </div>
+                <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded">
+                  POS
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Sidebar Footer */}
