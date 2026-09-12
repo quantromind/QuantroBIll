@@ -3,7 +3,7 @@ namespace PetBharke.Domain.Enums;
 public enum UserRole
 {
     SuperAdmin = 1,
-    Admin = 2,           // Restaurant Owner/Manager
+    Owner = 2,           // Restaurant Owner
     Cashier = 3,         // Biller
     KitchenStaff = 4,    // KDS
     DeliveryBoy = 5,     // Rider

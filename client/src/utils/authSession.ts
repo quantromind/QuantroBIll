@@ -1,6 +1,4 @@
 import { useAuthStore } from '../store/authStore';
-import { useSuperAdminAuthStore } from '../superadmin/store/superAdminAuthStore';
-import { useOwnerAuthStore } from '../owner/store/ownerAuthStore';
 import { signalRService } from '../services/signalr';
 
 export const ALL_AUTH_STORAGE_KEYS = [
@@ -31,9 +29,8 @@ export const ALL_AUTH_STORAGE_KEYS = [
 /**
  * Universal logout and session cleanup:
  * Clears all storage keys across QuantroBill and legacy prefixes,
- * stops active SignalR streams, and completely resets all three auth stores
- * (Global useAuthStore, SuperAdmin store, and Owner store) so that
- * no stale session bounces the user back into protected dashboards.
+ * stops active SignalR streams, and completely resets the unified auth store
+ * so that no stale session bounces the user back into protected dashboards.
  */
 export const clearAllAuthSessions = (): void => {
   // 1. Wipe known auth keys from localStorage
@@ -64,7 +61,7 @@ export const clearAllAuthSessions = (): void => {
     // ignore
   }
 
-  // 4. Reset global useAuthStore
+  // 4. Reset unified auth store
   try {
     useAuthStore.setState({
       user: null,
@@ -77,28 +74,6 @@ export const clearAllAuthSessions = (): void => {
       drawerOpen: false,
     });
   } catch (e) {
-    console.error('Error clearing global auth store:', e);
-  }
-
-  // 5. Reset SuperAdmin auth store
-  try {
-    useSuperAdminAuthStore.setState({
-      token: null,
-      user: null,
-      isAuthenticated: false,
-    });
-  } catch (e) {
-    console.error('Error clearing SuperAdmin auth store:', e);
-  }
-
-  // 6. Reset Owner auth store
-  try {
-    useOwnerAuthStore.setState({
-      token: null,
-      user: null,
-      isAuthenticated: false,
-    });
-  } catch (e) {
-    console.error('Error clearing Owner auth store:', e);
+    console.error('Error clearing auth store:', e);
   }
 };

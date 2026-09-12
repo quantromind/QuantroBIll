@@ -16,7 +16,6 @@ import {
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useReceiptSettingsStore, type ReceiptSettings as IReceiptSettings } from '../store/receiptSettingsStore';
 import { useAuthStore } from '../store/authStore';
-import { useOwnerAuthStore } from '../owner/store/ownerAuthStore';
 
 /* ───────── Template Styles Config ───────── */
 
@@ -231,8 +230,7 @@ const widthToPx = (mm: number): number => {
 
 export const ReceiptSettings: React.FC<{ isOwnerPortal?: boolean }> = ({ isOwnerPortal = false }) => {
   const store = useReceiptSettingsStore();
-  const { activeOutlet, tenant } = useAuthStore();
-  const ownerUser = useOwnerAuthStore((s) => s.user);
+  const { activeOutlet, tenant, user } = useAuthStore();
 
   const tabs: { id: IReceiptSettings['activeTab']; label: string; icon: React.ReactNode }[] = [
     { id: 'printer', label: 'Printer Settings', icon: <Printer className="w-3.5 h-3.5" /> },
@@ -263,13 +261,13 @@ export const ReceiptSettings: React.FC<{ isOwnerPortal?: boolean }> = ({ isOwner
   };
 
   /* ─── derived values for preview ─── */
-  const outletName = store.customRestaurantName || ownerUser?.restaurantName || activeOutlet?.name || tenant?.businessName || 'SAMPLE RESTAURANT';
+  const outletName = store.customRestaurantName || activeOutlet?.name || tenant?.businessName || 'SAMPLE RESTAURANT';
   const address1 = store.addressLine1 || activeOutlet?.address || '123 Main Street, Locality';
   const address2 = store.addressLine2 || 'City, State - 300001';
-  const phone = store.contactNumber || ownerUser?.phone || activeOutlet?.phone || '+91 98765 43210';
+  const phone = store.contactNumber || activeOutlet?.phone || '+91 98765 43210';
   const gstin = store.gstinNumber || '33AAAAA0000A1U';
   const fssai = store.fssaiNumber || '12345678901234';
-  const email = store.emailAddress || ownerUser?.email || 'contact@myrestaurant.com';
+  const email = store.emailAddress || user?.email || 'contact@myrestaurant.com';
   const website = store.websiteUrl || 'www.myrestaurant.com';
   const curr = store.currencySymbol || '₹';
   const upiId = store.upiId || 'petbharkhao@upi';

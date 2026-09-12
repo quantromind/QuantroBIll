@@ -8,7 +8,7 @@ namespace PetBharke.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "SuperAdmin,Owner,Manager")]
 public class InventoryController : ControllerBase
 {
     private readonly IMongoDbContext _context;
@@ -41,7 +41,7 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("load-stock")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> LoadStock([FromBody] LoadStockRequest request)
     {
         var tenantId = _currentUser.TenantId;

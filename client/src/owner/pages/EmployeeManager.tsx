@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import type { OwnerEmployee } from '../types';
 import { apiClient } from '../../services/api';
-import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { useAuthStore } from '../../store/authStore';
 
 // Default permissions matrix by role
 const defaultRolePermissions: Record<string, OwnerEmployee['permissions']> = {
@@ -56,8 +56,8 @@ const defaultRolePermissions: Record<string, OwnerEmployee['permissions']> = {
 };
 
 export const EmployeeManager: React.FC = () => {
-  const { user } = useOwnerAuthStore();
-  const tenantId = user?.tenantId || localStorage.getItem('quantrobill_tenant_id') || '';
+  const { user, tenant } = useAuthStore();
+  const tenantId = user?.tenantId || tenant?.id || localStorage.getItem('quantrobill_tenant_id') || '';
 
   const [employees, setEmployees] = useState<OwnerEmployee[]>([]);
   const [selectedEmpId, setSelectedEmpId] = useState<string>('');
@@ -146,7 +146,7 @@ export const EmployeeManager: React.FC = () => {
         const myTenant = tRes.data?.data?.find(
           (t: any) =>
             (user?.email && t.ownerEmail?.toLowerCase() === user.email.toLowerCase()) ||
-            (user?.restaurantName && t.businessName?.toLowerCase() === user.restaurantName.toLowerCase())
+            (tenant?.businessName && t.businessName?.toLowerCase() === tenant.businessName.toLowerCase())
         );
         if (myTenant) {
           resolvedTenantId = myTenant.id;

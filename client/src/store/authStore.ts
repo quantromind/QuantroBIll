@@ -1,7 +1,10 @@
 import { create } from 'zustand';
-import type { AuthResponse, OutletSummary, TenantSummary, UserProfile, UserRole } from '../types';
+import type { AuthResponse, OutletSummary, TenantSummary, UserProfile } from '../types';
 import { apiClient } from '../services/api';
 import { signalRService } from '../services/signalr';
+
+// Re-export for backward compatibility
+export { getHomeRouteForRole, canSettleBills, canApplyDiscounts, canVoidBills, isWaiterOnly } from '../types/roles';
 
 interface AuthState {
   user: UserProfile | null;
@@ -19,46 +22,7 @@ interface AuthState {
   setDrawerOpen: (open: boolean) => void;
   logout: () => void;
   initializeAuth: () => void;
-  switchRole: (role: UserRole) => void;
 }
-
-export const canSettleBills = (role?: UserRole): boolean => {
-  if (!role) return true; // Default cashier fallback
-  return role === 'Owner' || role === 'SuperAdmin' || role === 'Admin' || role === 'Manager' || role === 'Cashier';
-};
-
-export const canApplyDiscounts = (role?: UserRole): boolean => {
-  return role === 'Owner' || role === 'SuperAdmin' || role === 'Admin' || role === 'Manager';
-};
-
-export const canVoidBills = (role?: UserRole): boolean => {
-  return role === 'Owner' || role === 'SuperAdmin' || role === 'Admin' || role === 'Manager';
-};
-
-export const isWaiterOnly = (role?: UserRole): boolean => {
-  return role === 'Waiter';
-};
-
-export const getHomeRouteForRole = (role?: UserRole | string): string => {
-  if (!role) return '/billing';
-  switch (role) {
-    case 'SuperAdmin':
-      return '/superadmin/dashboard';
-    case 'Owner':
-    case 'Admin':
-    case 'Manager':
-      return '/owner/dashboard';
-    case 'Waiter':
-      return '/tables';
-    case 'KitchenStaff':
-      return '/kds';
-    case 'DeliveryBoy':
-      return '/online-orders';
-    case 'Cashier':
-    default:
-      return '/billing';
-  }
-};
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -71,6 +35,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   drawerOpen: false,
 
   setAuthData: (data: AuthResponse) => {
+    ['quantrobill_owner_token', 'quantrobill_superadmin_token', 'quantrobill_owner_user', 'quantrobill_superadmin_user', 'petbharke_owner_token', 'petbharke_superadmin_token'].forEach((k) => {
+      try { localStorage.removeItem(k); } catch {}
+    });
+
     localStorage.setItem('quantrobill_access_token', data.accessToken);
     localStorage.setItem('quantrobill_refresh_token', data.refreshToken);
     localStorage.setItem('quantrobill_user', JSON.stringify(data.user));
@@ -82,42 +50,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('quantrobill_active_outlet', JSON.stringify(data.activeOutlet));
     }
     localStorage.setItem('quantrobill_available_outlets', JSON.stringify(data.availableOutlets));
-
-    // Synchronize tokens across SuperAdmin and Owner stores
-    if (data.user.role === 'SuperAdmin') {
-      localStorage.setItem('quantrobill_superadmin_token', data.accessToken);
-      localStorage.setItem(
-        'quantrobill_superadmin_user',
-        JSON.stringify({
-          id: data.user.id,
-          name: data.user.fullName || data.user.username || 'System SuperAdmin',
-          email: data.user.email,
-          role: 'SuperAdmin',
-        })
-      );
-    }
-
-    if (
-      data.user.role === 'Owner' ||
-      data.user.role === 'Admin' ||
-      data.user.role === 'Manager' ||
-      data.user.role === 'SuperAdmin'
-    ) {
-      localStorage.setItem('quantrobill_owner_token', data.accessToken);
-      localStorage.setItem(
-        'quantrobill_owner_user',
-        JSON.stringify({
-          id: data.user.id,
-          name: data.user.fullName || data.user.username || 'Restaurant Owner',
-          email: data.user.email,
-          phone: (data.tenant as any)?.ownerPhone || '',
-          restaurantName: data.tenant?.businessName || 'Restaurant Portal',
-          role: data.user.role === 'Manager' ? 'GeneralManager' : 'Owner',
-          tenantId: data.tenant?.id,
-          outletId: data.activeOutlet?.id,
-        })
-      );
-    }
 
     set({
       user: data.user,
@@ -156,13 +88,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   toggleDrawer: () => set((state) => ({ drawerOpen: !state.drawerOpen })),
   setDrawerOpen: (open: boolean) => set({ drawerOpen: open }),
 
-  switchRole: (role: UserRole) => {
-    const current = get().user;
-    if (current) {
-      set({ user: { ...current, role } });
-    }
-  },
-
   logout: () => {
     ['quantrobill_', 'petbharke_'].forEach((prefix) => {
       localStorage.removeItem(`${prefix}access_token`);
@@ -193,6 +118,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initializeAuth: () => {
     try {
+      ['quantrobill_owner_token', 'quantrobill_superadmin_token', 'quantrobill_owner_user', 'quantrobill_superadmin_user', 'petbharke_owner_token', 'petbharke_superadmin_token'].forEach((k) => {
+        try { localStorage.removeItem(k); } catch {}
+      });
+
       const token = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
       const userStr = localStorage.getItem('quantrobill_user') || localStorage.getItem('petbharke_user');
       const tenantStr = localStorage.getItem('quantrobill_tenant') || localStorage.getItem('petbharke_tenant');
@@ -217,6 +146,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (tenant && activeOutlet) {
           signalRService.startConnection(tenant.id, activeOutlet.id);
+        }
+
+        // Transparently upgrade demo session to real backend JWT session if available
+        if (token.startsWith('quantrobill_demo_')) {
+          const creds: Record<string, { identifier: string; pass: string }> = {
+            Owner: { identifier: 'sourabh@gmail.com', pass: 'Owner@123' },
+            SuperAdmin: { identifier: 'admin@quantrobill.com', pass: 'SuperAdmin@123' },
+            Cashier: { identifier: 'biller@jaymalhar.com', pass: 'Cashier@123' },
+            Manager: { identifier: 'manager@jaymalhar.com', pass: 'Manager@123' },
+            Waiter: { identifier: 'waiter@jaymalhar.com', pass: 'Waiter@123' },
+          };
+          const match = creds[user.role];
+          if (match) {
+            apiClient
+              .post<{ success: boolean; data: AuthResponse }>('/auth/login', {
+                identifier: match.identifier,
+                password: match.pass,
+              })
+              .then((res) => {
+                if (res.data?.success && res.data.data) {
+                  get().setAuthData(res.data.data);
+                }
+              })
+              .catch(() => {});
+          }
         }
       } else {
         set({ isLoading: false, isAuthenticated: false });

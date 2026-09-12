@@ -43,7 +43,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("categories")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> CreateCategory([FromBody] Category category)
     {
         category.TenantId = _currentUser.TenantId ?? string.Empty;
@@ -56,7 +56,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPut("categories/{id}")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> UpdateCategory(string id, [FromBody] Category category)
     {
         category.UpdatedAt = DateTime.UtcNow;
@@ -70,7 +70,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpDelete("categories/{id}")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> DeleteCategory(string id)
     {
         var result = await _context.Categories.UpdateOneAsync(
@@ -121,7 +121,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("items")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> CreateMenuItem([FromBody] MenuItem item)
     {
         item.TenantId = _currentUser.TenantId ?? string.Empty;
@@ -134,7 +134,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("items/bulk")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager,Manager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> BulkUploadMenuItems([FromBody] List<BulkMenuItemDto> items, [FromQuery] bool replaceExisting = false)
     {
         var tenantId = _currentUser.TenantId;
@@ -243,7 +243,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPut("items/{id}")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> UpdateMenuItem(string id, [FromBody] MenuItem item)
     {
         item.UpdatedAt = DateTime.UtcNow;
@@ -257,7 +257,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpDelete("items/{id}")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> DeleteMenuItem(string id)
     {
         var result = await _context.MenuItems.UpdateOneAsync(

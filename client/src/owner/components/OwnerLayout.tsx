@@ -18,12 +18,12 @@ import {
   X,
   Store,
 } from 'lucide-react';
-import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { useAuthStore } from '../../store/authStore';
 import { clearAllAuthSessions } from '../../utils/authSession';
 
 export const OwnerLayout: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useOwnerAuthStore();
+  const { user, tenant } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -62,20 +62,18 @@ export const OwnerLayout: React.FC = () => {
           {/* Restaurant Identity Badge */}
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center tracking-wider shadow-xs uppercase">
-              {user?.restaurantName
-                ? user.restaurantName
-                    .split(' ')
-                    .filter(Boolean)
-                    .map((w) => w[0])
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase()
-                : 'QB'}
+              {(tenant?.businessName || tenant?.name || 'QB')
+                .split(' ')
+                .filter(Boolean)
+                .map((w: string) => w[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase()}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-slate-900 tracking-tight uppercase">
-                  {user?.restaurantName || 'Restaurant Portal'}
+                  {tenant?.businessName || tenant?.name || 'Restaurant Portal'}
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wider">
                   Owner Portal
@@ -112,7 +110,7 @@ export const OwnerLayout: React.FC = () => {
           {/* User Profile info */}
           <div className="flex items-center gap-3">
             <div className="text-right hidden md:block">
-              <p className="text-xs font-bold text-slate-900">{user?.name || 'Restaurant Owner'}</p>
+              <p className="text-xs font-bold text-slate-900">{user?.fullName || user?.username || 'Restaurant Owner'}</p>
               <p className="text-[10px] text-slate-500">{user?.email || 'owner@restaurant.com'}</p>
             </div>
 

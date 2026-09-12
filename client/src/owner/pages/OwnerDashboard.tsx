@@ -12,10 +12,10 @@ import {
 import type { LiveTableChip, LiveRunningOrdersSummary } from '../types';
 import { useTableStore } from '../../store/tableStore';
 import { usePosSyncStore } from '../../store/posSyncStore';
-import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { useAuthStore } from '../../store/authStore';
 
 export const OwnerDashboard: React.FC = () => {
-  const { user } = useOwnerAuthStore();
+  const { user, tenant } = useAuthStore();
   const { tables } = useTableStore();
   const { activeKOTs } = usePosSyncStore();
 
@@ -93,11 +93,11 @@ export const OwnerDashboard: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="text-xl">👑</span>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-              Welcome, {user?.name || 'Restaurant Owner'}!
+              Welcome, {user?.fullName || user?.username || 'Restaurant Owner'}!
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time restaurant operations dashboard • {user?.restaurantName || 'Restaurant Operations'} • Executive Hub
+            Real-time restaurant operations dashboard • {tenant?.businessName || tenant?.name || 'Restaurant Operations'} • Executive Hub
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export const OwnerDashboard: React.FC = () => {
               className="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer"
             >
               <option value="All Cashiers">All Cashiers</option>
-              {user?.name && <option value={user.name}>{user.name} (Owner)</option>}
+              {(user?.fullName || user?.username) && <option value={user.fullName || user.username}>{user.fullName || user.username} (Owner)</option>}
               <option value="Cashier Desk">Cashier Station</option>
               <option value="Waiter Captain">Floor Captain</option>
             </select>

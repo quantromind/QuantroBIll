@@ -37,7 +37,7 @@ export const TableManager: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const userRole = user?.role || 'Cashier';
   const isWaiter = isWaiterOnly(userRole);
-  const canAddTable = userRole === 'Owner' || userRole === 'Manager' || userRole === 'Admin';
+  const canAddTable = userRole === 'Owner' || userRole === 'Manager';
   const canVoidTable = canVoidBills(userRole);
 
   const { tables, vacateTable, createTable, getSections } = useTableStore();

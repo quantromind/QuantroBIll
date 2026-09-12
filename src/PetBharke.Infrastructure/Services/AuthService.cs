@@ -131,7 +131,7 @@ public class AuthService : IAuthService
             FullName = request.OwnerName,
             Phone = request.OwnerPhone,
             PasswordHash = _passwordHasher.HashPassword(request.Password),
-            Role = UserRole.Admin,
+            Role = UserRole.Owner,
             AssignedOutletIds = new List<string> { outlet.Id },
             Permissions = new List<string> { "all" },
             CreatedAt = DateTime.UtcNow,
@@ -153,7 +153,7 @@ public class AuthService : IAuthService
             throw new NotFoundException(nameof(User), userId);
         }
 
-        if (user.Role != UserRole.SuperAdmin && user.Role != UserRole.Admin && !user.AssignedOutletIds.Contains(request.OutletId))
+        if (user.Role != UserRole.SuperAdmin && user.Role != UserRole.Owner && !user.AssignedOutletIds.Contains(request.OutletId))
         {
             throw new ForbiddenException("You do not have access to switch to this outlet.");
         }

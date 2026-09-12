@@ -43,19 +43,23 @@ export const NavigationDrawer: React.FC = () => {
     { label: strings.operations, path: '/operations', icon: SlidersHorizontal },
   ];
 
-  const isOwnerOrManager =
-    role === 'Owner' ||
-    role === 'Admin' ||
-    role === 'Manager' ||
-    user?.role === 'Owner' ||
-    user?.role === 'Admin' ||
-    user?.role === 'Manager';
+  const userRole = user?.role;
 
-  const isSuperAdmin = role === 'SuperAdmin' || user?.role === 'SuperAdmin';
+  const isOwnerOrManager = userRole === 'Owner' || userRole === 'Manager';
+  const isSuperAdmin = userRole === 'SuperAdmin';
 
   const filteredNavItems = navItems.filter((item) => {
-    if (role === 'Waiter') {
+    if (userRole === 'Waiter') {
       return item.path === '/billing' || item.path === '/tables' || item.path === '/kds';
+    }
+    if (userRole === 'KitchenStaff') {
+      return item.path === '/kds';
+    }
+    if (userRole === 'DeliveryBoy') {
+      return item.path === '/online-orders';
+    }
+    if (userRole === 'Cashier' || userRole === 'Captain') {
+      return item.path !== '/finance' && item.path !== '/reports';
     }
     return true;
   });

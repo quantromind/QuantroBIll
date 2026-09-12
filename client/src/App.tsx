@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore, getHomeRouteForRole } from './store/authStore';
+import { useAuthStore } from './store/authStore';
+import { getHomeRouteForRole, SUPERADMIN_ROLES, POS_ROLES, FINANCE_ROLES, MANAGEMENT_ROLES } from './types/roles';
+import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
 import { Login } from './pages/Login';
 import { Billing } from './pages/Billing';
@@ -15,17 +17,13 @@ import { Reports } from './pages/Reports';
 import { ReceiptSettings } from './pages/ReceiptSettings';
 
 import { SuperAdminLayout } from './superadmin/components/SuperAdminLayout';
-import { SuperAdminPrivateRoute } from './superadmin/components/SuperAdminPrivateRoute';
 import { SuperAdminDashboard } from './superadmin/pages/SuperAdminDashboard';
-import { SuperAdminLogin } from './superadmin/pages/SuperAdminLogin';
 import { TenantManagement } from './superadmin/pages/TenantManagement';
 import { SubscriptionPlans } from './superadmin/pages/SubscriptionPlans';
 import { FeatureToggles } from './superadmin/pages/FeatureToggles';
 
 import { OwnerLayout } from './owner/components/OwnerLayout';
-import { OwnerPrivateRoute } from './owner/components/OwnerPrivateRoute';
 import { OwnerDashboard } from './owner/pages/OwnerDashboard';
-import { OwnerLogin } from './owner/pages/OwnerLogin';
 import { OwnerMenu } from './owner/pages/OwnerMenu';
 import { OwnerSales } from './owner/pages/OwnerSales';
 import { OwnerReports } from './owner/pages/OwnerReports';
@@ -66,20 +64,6 @@ const RootRedirect: React.FC = () => {
   return <Navigate to={target} replace />;
 };
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800">
-        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
-};
-
 export const App: React.FC = () => {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
@@ -97,11 +81,12 @@ export const App: React.FC = () => {
           <Route path="/" element={<RootRedirect />} />
 
           {/* ========================================= */}
-          {/* Dedicated Login Portals                   */}
+          {/* Single Login Portal (all roles)           */}
           {/* ========================================= */}
           <Route path="/login" element={<Login />} />
-          <Route path="/owner/login" element={<OwnerLogin />} />
-          <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+          {/* Legacy login routes redirect to unified login */}
+          <Route path="/owner/login" element={<Navigate to="/login" replace />} />
+          <Route path="/superadmin/login" element={<Navigate to="/login" replace />} />
 
           {/* ========================================= */}
           {/* Quick Route Aliases                       */}
@@ -116,35 +101,48 @@ export const App: React.FC = () => {
           <Route path="/super-admin" element={<Navigate to="/superadmin/dashboard" replace />} />
 
           {/* ========================================= */}
-          {/* 1. RESTAURANT STAFF POS (Cashier, Waiter) */}
+          {/* 1. RESTAURANT POS (Staff + Owner)         */}
+          {/*    Role-gated: POS_ROLES only             */}
           {/* ========================================= */}
           <Route
             element={
-              <PrivateRoute>
+              <RoleProtectedRoute allowedRoles={[...POS_ROLES]}>
                 <AppLayout />
-              </PrivateRoute>
+              </RoleProtectedRoute>
             }
           >
             <Route path="/billing" element={<Billing />} />
             <Route path="/online-orders" element={<OnlineOrders />} />
             <Route path="/tables" element={<TableManager />} />
             <Route path="/menu-manager" element={<MenuManager />} />
-            <Route path="/finance" element={<Finance />} />
-            <Route path="/reports" element={<Reports />} />
             <Route path="/operations" element={<Operations />} />
             <Route path="/kds" element={<KDS />} />
             <Route path="/receipt-settings" element={<ReceiptSettings />} />
           </Route>
 
           {/* ========================================= */}
-          {/* 2. ISOLATED SAAS SUPERADMIN PORTAL        */}
+          {/* Finance & Reports (Management only)       */}
+          {/* ========================================= */}
+          <Route
+            element={
+              <RoleProtectedRoute allowedRoles={[...FINANCE_ROLES]}>
+                <AppLayout />
+              </RoleProtectedRoute>
+            }
+          >
+            <Route path="/finance" element={<Finance />} />
+            <Route path="/reports" element={<Reports />} />
+          </Route>
+
+          {/* ========================================= */}
+          {/* 2. SUPERADMIN PORTAL (SuperAdmin only)    */}
           {/* ========================================= */}
           <Route
             path="/superadmin"
             element={
-              <SuperAdminPrivateRoute>
+              <RoleProtectedRoute allowedRoles={[...SUPERADMIN_ROLES]}>
                 <SuperAdminLayout />
-              </SuperAdminPrivateRoute>
+              </RoleProtectedRoute>
             }
           >
             <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
@@ -155,14 +153,14 @@ export const App: React.FC = () => {
           </Route>
 
           {/* =================================================== */}
-          {/* 3. ISOLATED RESTAURANT OWNER / ADMIN PORTAL (LEVEL 2) */}
+          {/* 3. RESTAURANT OWNER / ADMIN PORTAL (Management)     */}
           {/* =================================================== */}
           <Route
             path="/owner"
             element={
-              <OwnerPrivateRoute>
+              <RoleProtectedRoute allowedRoles={[...MANAGEMENT_ROLES]}>
                 <OwnerLayout />
-              </OwnerPrivateRoute>
+              </RoleProtectedRoute>
             }
           >
             <Route index element={<Navigate to="/owner/dashboard" replace />} />

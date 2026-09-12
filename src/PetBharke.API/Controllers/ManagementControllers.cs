@@ -69,7 +69,7 @@ public class TenantsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTenantById(string id)
     {
-        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
+        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.Role != nameof(UserRole.Owner) && _currentUserService.TenantId != id)
         {
             return Forbid();
         }
@@ -94,6 +94,7 @@ public class TenantsController : ControllerBase
     }
 
     [HttpGet("{id}/users")]
+    [Authorize(Roles = "SuperAdmin,Owner")]
     public async Task<IActionResult> GetTenantUsers(string id)
     {
         if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
@@ -125,6 +126,7 @@ public class TenantsController : ControllerBase
     }
 
     [HttpPost("{id}/users")]
+    [Authorize(Roles = "SuperAdmin,Owner")]
     public async Task<IActionResult> CreateTenantUser(string id, [FromBody] CreateTenantEmployeeDto request)
     {
         if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
@@ -172,6 +174,15 @@ public class TenantsController : ControllerBase
             role = UserRole.Cashier;
         }
 
+        // SECURITY: Non-SuperAdmin callers cannot create SuperAdmin or Owner users
+        if (_currentUserService.Role != nameof(UserRole.SuperAdmin))
+        {
+            if (role == UserRole.SuperAdmin || role == UserRole.Owner)
+            {
+                return StatusCode(403, new { success = false, message = "You are not authorized to assign the SuperAdmin or Owner role." });
+            }
+        }
+
         var newEmployee = new User
         {
             TenantId = id,
@@ -212,11 +223,18 @@ public class TenantsController : ControllerBase
     }
 
     [HttpPut("{id}/users/{userId}")]
+    [Authorize(Roles = "SuperAdmin,Owner")]
     public async Task<IActionResult> UpdateTenantUser(string id, string userId, [FromBody] UpdateTenantEmployeeDto request)
     {
         if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
         {
             return Forbid();
+        }
+
+        // SECURITY: Block self-escalation — no user can change their own role
+        if (userId == _currentUserService.UserId && !string.IsNullOrWhiteSpace(request.Role))
+        {
+            return StatusCode(403, new { success = false, message = "You cannot change your own role." });
         }
 
         var employee = await _context.Users.Find(u => u.Id == userId && u.TenantId == id).FirstOrDefaultAsync();
@@ -238,7 +256,19 @@ public class TenantsController : ControllerBase
             updateBuilder = updateBuilder.Set(u => u.PasswordHash, _passwordHasher.HashPassword(request.Password));
 
         if (!string.IsNullOrWhiteSpace(request.Role) && Enum.TryParse<UserRole>(request.Role, true, out var role))
+        {
+            // SECURITY: Non-SuperAdmin cannot assign SuperAdmin role
+            if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && role == UserRole.SuperAdmin)
+            {
+                return StatusCode(403, new { success = false, message = "Only SuperAdmin can assign the SuperAdmin role." });
+            }
+            // SECURITY: Owner cannot assign Owner role to others (only SuperAdmin can)
+            if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && role == UserRole.Owner)
+            {
+                return StatusCode(403, new { success = false, message = "Only SuperAdmin can assign the Owner role." });
+            }
             updateBuilder = updateBuilder.Set(u => u.Role, role);
+        }
 
         if (request.Permissions != null)
             updateBuilder = updateBuilder.Set(u => u.Permissions, request.Permissions);
@@ -313,7 +343,7 @@ public class TenantsController : ControllerBase
                 FullName = string.IsNullOrWhiteSpace(request.OwnerName) ? request.BusinessName + " Owner" : request.OwnerName,
                 Phone = request.OwnerPhone,
                 PasswordHash = _passwordHasher.HashPassword(rawPassword),
-                Role = UserRole.Admin,
+                Role = UserRole.Owner,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -515,7 +545,7 @@ public class OutletsController : ControllerBase
     }
 
     [HttpPut("{id}/tax-settings")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Owner")]
     public async Task<IActionResult> UpdateTaxSettings(string id, [FromBody] OutletTaxSettings settings)
     {
         var tenantId = _currentUserService.TenantId;
@@ -536,7 +566,7 @@ public class OutletsController : ControllerBase
     }
 
     [HttpPut("{id}/printer-settings")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Owner")]
     public async Task<IActionResult> UpdatePrinterSettings(string id, [FromBody] OutletPrinterSettings settings)
     {
         var tenantId = _currentUserService.TenantId;

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore';
 import { clearAllAuthSessions } from '../utils/authSession';
 
 export const getBaseApiUrl = (): string => {
@@ -27,25 +26,13 @@ export const apiClient = axios.create({
   },
 });
 
-// Attach token to every outgoing request
+// Attach unified access token to every outgoing request
 apiClient.interceptors.request.use((config) => {
-  const isSuperAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/superadmin');
-  const isOwnerRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/owner');
-  const superAdminToken = localStorage.getItem('quantrobill_superadmin_token') || localStorage.getItem('petbharke_superadmin_token');
-  const ownerToken = localStorage.getItem('quantrobill_owner_token');
-  const staffToken = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
-  const token = isSuperAdminRoute
-    ? (superAdminToken || staffToken)
-    : isOwnerRoute
-      ? (ownerToken || staffToken || superAdminToken)
-      : (staffToken || ownerToken || superAdminToken);
+  const token = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
-  // TenantId and OutletId are now derived exclusively from JWT claims on the backend.
-  // No client-controlled headers are sent for tenant/outlet context.
 
   return config;
 });
@@ -57,30 +44,24 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
       const requestUrl = error.config?.url || '';
+      const token = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
 
-      // Do not boot user out if a background POS query failed due to missing tenant context
-      if (
-        pathname.startsWith('/superadmin') &&
-        (requestUrl.includes('/orders') || requestUrl.includes('/inventory') || requestUrl.includes('/tables'))
-      ) {
+      // 1. If using demo token or offline fallback, NEVER boot user to login
+      if (token && token.startsWith('quantrobill_demo_')) {
         return Promise.reject(error);
       }
 
-      // If already on a login route, do not loop
-      if (!pathname.includes('/login')) {
-        const isSuperAdminRoute = pathname.startsWith('/superadmin');
-        const isOwnerRoute = pathname.startsWith('/owner');
+      // 2. Ignore 401 on login endpoints so the form can display the invalid credentials error
+      if (requestUrl.includes('/auth/login') || requestUrl.includes('/auth/pin-login')) {
+        return Promise.reject(error);
+      }
 
-        if (isSuperAdminRoute) {
-          clearAllAuthSessions();
-          window.location.href = '/superadmin/login';
-        } else if (isOwnerRoute) {
-          clearAllAuthSessions();
-          window.location.href = '/owner/login';
-        } else {
-          clearAllAuthSessions();
-          window.location.href = '/login';
-        }
+      // 3. Do not boot user out on secondary data fetches (tables, orders, reports, etc.)
+      // Only boot if this is a dedicated token verification/refresh endpoint
+      const isAuthVerification = requestUrl.includes('/auth/me') || requestUrl.includes('/auth/verify') || requestUrl.includes('/auth/refresh');
+      if (isAuthVerification && !pathname.includes('/login')) {
+        clearAllAuthSessions();
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);

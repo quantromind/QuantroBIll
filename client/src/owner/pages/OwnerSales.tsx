@@ -11,10 +11,10 @@ import {
 } from 'lucide-react';
 import type { OwnerSaleTransaction } from '../types';
 import { usePosSyncStore } from '../../store/posSyncStore';
-import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { useAuthStore } from '../../store/authStore';
 
 export const OwnerSales: React.FC = () => {
-  const { user } = useOwnerAuthStore();
+  const { tenant } = useAuthStore();
   const sales = usePosSyncStore((state) => state.sales);
 
   useEffect(() => {
@@ -291,7 +291,7 @@ export const OwnerSales: React.FC = () => {
 
             <div className="p-4 space-y-3 font-mono text-xs">
               <div className="text-center pb-3 border-b border-dashed border-slate-300">
-                <p className="font-black text-sm text-slate-900 uppercase">{user?.restaurantName || 'RESTAURANT RECEIPT'}</p>
+                <p className="font-black text-sm text-slate-900 uppercase">{tenant?.businessName || tenant?.name || 'RESTAURANT RECEIPT'}</p>
                 <p className="text-[10px] text-slate-500">Tax Invoice / Receipt</p>
                 <p className="text-[11px] font-bold text-blue-600 mt-1">{selectedTx.billNo}</p>
                 <p className="text-[10px] text-slate-500">{selectedTx.timestamp}</p>

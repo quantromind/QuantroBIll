@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register-tenant")]
-    [AllowAnonymous]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> RegisterTenant([FromBody] RegisterTenantRequest request)
     {
         var response = await _authService.RegisterTenantAsync(request);

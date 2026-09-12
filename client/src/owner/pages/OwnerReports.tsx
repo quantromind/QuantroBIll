@@ -6,10 +6,10 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { usePosSyncStore } from '../../store/posSyncStore';
-import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { useAuthStore } from '../../store/authStore';
 
 export const OwnerReports: React.FC = () => {
-  const { user } = useOwnerAuthStore();
+  const { tenant } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'Z_REPORT' | 'ITEM_WISE' | 'TAX_REPORT' | 'VOIDS'>('Z_REPORT');
   const [selectedDate, setSelectedDate] = useState('Today');
 
@@ -152,7 +152,7 @@ export const OwnerReports: React.FC = () => {
           <div className="max-w-2xl mx-auto space-y-5">
             <div className="border border-dashed border-slate-300 rounded-xl p-6 font-mono text-xs bg-slate-50/50">
               <div className="text-center pb-4 border-b border-slate-200">
-                <p className="text-base font-black text-black uppercase">{user?.restaurantName || 'RESTAURANT'}</p>
+                <p className="text-base font-black text-black uppercase">{tenant?.businessName || tenant?.name || 'RESTAURANT'}</p>
                 <p className="text-[11px] text-slate-500">Official Day-End Z-Report</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">Date: {selectedDate} | Shift 1 & 2</p>
               </div>

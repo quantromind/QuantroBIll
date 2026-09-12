@@ -1,4 +1,6 @@
-export type UserRole = 'SuperAdmin' | 'Admin' | 'Owner' | 'Manager' | 'Cashier' | 'Waiter' | 'KitchenStaff' | 'DeliveryBoy';
+import type { UserRole } from './roles';
+export * from './roles';
+export type { UserRole };
 export type BusinessType = 'Cafe' | 'Restaurant' | 'QSR' | 'CloudKitchen' | 'Bar';
 
 export interface UserProfile {
@@ -6,14 +8,18 @@ export interface UserProfile {
   username: string;
   email: string;
   fullName: string;
+  name?: string;
+  phone?: string;
   role: UserRole;
   permissions: string[];
   tenantId: string;
+  outletId?: string;
 }
 
 export interface TenantSummary {
   id: string;
   businessName: string;
+  name?: string;
   businessType: BusinessType;
   subscriptionPlan: string;
 }

@@ -9,7 +9,7 @@ namespace PetBharke.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "SuperAdmin,Owner,Manager")]
 public class FinanceController : ControllerBase
 {
     private readonly IMongoDbContext _context;
@@ -130,7 +130,7 @@ public class FinanceController : ControllerBase
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "SuperAdmin,Owner,Manager")]
 public class ReportsController : ControllerBase
 {
     private readonly IMongoDbContext _context;

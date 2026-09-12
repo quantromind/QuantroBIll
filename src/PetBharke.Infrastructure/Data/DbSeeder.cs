@@ -189,7 +189,7 @@ public static class DbSeeder
                 FullName = "Restaurant Director",
                 Phone = "9822003344",
                 PasswordHash = hasher.HashPassword("Owner@123"),
-                Role = UserRole.Admin,
+                Role = UserRole.Owner,
                 AssignedOutletIds = new List<string> { restOutlet.Id },
                 Permissions = new List<string> { "all" },
                 IsActive = true,
@@ -246,7 +246,7 @@ public static class DbSeeder
                 FullName = "Restaurant Owner",
                 Phone = "9876543210",
                 PasswordHash = hasher.HashPassword("Owner@123"),
-                Role = UserRole.Admin,
+                Role = UserRole.Owner,
                 AssignedOutletIds = new List<string> { sampleOutlet.Id },
                 Permissions = new List<string> { "all" },
                 IsActive = true,
@@ -310,6 +310,46 @@ public static class DbSeeder
                 Role = UserRole.DeliveryBoy,
                 AssignedOutletIds = new List<string> { sampleOutlet.Id },
                 Permissions = new List<string> { "delivery.view", "delivery.update" },
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        var existingWaiter = await context.Users.Find(u => u.Username == "waiter").FirstOrDefaultAsync();
+        if (existingWaiter == null)
+        {
+            await context.Users.InsertOneAsync(new User
+            {
+                TenantId = sampleTenant.Id,
+                OutletId = sampleOutlet.Id,
+                Username = "waiter",
+                Email = "waiter@magicbottle.com",
+                FullName = "Ramesh Waiter",
+                Phone = "9876543214",
+                PasswordHash = hasher.HashPassword("Waiter@123"),
+                Role = UserRole.Waiter,
+                AssignedOutletIds = new List<string> { sampleOutlet.Id },
+                Permissions = new List<string> { "pos.view", "pos.kot" },
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        var existingManager = await context.Users.Find(u => u.Username == "manager").FirstOrDefaultAsync();
+        if (existingManager == null)
+        {
+            await context.Users.InsertOneAsync(new User
+            {
+                TenantId = sampleTenant.Id,
+                OutletId = sampleOutlet.Id,
+                Username = "manager",
+                Email = "manager@magicbottle.com",
+                FullName = "Store General Manager",
+                Phone = "9876543215",
+                PasswordHash = hasher.HashPassword("Manager@123"),
+                Role = UserRole.Manager,
+                AssignedOutletIds = new List<string> { sampleOutlet.Id },
+                Permissions = new List<string> { "all" },
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             });
@@ -490,6 +530,126 @@ public static class DbSeeder
                 }
             };
             await context.Orders.InsertManyAsync(sampleOrders);
+        }
+
+        // 6. Seed Jay Malhar Restaurant for Sourabh Dhangar
+        var jmTenant = await context.Tenants.Find(t => t.OwnerEmail == "sourabh@gmail.com" || t.BusinessName == "Jay Malhar").FirstOrDefaultAsync();
+        if (jmTenant == null)
+        {
+            jmTenant = new Tenant
+            {
+                BusinessName = "Jay Malhar",
+                OwnerEmail = "sourabh@gmail.com",
+                OwnerPhone = "9876543210",
+                BusinessType = BusinessType.Restaurant,
+                SubscriptionPlan = SubscriptionPlan.Enterprise,
+                SubscriptionExpiresAt = DateTime.UtcNow.AddYears(2),
+                MaxOutlets = 5,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await context.Tenants.InsertOneAsync(jmTenant);
+        }
+
+        var jmOutlet = await context.Outlets.Find(o => o.TenantId == jmTenant.Id).FirstOrDefaultAsync();
+        if (jmOutlet == null)
+        {
+            jmOutlet = new Outlet
+            {
+                TenantId = jmTenant.Id,
+                Name = "Jay Malhar - Main Branch",
+                BusinessType = BusinessType.Restaurant,
+                Code = "JM-01",
+                Address = "Commercial High Street, Pune, Maharashtra 411045",
+                City = "Pune",
+                Phone = "9876543210",
+                GSTIN = "27AABCJ1234M1ZP",
+                FSSAI = "11522045000999",
+                Currency = "INR",
+                IsOpen = true,
+                IsActive = true,
+                TaxSettings = new OutletTaxSettings
+                {
+                    CgstPercentage = 2.5m,
+                    SgstPercentage = 2.5m,
+                    IsGstInclusive = false,
+                    ServiceChargePercentage = 0.0m
+                },
+                PrinterSettings = new OutletPrinterSettings
+                {
+                    PrinterType = "Thermal80mm",
+                    HeaderText = "Jay Malhar Restaurant\nPune - 411045",
+                    FooterText = "Thank you! Visit again\nFSSAI: 11522045000999",
+                    AutoPrintBill = true,
+                    AutoPrintKOT = true
+                },
+                CreatedAt = DateTime.UtcNow
+            };
+            await context.Outlets.InsertOneAsync(jmOutlet);
+        }
+
+        var existingSourabh = await context.Users.Find(u => u.Email == "sourabh@gmail.com" || u.Username == "sourabh").FirstOrDefaultAsync();
+        if (existingSourabh == null)
+        {
+            await context.Users.InsertOneAsync(new User
+            {
+                TenantId = jmTenant.Id,
+                OutletId = jmOutlet.Id,
+                Username = "sourabh",
+                Email = "sourabh@gmail.com",
+                FullName = "Sourabh Dhangar",
+                Phone = "9876543210",
+                PasswordHash = hasher.HashPassword("Owner@123"),
+                Role = UserRole.Owner,
+                AssignedOutletIds = new List<string> { jmOutlet.Id },
+                Permissions = new List<string> { "all" },
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            var update = Builders<User>.Update
+                .Set(u => u.TenantId, jmTenant.Id)
+                .Set(u => u.OutletId, jmOutlet.Id)
+                .Set(u => u.Role, UserRole.Owner)
+                .Set(u => u.PasswordHash, hasher.HashPassword("Owner@123"))
+                .Set(u => u.IsActive, true);
+            await context.Users.UpdateOneAsync(u => u.Id == existingSourabh.Id, update);
+        }
+
+        var countJmTables = await context.Tables.CountDocumentsAsync(t => t.TenantId == jmTenant.Id);
+        if (countJmTables == 0)
+        {
+            var jmTables = new List<RestaurantTable>
+            {
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, TableNumber = "T-1", Section = "Main Dining", SeatingCapacity = 4, IsOccupied = false },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, TableNumber = "T-2", Section = "Main Dining", SeatingCapacity = 4, IsOccupied = false },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, TableNumber = "T-3", Section = "Main Dining", SeatingCapacity = 2, IsOccupied = false },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, TableNumber = "T-4", Section = "Family Section", SeatingCapacity = 6, IsOccupied = false },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, TableNumber = "T-5", Section = "Family Section", SeatingCapacity = 6, IsOccupied = false },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, TableNumber = "VIP-1", Section = "AC Lounge", SeatingCapacity = 8, IsOccupied = false }
+            };
+            await context.Tables.InsertManyAsync(jmTables);
+        }
+
+        var countJmCategories = await context.Categories.CountDocumentsAsync(c => c.TenantId == jmTenant.Id);
+        if (countJmCategories == 0)
+        {
+            var catStarters = new Category { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, Name = "Starters & Snacks", Description = "Crispy starters", DisplayOrder = 1 };
+            var catMains = new Category { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, Name = "Main Course & Thali", Description = "Special Malhar Thali & Gravies", DisplayOrder = 2 };
+            var catBreads = new Category { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, Name = "Bhakri & Breads", Description = "Jowar & Bajra Bhakri", DisplayOrder = 3 };
+            await context.Categories.InsertManyAsync(new[] { catStarters, catMains, catBreads });
+
+            var jmItems = new List<MenuItem>
+            {
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, CategoryId = catStarters.Id, Name = "Chicken Sukka Special", BasePrice = 260, IsVeg = false, IsAvailable = true },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, CategoryId = catStarters.Id, Name = "Mutton Sukka Masala", BasePrice = 340, IsVeg = false, IsAvailable = true },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, CategoryId = catMains.Id, Name = "Special Malhar Chicken Thali", BasePrice = 320, IsVeg = false, IsAvailable = true },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, CategoryId = catMains.Id, Name = "Special Malhar Mutton Thali", BasePrice = 420, IsVeg = false, IsAvailable = true },
+                new() { TenantId = jmTenant.Id, OutletId = jmOutlet.Id, CategoryId = catBreads.Id, Name = "Jowar Bhakri (Fresh Hot)", BasePrice = 30, IsVeg = true, IsAvailable = true }
+            };
+            await context.MenuItems.InsertManyAsync(jmItems);
         }
     }
 }

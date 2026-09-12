@@ -40,7 +40,7 @@ public class TablesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager,Manager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> CreateTable([FromBody] RestaurantTable table)
     {
         var tenantId = _currentUser.TenantId ?? string.Empty;
@@ -81,7 +81,7 @@ public class TablesController : ControllerBase
     }
 
     [HttpPost("bulk")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager,Manager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> BulkCreateTables([FromBody] BulkTableCreateRequest req)
     {
         var tenantId = _currentUser.TenantId ?? string.Empty;
@@ -137,7 +137,7 @@ public class TablesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager,Manager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> UpdateTable(string id, [FromBody] UpdateTableRequest req)
     {
         var tenantId = _currentUser.TenantId ?? string.Empty;
@@ -187,7 +187,7 @@ public class TablesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "SuperAdmin,Admin,Owner,GeneralManager,Manager")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
     public async Task<IActionResult> DeleteTable(string id)
     {
         var tenantId = _currentUser.TenantId ?? string.Empty;

@@ -7,16 +7,16 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
-import { useOwnerAuthStore } from '../store/ownerAuthStore';
+import { useAuthStore } from '../../store/authStore';
 
 export const OwnerSettings: React.FC = () => {
-  const { user, setUserData } = useOwnerAuthStore();
+  const { user, tenant } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'GENERAL' | 'SECTIONS' | 'TAX' | 'HARDWARE'>('GENERAL');
 
   // General Settings State
-  const [restaurantName, setRestaurantName] = useState(user?.restaurantName || 'My Restaurant');
+  const [restaurantName, setRestaurantName] = useState(tenant?.businessName || tenant?.name || 'My Restaurant');
   const [branchName, setBranchName] = useState('Main Branch');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState(user?.email || 'owner@restaurant.com');
   const [currencySymbol, setCurrencySymbol] = useState('₹ (INR)');
 
@@ -41,11 +41,10 @@ export const OwnerSettings: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setUserData({
-      restaurantName,
-      phone,
-      email,
-    });
+    if (tenant) {
+      tenant.businessName = restaurantName;
+      localStorage.setItem('quantrobill_tenant', JSON.stringify(tenant));
+    }
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
