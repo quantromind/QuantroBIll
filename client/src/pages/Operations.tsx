@@ -34,7 +34,6 @@ import {
 } from 'lucide-react';
 import {
   DuePaymentModal,
-  ReprintModal,
   DeliveryBoysModal,
   ExpenseModal,
   TaxSettingsModal,
@@ -48,6 +47,7 @@ import {
   ServiceRenewalModal,
   ModalWrapper
 } from '../components/modals/OperationsModals';
+import { BillHistoryModal } from '../components/modals/BillHistoryModal';
 import { useAuthStore } from '../store/authStore';
 import { useLangStore } from '../store/langStore';
 
@@ -213,7 +213,7 @@ export const Operations: React.FC = () => {
 
       {/* Interactive Modals */}
       <DuePaymentModal isOpen={activeModal === 'duePayment'} onClose={() => setActiveModal(null)} />
-      <ReprintModal isOpen={activeModal === 'reprint'} onClose={() => setActiveModal(null)} />
+      <BillHistoryModal isOpen={activeModal === 'reprint'} onClose={() => setActiveModal(null)} />
       <DeliveryBoysModal isOpen={activeModal === 'deliveryBoys'} onClose={() => setActiveModal(null)} />
       <ExpenseModal isOpen={activeModal === 'expense'} onClose={() => setActiveModal(null)} />
       <TaxSettingsModal isOpen={activeModal === 'tax'} onClose={() => setActiveModal(null)} />
