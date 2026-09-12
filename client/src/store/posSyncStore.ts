@@ -27,8 +27,35 @@ export interface KdsTicket {
 
 // Initial dynamic defaults for freshly onboarded restaurant tenants (starts at 0 / clean)
 const initialIngredients: InventoryIngredient[] = [];
-const initialSales: OwnerSaleTransaction[] = [];
 const initialKOTs: KdsTicket[] = [];
+
+export const getSalesStorageKey = (): string => {
+  try {
+    const authRaw = localStorage.getItem('quantrobill-auth');
+    if (authRaw) {
+      const parsed = JSON.parse(authRaw);
+      if (parsed?.state?.tenant?.id) return `quantrobill_sales_${parsed.state.tenant.id}`;
+    }
+    const ownerAuthRaw = localStorage.getItem('quantrobill_owner_auth');
+    if (ownerAuthRaw) {
+      const parsed = JSON.parse(ownerAuthRaw);
+      if (parsed?.state?.user?.tenantId) return `quantrobill_sales_${parsed.state.user.tenantId}`;
+    }
+  } catch {}
+  return 'quantrobill_sales_default';
+};
+
+export const loadInitialSales = (): OwnerSaleTransaction[] => {
+  try {
+    const key = getSalesStorageKey();
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return [];
+};
 
 
 // Pure Web Audio API dual-tone synthesized chime
@@ -107,7 +134,7 @@ interface PosSyncState {
 export const usePosSyncStore = create<PosSyncState>((set, get) => ({
   activeKOTs: initialKOTs,
   completedKOTs: [],
-  sales: initialSales,
+  sales: loadInitialSales(),
   inventory: initialIngredients,
   nextKotSequence: 107,
   nextBillSequence: 892,
@@ -118,7 +145,7 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
   fetchInitialData: async () => {
     try {
       const [ordersRes, invRes] = await Promise.allSettled([
-        apiClient.get<{ success: boolean; data: any[] }>('/orders?limit=40'),
+        apiClient.get<{ success: boolean; data: any[] }>('/orders?limit=100'),
         apiClient.get<{ success: boolean; data: any[] }>('/inventory')
       ]);
 
@@ -146,6 +173,87 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
 
         if (pendingTickets.length > 0) {
           set({ activeKOTs: pendingTickets });
+        }
+
+        // Map settled and completed orders into sales for Owner Sales, Bill History, and Reports
+        const settledOrders = rawOrders.filter(
+          (o: any) =>
+            o.status === 5 ||
+            o.status === 4 ||
+            o.status === 'Delivered' ||
+            o.status === 'FoodReady' ||
+            (o.payments && o.payments.length > 0) ||
+            o.billNumber
+        );
+
+        if (settledOrders.length > 0) {
+          const mappedSales: OwnerSaleTransaction[] = settledOrders.map((o: any) => {
+            const placedDate = o.placedAt ? new Date(o.placedAt) : new Date();
+            const isToday = placedDate.toDateString() === new Date().toDateString();
+            const timeStr = placedDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = placedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+            let pMode: 'Cash' | 'UPI' | 'Card' | 'Credit' = 'Cash';
+            if (o.payments && o.payments.length > 0) {
+              const pm = o.payments[0]?.mode;
+              if (pm === 2 || pm === 'Card') pMode = 'Card';
+              else if (pm === 3 || pm === 'UPI') pMode = 'UPI';
+              else if (pm === 5 || pm === 'Split' || pm === 'Credit') pMode = 'Credit';
+            }
+
+            let ordType: 'Dine In' | 'Take Away' | 'Parcel' | 'Delivery' = 'Dine In';
+            if (o.orderType === 2 || o.orderType === 'Delivery') ordType = 'Delivery';
+            else if (o.orderType === 5 || o.orderType === 'Parcel') ordType = 'Parcel';
+            else if (o.orderType === 4 || o.orderType === 3 || o.orderType === 'TakeAway' || o.orderType === 'Take Away') ordType = 'Take Away';
+
+            const itemsList: OrderItem[] = (o.items || []).map((it: any) => ({
+              menuItemId: it.menuItemId || it.id || '',
+              name: it.name,
+              quantity: it.quantity || 1,
+              unitPrice: it.unitPrice || 0,
+              totalPrice: it.totalPrice || (it.unitPrice * (it.quantity || 1)) || 0,
+              isVeg: it.isVeg ?? true,
+              itemNote: it.specialNotes || '',
+            }));
+
+            const billDisplayNo = o.billNumber
+              ? (o.billNumber.startsWith('INV-') ? o.billNumber : `INV-2026-0${o.billNumber}`)
+              : `INV-2026-0${o.id?.slice(-3) || '001'}`;
+
+            return {
+              id: o.id || `ord-${Date.now()}`,
+              billNo: billDisplayNo,
+              orderType: ordType,
+              tableOrToken: o.tableNumber ? `Table ${o.tableNumber}` : 'Counter Order',
+              totalAmount: o.totalAmount || (o.subTotal + (o.cgstAmount || 0) + (o.sgstAmount || 0)) || 0,
+              taxAmount: (o.cgstAmount || 0) + (o.sgstAmount || 0),
+              discountAmount: o.discountAmount || 0,
+              paymentMode: pMode,
+              cashierName: o.billerName || 'biller',
+              timestamp: isToday ? `Today, ${timeStr}` : `${dateStr}, ${timeStr}`,
+              itemsCount: itemsList.length,
+              items: itemsList,
+              customerPhone: o.customerPhone || '',
+              kotNo: o.kotNumber || '',
+            };
+          });
+
+          set((state) => {
+            const existingMap = new Map<string, OwnerSaleTransaction>();
+            // Add local sales first
+            state.sales.forEach((s) => existingMap.set(s.billNo || s.id, s));
+            mappedSales.forEach((s) => {
+              if (!existingMap.has(s.billNo || s.id)) {
+                existingMap.set(s.billNo || s.id, s);
+              }
+            });
+            const merged = Array.from(existingMap.values());
+            try {
+              const key = getSalesStorageKey();
+              localStorage.setItem(key, JSON.stringify(merged.slice(0, 500)));
+            } catch {}
+            return { sales: merged };
+          });
         }
       }
 
@@ -176,9 +284,71 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
 
       // Status 4 = FoodReady, 5 = Delivered/Settled
       if (order.status === 4 || order.status === 5 || order.status === 'FoodReady' || order.status === 'Delivered') {
-        set((state) => ({
-          activeKOTs: state.activeKOTs.filter((t) => t.id !== order.id && t.kotNo !== order.kotNumber)
-        }));
+        set((state) => {
+          const remainingKOTs = state.activeKOTs.filter((t) => t.id !== order.id && t.kotNo !== order.kotNumber);
+          // If settled, ensure it is added into sales ledger
+          if (order.status === 5 || order.status === 'Delivered') {
+            const billDisplayNo = order.billNumber
+              ? (order.billNumber.startsWith('INV-') ? order.billNumber : `INV-2026-0${order.billNumber}`)
+              : `INV-2026-0${order.id?.slice(-3) || '001'}`;
+
+            const alreadyExists = state.sales.some((s) => s.billNo === billDisplayNo || s.id === order.id);
+            if (!alreadyExists) {
+              const placedDate = order.placedAt ? new Date(order.placedAt) : new Date();
+              const isToday = placedDate.toDateString() === new Date().toDateString();
+              const timeStr = placedDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+              const dateStr = placedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+              let pMode: 'Cash' | 'UPI' | 'Card' | 'Credit' = 'Cash';
+              if (order.payments && order.payments.length > 0) {
+                const pm = order.payments[0]?.mode;
+                if (pm === 2 || pm === 'Card') pMode = 'Card';
+                else if (pm === 3 || pm === 'UPI') pMode = 'UPI';
+                else if (pm === 5 || pm === 'Split' || pm === 'Credit') pMode = 'Credit';
+              }
+
+              let ordType: 'Dine In' | 'Take Away' | 'Parcel' | 'Delivery' = 'Dine In';
+              if (order.orderType === 2 || order.orderType === 'Delivery') ordType = 'Delivery';
+              else if (order.orderType === 5 || order.orderType === 'Parcel') ordType = 'Parcel';
+              else if (order.orderType === 4 || order.orderType === 3 || order.orderType === 'TakeAway') ordType = 'Take Away';
+
+              const itemsList: OrderItem[] = (order.items || []).map((it: any) => ({
+                menuItemId: it.menuItemId || it.id || '',
+                name: it.name,
+                quantity: it.quantity || 1,
+                unitPrice: it.unitPrice || 0,
+                totalPrice: it.totalPrice || (it.unitPrice * (it.quantity || 1)) || 0,
+                isVeg: it.isVeg ?? true,
+                itemNote: it.specialNotes || '',
+              }));
+
+              const liveSale: OwnerSaleTransaction = {
+                id: order.id || `sig-${Date.now()}`,
+                billNo: billDisplayNo,
+                orderType: ordType,
+                tableOrToken: order.tableNumber ? `Table ${order.tableNumber}` : 'Counter Order',
+                totalAmount: order.totalAmount || (order.subTotal + (order.cgstAmount || 0) + (order.sgstAmount || 0)) || 0,
+                taxAmount: (order.cgstAmount || 0) + (order.sgstAmount || 0),
+                discountAmount: order.discountAmount || 0,
+                paymentMode: pMode,
+                cashierName: order.billerName || 'biller',
+                timestamp: isToday ? `Today, ${timeStr}` : `${dateStr}, ${timeStr}`,
+                itemsCount: itemsList.length,
+                items: itemsList,
+                customerPhone: order.customerPhone || '',
+                kotNo: order.kotNumber || '',
+              };
+
+              const newSales = [liveSale, ...state.sales];
+              try {
+                const key = getSalesStorageKey();
+                localStorage.setItem(key, JSON.stringify(newSales.slice(0, 500)));
+              } catch {}
+              return { activeKOTs: remainingKOTs, sales: newSales };
+            }
+          }
+          return { activeKOTs: remainingKOTs };
+        });
         return;
       }
 
@@ -347,13 +517,22 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
       cashierName: cashierName || 'biller',
       timestamp: `Today, ${hours}:${minutes}`,
       itemsCount: items.length,
+      items,
+      customerPhone: '',
     };
 
-    // 1. Add to sales ledger
-    set((state) => ({
-      sales: [newSale, ...state.sales],
-      nextBillSequence: state.nextBillSequence + 1,
-    }));
+    // 1. Add to sales ledger and persist
+    set((state) => {
+      const updatedSales = [newSale, ...state.sales];
+      try {
+        const key = getSalesStorageKey();
+        localStorage.setItem(key, JSON.stringify(updatedSales.slice(0, 500)));
+      } catch {}
+      return {
+        sales: updatedSales,
+        nextBillSequence: state.nextBillSequence + 1,
+      };
+    });
 
     // 2. Auto-deduct raw recipe ingredients
     get().deductInventoryForItems(items);

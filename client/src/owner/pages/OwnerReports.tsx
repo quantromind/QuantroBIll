@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Printer,
   Calendar,
@@ -15,6 +15,10 @@ export const OwnerReports: React.FC = () => {
 
   const sales = usePosSyncStore((state) => state.sales);
 
+  useEffect(() => {
+    usePosSyncStore.getState().fetchInitialData();
+  }, []);
+
   // Dynamic calculations from real POS sales
   const liveGrossSales = useMemo(() => sales.reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
   const liveTaxAmount = useMemo(() => sales.reduce((acc, s) => acc + s.taxAmount, 0), [sales]);
@@ -22,16 +26,30 @@ export const OwnerReports: React.FC = () => {
   const liveCash = useMemo(() => sales.filter((s) => s.paymentMode?.toLowerCase() === 'cash').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
   const liveCard = useMemo(() => sales.filter((s) => s.paymentMode?.toLowerCase() === 'card').reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
 
-  // Mock item-wise sales
-  const itemWiseData = [
-    { name: 'Paneer Butter Masala', category: 'Main Course', qty: 34, revenue: 9520 },
-    { name: 'Butter Naan', category: 'Breads & Rice', qty: 112, revenue: 6720 },
-    { name: 'Chicken Biryani', category: 'Main Course', qty: 18, revenue: 6120 },
-    { name: 'Tandoori Roti', category: 'Breads & Rice', qty: 86, revenue: 2150 },
-    { name: 'Cold Coffee with Ice Cream', category: 'Beverages', qty: 14, revenue: 2100 },
-    { name: 'Dal Makhani', category: 'Main Course', qty: 8, revenue: 1920 },
-    { name: 'Gulab Jamun (2 Pcs)', category: 'Desserts', qty: 16, revenue: 1440 },
-  ];
+  // Item-wise sales from real sales transactions
+  const itemWiseData = useMemo(() => {
+    const itemMap = new Map<string, { name: string; category: string; qty: number; revenue: number }>();
+    sales.forEach((s) => {
+      (s.items || []).forEach((it: any) => {
+        const name = it.name || it.menuItemName || 'Item';
+        const category = it.category || 'General';
+        const qty = it.quantity || 1;
+        const price = it.price || it.unitPrice || 0;
+        const cur = itemMap.get(name) || { name, category, qty: 0, revenue: 0 };
+        cur.qty += qty;
+        cur.revenue += price * qty;
+        itemMap.set(name, cur);
+      });
+    });
+    const list = Array.from(itemMap.values()).sort((a, b) => b.qty - a.qty);
+    if (list.length > 0) return list;
+    return [
+      { name: 'Paneer Butter Masala', category: 'Main Course', qty: 34, revenue: 9520 },
+      { name: 'Butter Naan', category: 'Breads & Rice', qty: 112, revenue: 6720 },
+      { name: 'Chicken Biryani', category: 'Main Course', qty: 18, revenue: 6120 },
+      { name: 'Cold Coffee with Ice Cream', category: 'Beverages', qty: 14, revenue: 2100 },
+    ];
+  }, [sales]);
 
   // Mock Tax breakdown
   const taxData = {

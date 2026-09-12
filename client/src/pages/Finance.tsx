@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Banknote,
@@ -6,12 +6,19 @@ import {
   Plus,
   ArrowLeft
 } from 'lucide-react';
+import { usePosSyncStore } from '../store/posSyncStore';
 
 export const Finance: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'shift' | 'expenses' | 'cashflow'>('shift');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
+
+  const sales = usePosSyncStore((state) => state.sales);
+
+  useEffect(() => {
+    usePosSyncStore.getState().fetchInitialData();
+  }, []);
 
   const [expenseCategory, setExpenseCategory] = useState('Supplies & Raw Materials');
   const [expenseAmount, setExpenseAmount] = useState<number>(250);
@@ -21,18 +28,31 @@ export const Finance: React.FC = () => {
   const [cashAmount, setCashAmount] = useState<number>(500);
   const [cashNote, setCashNote] = useState('');
 
-  const [shiftData] = useState({
-    totalSales: 8450,
-    ordersCount: 38,
-    cashSales: 3200,
-    upiSales: 4100,
-    cardSales: 1150,
-    totalExpense: 650,
-    openingCash: 2000,
-    cashTopUp: 500,
-    withdrawal: 0,
-    expectedDrawerCash: 4050,
-  });
+  const shiftData = useMemo(() => {
+    const liveTotalSales = sales.reduce((acc, s) => acc + s.totalAmount, 0);
+    const liveOrdersCount = sales.length;
+    const liveCashSales = sales.filter((s) => s.paymentMode?.toLowerCase() === 'cash').reduce((acc, s) => acc + s.totalAmount, 0);
+    const liveUpiSales = sales.filter((s) => s.paymentMode?.toLowerCase() === 'upi').reduce((acc, s) => acc + s.totalAmount, 0);
+    const liveCardSales = sales.filter((s) => s.paymentMode?.toLowerCase() === 'card').reduce((acc, s) => acc + s.totalAmount, 0);
+
+    const openingCash = 2000;
+    const cashTopUp = 500;
+    const withdrawal = 0;
+    const totalExpense = 650;
+
+    return {
+      totalSales: liveOrdersCount > 0 ? liveTotalSales : 8450,
+      ordersCount: liveOrdersCount > 0 ? liveOrdersCount : 38,
+      cashSales: liveOrdersCount > 0 ? liveCashSales : 3200,
+      upiSales: liveOrdersCount > 0 ? liveUpiSales : 4100,
+      cardSales: liveOrdersCount > 0 ? liveCardSales : 1150,
+      totalExpense,
+      openingCash,
+      cashTopUp,
+      withdrawal,
+      expectedDrawerCash: openingCash + cashTopUp + (liveOrdersCount > 0 ? liveCashSales : 3200) - totalExpense - withdrawal,
+    };
+  }, [sales]);
 
   const [expenses, setExpenses] = useState([
     { id: 'e1', category: 'Dairy & Milk Supplies', amount: 350, desc: 'Amul Taaza 10L emergency stock', paidBy: 'Biller', time: '14:20' },

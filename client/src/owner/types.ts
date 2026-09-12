@@ -99,6 +99,9 @@ export interface OwnerSaleTransaction {
   cashierName: string;
   timestamp: string;
   itemsCount: number;
+  items?: any[];
+  customerPhone?: string;
+  kotNo?: string;
 }
 
 export interface OwnerExpense {

@@ -21,6 +21,7 @@ import {
   Percent,
   Lock,
   Printer,
+  History,
 } from 'lucide-react';
 import type { OrderItem, OrderType, PaymentMode } from '../types';
 import { useLangStore } from '../store/langStore';
@@ -33,6 +34,7 @@ import { SplitBillModal } from '../components/modals/SplitBillModal';
 import { TableMergeModal } from '../components/modals/TableMergeModal';
 import { TableShiftModal } from '../components/modals/TableShiftModal';
 import { ManagerPinModal } from '../components/modals/OperationsModals';
+import { BillHistoryModal } from '../components/modals/BillHistoryModal';
 import { useDraftCartStore } from '../store/draftCartStore';
 
 export const Billing: React.FC = () => {
@@ -80,6 +82,7 @@ export const Billing: React.FC = () => {
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [notification, setNotification] = useState<string | null>(null);
   const [tokenNumber, setTokenNumber] = useState<number>(101);
+  const [showBillHistory, setShowBillHistory] = useState<boolean>(false);
 
   // Draft Cart Store (Tenant Isolated)
   const drafts = useDraftCartStore((state) => state.drafts);
@@ -559,6 +562,15 @@ export const Billing: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between sm:justify-end space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowBillHistory(true)}
+                className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer shrink-0"
+                title="View Settled Bills & Sales History"
+              >
+                <History className="w-3.5 h-3.5 text-blue-600" />
+                <span>Bill History</span>
+              </button>
               <span className="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
                 <span>{activeCategoryInfo.icon}</span>
                 <span className="truncate max-w-[160px] sm:max-w-[200px]">{activeCategoryInfo.name}</span>
@@ -674,9 +686,20 @@ export const Billing: React.FC = () => {
               <span>🧾</span>
               <span>Cashier Terminal • Billing & Settlement</span>
             </div>
-            <span className="text-[10px] bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-bold">
-              Manager PIN Protected
-            </span>
+            <div className="flex items-center space-x-1.5">
+              <button
+                type="button"
+                onClick={() => setShowBillHistory(true)}
+                className="flex items-center space-x-1 px-2 py-0.5 bg-white border border-blue-300 hover:bg-blue-100/70 text-blue-700 rounded-md text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                title="View Settled Invoices"
+              >
+                <History className="w-3 h-3 text-blue-600" />
+                <span>History</span>
+              </button>
+              <span className="text-[10px] bg-white border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                Manager PIN Protected
+              </span>
+            </div>
           </div>
         ) : (
           <div className="p-2 bg-emerald-50/70 border-b border-emerald-100 text-emerald-900 text-xs font-semibold flex items-center justify-between">
@@ -684,9 +707,20 @@ export const Billing: React.FC = () => {
               <span>👑</span>
               <span>{userRole === 'Owner' ? 'Owner / Admin' : 'Store Manager'} Terminal</span>
             </div>
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
-              Full Access
-            </span>
+            <div className="flex items-center space-x-1.5">
+              <button
+                type="button"
+                onClick={() => setShowBillHistory(true)}
+                className="flex items-center space-x-1 px-2 py-0.5 bg-white border border-emerald-300 hover:bg-emerald-100/70 text-emerald-800 rounded-md text-[11px] font-bold transition shadow-2xs cursor-pointer"
+                title="View Settled Invoices"
+              >
+                <History className="w-3 h-3 text-emerald-600" />
+                <span>History</span>
+              </button>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                Full Access
+              </span>
+            </div>
           </div>
         )}
 
@@ -1311,6 +1345,14 @@ export const Billing: React.FC = () => {
             showToast('Manager Authorization Approved! Discounts unlocked.');
           }}
           actionTitle="Manager Authorization for Discounts"
+        />
+      )}
+
+      {/* Bill History & Settled Invoices Modal */}
+      {showBillHistory && (
+        <BillHistoryModal
+          isOpen={showBillHistory}
+          onClose={() => setShowBillHistory(false)}
         />
       )}
     </div>

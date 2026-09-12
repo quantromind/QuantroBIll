@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileText,
   CreditCard,
@@ -17,11 +17,23 @@ export const OwnerSales: React.FC = () => {
   const { user } = useOwnerAuthStore();
   const sales = usePosSyncStore((state) => state.sales);
 
+  useEffect(() => {
+    usePosSyncStore.getState().fetchInitialData();
+  }, []);
+
   const [filterCashier, setFilterCashier] = useState('ALL');
   const [filterMode, setFilterMode] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<OwnerSaleTransaction | null>(null);
+
+  const availableCashiers = useMemo(() => {
+    const set = new Set<string>();
+    sales.forEach((s) => {
+      if (s.cashierName && s.cashierName.trim()) set.add(s.cashierName.trim());
+    });
+    return Array.from(set);
+  }, [sales]);
 
   // Computed Totals
   const totalRevenue = useMemo(() => sales.reduce((acc, s) => acc + s.totalAmount, 0), [sales]);
@@ -145,9 +157,11 @@ export const OwnerSales: React.FC = () => {
             className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           >
             <option value="ALL">All Cashiers</option>
-            <option value="gayathri">gayathri</option>
-            <option value="raju">raju</option>
-            <option value="Nushrath">Nushrath</option>
+            {availableCashiers.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -301,6 +315,20 @@ export const OwnerSales: React.FC = () => {
                   <span className="font-bold text-slate-900">{selectedTx.paymentMode}</span>
                 </div>
               </div>
+
+              {selectedTx.items && selectedTx.items.length > 0 && (
+                <div className="pt-2 border-t border-dashed border-slate-300 space-y-1 text-[11px]">
+                  <p className="font-bold text-slate-700 text-[10px] uppercase">Billed Items:</p>
+                  {selectedTx.items.map((it: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-slate-700">
+                      <span>
+                        {it.quantity}x {it.name || it.menuItemName}
+                      </span>
+                      <span>₹{((it.price || it.unitPrice || 0) * (it.quantity || 1)).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="pt-2 border-t border-dashed border-slate-300 space-y-1 text-[11px]">
                 <div className="flex justify-between">

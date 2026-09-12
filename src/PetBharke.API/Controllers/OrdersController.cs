@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using PetBharke.API.Hubs;
 using PetBharke.Application.Interfaces;
@@ -46,7 +47,10 @@ public class OrdersController : ControllerBase
         var filter = builder.Eq(o => o.IsActive, true)
             & builder.Eq(o => o.TenantId, tenantId);
 
-        if (!string.IsNullOrEmpty(outletId)) filter &= builder.Eq(o => o.OutletId, outletId);
+        if (!string.IsNullOrEmpty(outletId))
+        {
+            filter &= (builder.Eq(o => o.OutletId, outletId) | builder.Eq(o => o.OutletId, "") | builder.Eq(o => o.OutletId, (string?)null));
+        }
         if (status.HasValue) filter &= builder.Eq(o => o.Status, status.Value);
         if (orderType.HasValue) filter &= builder.Eq(o => o.OrderType, orderType.Value);
         if (aggregator.HasValue) filter &= builder.Eq(o => o.AggregatorSource, aggregator.Value);
@@ -65,9 +69,20 @@ public class OrdersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetOrderById(string id)
     {
-        var order = await _context.Orders
-            .Find(o => o.Id == id && o.TenantId == _currentUser.TenantId)
-            .FirstOrDefaultAsync();
+        var tenantId = _currentUser.TenantId;
+        Order? order = null;
+        if (ObjectId.TryParse(id, out _))
+        {
+            order = await _context.Orders
+                .Find(o => o.Id == id && o.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+        }
+        else
+        {
+            order = await _context.Orders
+                .Find(o => (o.KotNumber == id || o.BillNumber == id) && o.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+        }
 
         if (order == null) return NotFound();
         return Ok(new { success = true, data = order });
@@ -78,6 +93,11 @@ public class OrdersController : ControllerBase
     {
         var tenantId = _currentUser.TenantId ?? string.Empty;
         var outletId = _currentUser.OutletId ?? string.Empty;
+
+        if (!ObjectId.TryParse(order.Id, out _))
+        {
+            order.Id = ObjectId.GenerateNewId().ToString();
+        }
 
         // Auto-generate Bill & KOT Number if not provided
         var todayCount = await _context.Orders.CountDocumentsAsync(o => o.TenantId == tenantId && o.PlacedAt >= DateTime.UtcNow.Date);
@@ -122,23 +142,24 @@ public class OrdersController : ControllerBase
         // Update table status if DineIn
         if (order.OrderType == OrderType.DineIn && !string.IsNullOrEmpty(order.TableNumber))
         {
+            var isSettled = order.Status == OrderStatus.Delivered;
             await _context.Tables.UpdateOneAsync(
                 t => t.TenantId == tenantId && t.TableNumber == order.TableNumber,
                 Builders<RestaurantTable>.Update
-                    .Set(t => t.IsOccupied, true)
-                    .Set(t => t.CurrentOrderId, order.Id)
+                    .Set(t => t.IsOccupied, !isSettled)
+                    .Set(t => t.CurrentOrderId, isSettled ? null : order.Id)
             );
 
             await _orderHub.Clients.Group(groupName).SendAsync("TableStatusChanged", new
             {
                 tableNumber = order.TableNumber,
-                isOccupied = true,
-                currentOrderId = order.Id,
-                orderTotal = order.TotalAmount,
+                isOccupied = !isSettled,
+                currentOrderId = isSettled ? null : order.Id,
+                orderTotal = isSettled ? 0 : order.TotalAmount,
                 billNumber = order.BillNumber,
                 kotNumber = order.KotNumber,
-                items = order.Items,
-                orderTime = DateTime.UtcNow.ToString("o")
+                items = isSettled ? new List<OrderItem>() : order.Items,
+                orderTime = isSettled ? null : DateTime.UtcNow.ToString("o")
             });
         }
 
@@ -168,11 +189,22 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> UpdateOrderStatus(string id, [FromBody] UpdateOrderStatusRequest request)
     {
         var tenantId = _currentUser.TenantId;
-        var order = await _context.Orders
-            .Find(o => o.Id == id && o.TenantId == tenantId)
-            .FirstOrDefaultAsync();
+        Order? order = null;
+        if (ObjectId.TryParse(id, out _))
+        {
+            order = await _context.Orders
+                .Find(o => o.Id == id && o.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+        }
+        else
+        {
+            order = await _context.Orders
+                .Find(o => (o.KotNumber == id || o.BillNumber == id) && o.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+        }
 
         if (order == null) return NotFound();
+        id = order.Id;
 
         order.Status = request.Status;
         order.UpdatedAt = DateTime.UtcNow;
