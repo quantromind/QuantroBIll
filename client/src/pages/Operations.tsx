@@ -312,8 +312,8 @@ export const Operations: React.FC = () => {
         <div className="space-y-2 text-xs">
           {[
             { id: 'en', label: 'English (Default Interface)' },
-            { id: 'mr', label: 'मराठी (महाराष्ट्र प्रादेशिक भाषा)' },
-            { id: 'hi', label: 'हिंदी (राष्ट्रीय भाषा)' },
+            { id: 'mr', label: 'Marathi' },
+            { id: 'hi', label: 'Hindi' },
           ].map((l) => (
             <button
               key={l.id}

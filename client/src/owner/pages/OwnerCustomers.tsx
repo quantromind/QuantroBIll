@@ -8,58 +8,7 @@ import {
 import type { CreditCustomer } from '../types';
 
 export const OwnerCustomers: React.FC = () => {
-  const [customers, setCustomers] = useState<CreditCustomer[]>([
-    {
-      id: 'c-1',
-      name: 'Vikas Sharma',
-      phone: '9820112345',
-      totalVisits: 14,
-      totalSpent: 18450,
-      outstandingCreditDue: 0,
-      lastOrderDate: 'Today, 14:22',
-      status: 'Clear',
-    },
-    {
-      id: 'c-2',
-      name: 'Pooja Agarwal',
-      phone: '9819054321',
-      totalVisits: 8,
-      totalSpent: 9240,
-      outstandingCreditDue: 0,
-      lastOrderDate: 'Yesterday',
-      status: 'Clear',
-    },
-    {
-      id: 'c-3',
-      name: 'Rajesh Khanna',
-      phone: '9765412389',
-      totalVisits: 22,
-      totalSpent: 34100,
-      outstandingCreditDue: 3500,
-      lastOrderDate: '09/09/2026',
-      status: 'DuePending',
-    },
-    {
-      id: 'c-4',
-      name: 'Amit Deshmukh',
-      phone: '9988776655',
-      totalVisits: 5,
-      totalSpent: 4800,
-      outstandingCreditDue: 0,
-      lastOrderDate: '07/09/2026',
-      status: 'Clear',
-    },
-    {
-      id: 'c-5',
-      name: 'Meera Nair',
-      phone: '9123456780',
-      totalVisits: 19,
-      totalSpent: 26700,
-      outstandingCreditDue: 0,
-      lastOrderDate: 'Today, 13:12',
-      status: 'Clear',
-    },
-  ]);
+  const [customers, setCustomers] = useState<CreditCustomer[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -204,6 +153,13 @@ export const OwnerCustomers: React.FC = () => {
                 </tr>
               );
             })}
+            {filteredCustomers.length === 0 && (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-slate-400 text-xs">
+                  No guest customer records yet. Customers will appear here as orders are placed.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

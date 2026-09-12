@@ -17,6 +17,8 @@ interface Translations {
   dineIn: string;
   delivery: string;
   pickUp: string;
+  takeAway: string;
+  parcel: string;
   items: string;
   qty: string;
   price: string;
@@ -54,6 +56,8 @@ const translations: Record<Language, Translations> = {
     dineIn: 'Dine In',
     delivery: 'Delivery',
     pickUp: 'Pick Up',
+    takeAway: 'Take Away',
+    parcel: 'Parcel',
     items: 'ITEMS',
     qty: 'QTY.',
     price: 'PRICE',
@@ -88,7 +92,9 @@ const translations: Record<Language, Translations> = {
     logout: 'लॉगआउट',
     dineIn: 'डायन इन',
     delivery: 'डिलिव्हरी',
-    pickUp: 'पिक अप / पार्सल',
+    pickUp: 'पिक अप',
+    takeAway: 'टेक अवे',
+    parcel: 'पार्सल',
     items: 'पदार्थ',
     qty: 'नग',
     price: 'किंमत',
@@ -124,6 +130,8 @@ const translations: Record<Language, Translations> = {
     dineIn: 'डाइन इन',
     delivery: 'डिलीवरी',
     pickUp: 'पिक अप',
+    takeAway: 'टेक अवे',
+    parcel: 'पार्सल',
     items: 'आइटम्स',
     qty: 'मात्रा',
     price: 'मूल्य',

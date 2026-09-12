@@ -33,6 +33,7 @@ import { SplitBillModal } from '../components/modals/SplitBillModal';
 import { TableMergeModal } from '../components/modals/TableMergeModal';
 import { TableShiftModal } from '../components/modals/TableShiftModal';
 import { ManagerPinModal } from '../components/modals/OperationsModals';
+import { useDraftCartStore } from '../store/draftCartStore';
 
 export const Billing: React.FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -64,8 +65,11 @@ export const Billing: React.FC = () => {
   }, [fetchFromBackend]);
 
   // State
-  const [orderType, setOrderType] = useState<OrderType>(posMode === 'cafe' ? 'PickUp' : 'DineIn');
+  const [orderType, setOrderType] = useState<OrderType>(posMode === 'cafe' ? 'TakeAway' : 'DineIn');
+  const [packagingCharge, setPackagingCharge] = useState<number>(15);
+  const [enablePackaging, setEnablePackaging] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [cartItems, setCartItems] = useState<OrderItem[]>([]);
   const [customerPhone, setCustomerPhone] = useState<string>('');
@@ -77,17 +81,44 @@ export const Billing: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [tokenNumber, setTokenNumber] = useState<number>(101);
 
-  // Sync initial and selected table's ordered items into cart
+  // Draft Cart Store (Tenant Isolated)
+  const drafts = useDraftCartStore((state) => state.drafts);
+  const { saveDraft, clearDraft, getDraft } = useDraftCartStore();
+
+  const activeCartKey = orderType === 'DineIn'
+    ? `table:${tableNumber.trim().toUpperCase()}`
+    : `channel:${orderType}`;
+
+  // Sync draft or active table's ordered items into cart when activeCartKey changes
   useEffect(() => {
-    if (orderType === 'DineIn') {
+    const draft = getDraft(activeCartKey);
+    if (draft && draft.items && draft.items.length > 0) {
+      setCartItems(draft.items);
+      setCustomerPhone(draft.customerPhone || '');
+      setOrderNote(draft.orderNote || '');
+      setDiscountPercent(draft.discountPercent || 0);
+      if (draft.enablePackaging !== undefined) setEnablePackaging(draft.enablePackaging);
+      if (draft.packagingCharge !== undefined) setPackagingCharge(draft.packagingCharge);
+    } else if (orderType === 'DineIn') {
       const activeT = getTable(tableNumber);
       if (activeT && activeT.isOccupied && activeT.items && activeT.items.length > 0) {
         setCartItems(activeT.items);
+        setCustomerPhone(activeT.customerPhone || '');
+        setOrderNote('');
+        setDiscountPercent(0);
       } else {
         setCartItems([]);
+        setCustomerPhone('');
+        setOrderNote('');
+        setDiscountPercent(0);
       }
+    } else {
+      setCartItems([]);
+      setCustomerPhone('');
+      setOrderNote('');
+      setDiscountPercent(0);
     }
-  }, [tableNumber, orderType]);
+  }, [activeCartKey, orderType, tableNumber, getTable, getDraft]);
 
   // Modals
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -144,11 +175,16 @@ export const Billing: React.FC = () => {
   // Cafe Quick Beverage Modifiers
   const cafeModifiers = ['Extra Shot (+₹30)', 'Sugar Free', 'Oat Milk (+₹40)', 'Extra Ice', 'Less Sweet'];
 
-  // Filter items by selected category and search query
+  // Filter items by selected category, diet type, and search query
   const filteredItems = useMemo(() => {
     let result = items;
     if (selectedCategory !== 'all') {
       result = result.filter((item) => item.categoryId === selectedCategory);
+    }
+    if (dietFilter === 'veg') {
+      result = result.filter((item) => item.isVeg === true);
+    } else if (dietFilter === 'non-veg') {
+      result = result.filter((item) => item.isVeg === false);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -160,18 +196,43 @@ export const Billing: React.FC = () => {
       );
     }
     return result;
-  }, [items, selectedCategory, searchQuery]);
+  }, [items, selectedCategory, dietFilter, searchQuery]);
 
   // Active Category Name
   const activeCategoryInfo = useMemo(() => {
     if (selectedCategory === 'all') {
-      return { name: 'All Menu Items (सर्व पदार्थ)', icon: '🍽️' };
+      return { name: 'All Menu Items', icon: '🍽️' };
     }
     const cat = categories.find((c) => c.id === selectedCategory);
     return cat ? { name: cat.name, icon: cat.icon || '🍽️' } : { name: 'Menu Items', icon: '🍽️' };
   }, [selectedCategory, categories]);
 
-  // Cart operations
+  // Cart operations with tenant-scoped draft persistence
+  const handleCustomerPhoneChange = (phone: string) => {
+    setCustomerPhone(phone);
+    saveDraft(activeCartKey, { customerPhone: phone });
+  };
+
+  const handleOrderNoteChange = (note: string) => {
+    setOrderNote(note);
+    saveDraft(activeCartKey, { orderNote: note });
+  };
+
+  const handleDiscountChange = (pct: number) => {
+    setDiscountPercent(pct);
+    saveDraft(activeCartKey, { discountPercent: pct });
+  };
+
+  const handlePackagingToggle = (checked: boolean) => {
+    setEnablePackaging(checked);
+    saveDraft(activeCartKey, { enablePackaging: checked });
+  };
+
+  const handlePackagingChargeSelect = (charge: number) => {
+    setPackagingCharge(charge);
+    saveDraft(activeCartKey, { packagingCharge: charge });
+  };
+
   const addToCart = (item: MenuItemData) => {
     if (!item.isAvailable) {
       showToast(`"${item.name}" is currently Out of Stock.`);
@@ -180,30 +241,37 @@ export const Billing: React.FC = () => {
 
     setCartItems((prev) => {
       const existing = prev.find((ci) => ci.menuItemId === item.id);
-      if (existing) {
-        return prev.map((ci) =>
-          ci.menuItemId === item.id
-            ? { ...ci, quantity: ci.quantity + 1, totalPrice: (ci.quantity + 1) * ci.unitPrice }
-            : ci
-        );
-      }
-      return [
-        ...prev,
-        {
-          menuItemId: item.id,
-          name: item.name,
-          quantity: 1,
-          unitPrice: item.price,
-          totalPrice: item.price,
-          isVeg: item.isVeg,
-        },
-      ];
+      const nextItems = existing
+        ? prev.map((ci) =>
+            ci.menuItemId === item.id
+              ? { ...ci, quantity: ci.quantity + 1, totalPrice: (ci.quantity + 1) * ci.unitPrice }
+              : ci
+          )
+        : [
+            ...prev,
+            {
+              menuItemId: item.id,
+              name: item.name,
+              quantity: 1,
+              unitPrice: item.price,
+              totalPrice: item.price,
+              isVeg: item.isVeg,
+            },
+          ];
+
+      saveDraft(activeCartKey, {
+        items: nextItems,
+        customerPhone,
+        orderNote,
+        discountPercent,
+      });
+      return nextItems;
     });
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
-    setCartItems((prev) =>
-      prev
+    setCartItems((prev) => {
+      const nextItems = prev
         .map((item) => {
           if (item.menuItemId === itemId) {
             const newQty = item.quantity + delta;
@@ -213,38 +281,70 @@ export const Billing: React.FC = () => {
           }
           return item;
         })
-        .filter(Boolean) as OrderItem[]
-    );
+        .filter(Boolean) as OrderItem[];
+
+      saveDraft(activeCartKey, {
+        items: nextItems,
+        customerPhone,
+        orderNote,
+        discountPercent,
+      });
+      return nextItems;
+    });
   };
 
   const removeFromCart = (itemId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.menuItemId !== itemId));
+    setCartItems((prev) => {
+      const nextItems = prev.filter((item) => item.menuItemId !== itemId);
+      saveDraft(activeCartKey, {
+        items: nextItems,
+        customerPhone,
+        orderNote,
+        discountPercent,
+      });
+      return nextItems;
+    });
   };
 
   const addModifierToItem = (itemId: string, modifier: string) => {
-    setCartItems((prev) =>
-      prev.map((item) => {
+    setCartItems((prev) => {
+      const nextItems = prev.map((item) => {
         if (item.menuItemId === itemId) {
           const note = item.itemNote ? `${item.itemNote}, ${modifier}` : modifier;
           return { ...item, itemNote: note };
         }
         return item;
-      })
-    );
+      });
+      saveDraft(activeCartKey, {
+        items: nextItems,
+        customerPhone,
+        orderNote,
+        discountPercent,
+      });
+      return nextItems;
+    });
     showToast(`Added modifier: ${modifier}`);
   };
 
-  // Calculations with Optional Discount
+  // Calculations with Optional Discount and Parcel Packaging Charge
+  const effectivePackaging = orderType === 'Parcel' && enablePackaging ? packagingCharge : 0;
   const subTotal = cartItems.reduce((acc, item) => acc + item.totalPrice, 0);
   const discountAmount = Math.round((subTotal * discountPercent) / 100);
   const taxableAmount = Math.max(0, subTotal - discountAmount);
   const cgst = taxableAmount * 0.025;
   const sgst = taxableAmount * 0.025;
-  const grandTotal = Math.round(taxableAmount + cgst + sgst);
+  const grandTotal = Math.round(taxableAmount + cgst + sgst + effectivePackaging);
 
   const showToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  const getOrderDestination = () => {
+    if (orderType === 'DineIn') return `Table ${tableNumber}`;
+    if (orderType === 'TakeAway') return `Take Away Token #TK-${tokenNumber}`;
+    if (orderType === 'Parcel') return `Parcel Token #PR-${tokenNumber}`;
+    return `Delivery Token #DL-${tokenNumber}`;
   };
 
   const handleKOT = (print: boolean = false) => {
@@ -252,7 +352,7 @@ export const Billing: React.FC = () => {
       showToast('Please add items to cart before generating KOT.');
       return;
     }
-    const destination = orderType === 'DineIn' ? `Table ${tableNumber}` : `${orderType} Token #${tokenNumber}`;
+    const destination = getOrderDestination();
     const newKot = usePosSyncStore.getState().addKOT({
       orderType,
       tableOrChannel: destination,
@@ -262,6 +362,12 @@ export const Billing: React.FC = () => {
 
     if (orderType === 'DineIn') {
       updateTableOrder(tableNumber, cartItems, grandTotal);
+      saveDraft(activeCartKey, {
+        items: cartItems,
+        customerPhone,
+        orderNote,
+        discountPercent,
+      });
     }
     showToast(`${newKot.kotNo} generated for ${destination} - Routed to Kitchen KDS! 🔔`);
     if (print) {
@@ -280,7 +386,7 @@ export const Billing: React.FC = () => {
       return;
     }
 
-    const destination = orderType === 'DineIn' ? `Table ${tableNumber}` : `${orderType} Token #${tokenNumber}`;
+    const destination = getOrderDestination();
     // Record into posSyncStore for live Owner Sales, Z-Reports, and Inventory depletion
     usePosSyncStore.getState().recordSettledBill({
       orderType,
@@ -300,7 +406,10 @@ export const Billing: React.FC = () => {
       if (orderType === 'DineIn') {
         vacateTable(tableNumber);
       }
+      clearDraft(activeCartKey);
       setCartItems([]);
+      setCustomerPhone('');
+      setOrderNote('');
       setDiscountPercent(0);
       setTokenNumber((t) => t + 1);
     }
@@ -342,7 +451,7 @@ export const Billing: React.FC = () => {
             >
               <div className="flex items-center space-x-2 truncate">
                 <span className="text-base">🍽️</span>
-                <span className="truncate">All Items (सर्व)</span>
+                <span className="truncate">All Items</span>
               </div>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full font-bold ml-1 shrink-0 ${
@@ -408,6 +517,47 @@ export const Billing: React.FC = () => {
               )}
             </div>
 
+            {/* Veg / Non-Veg Diet Filter */}
+            <div className="inline-flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-bold shrink-0">
+              <button
+                type="button"
+                onClick={() => setDietFilter('all')}
+                className={`px-2.5 py-1.5 rounded-md transition text-[11px] font-bold ${
+                  dietFilter === 'all'
+                    ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setDietFilter('veg')}
+                className={`px-2.5 py-1.5 rounded-md transition flex items-center space-x-1.5 text-[11px] font-bold ${
+                  dietFilter === 'veg'
+                    ? 'bg-emerald-600 text-white shadow-2xs font-extrabold'
+                    : 'text-emerald-700 hover:bg-emerald-50'
+                }`}
+                title="Show Vegetarian items"
+              >
+                <span className={`w-2 h-2 rounded-full ${dietFilter === 'veg' ? 'bg-white' : 'bg-emerald-500'}`} />
+                <span>Veg</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDietFilter('non-veg')}
+                className={`px-2.5 py-1.5 rounded-md transition flex items-center space-x-1.5 text-[11px] font-bold ${
+                  dietFilter === 'non-veg'
+                    ? 'bg-rose-600 text-white shadow-2xs font-extrabold'
+                    : 'text-rose-700 hover:bg-rose-50'
+                }`}
+                title="Show Non-Vegetarian items"
+              >
+                <span className={`w-2 h-2 rounded-full ${dietFilter === 'non-veg' ? 'bg-white' : 'bg-rose-500'}`} />
+                <span>Non-Veg</span>
+              </button>
+            </div>
+
             <div className="flex items-center justify-between sm:justify-end space-x-2">
               <span className="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
                 <span>{activeCategoryInfo.icon}</span>
@@ -446,11 +596,21 @@ export const Billing: React.FC = () => {
 
           {/* Grid of Items */}
           <div className="flex-1 p-3.5 overflow-y-auto">
-            {filteredItems.length === 0 ? (
+            {items.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-16 px-4 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 shadow-inner">
+                  <Utensils className="w-7 h-7" />
+                </div>
+                <p className="text-sm font-bold text-slate-800">No menu items added yet</p>
+                <p className="text-xs text-slate-500 max-w-sm mt-1">
+                  This restaurant does not have any dishes in its catalog. Ask your restaurant owner or manager to add items or bulk upload via Excel from the Owner Portal.
+                </p>
+              </div>
+            ) : filteredItems.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 py-16">
                 <Utensils className="w-12 h-12 text-slate-300 mb-2" />
-                <p className="text-sm font-bold text-slate-700">No menu items found</p>
-                <p className="text-xs text-slate-400 mt-0.5">Try searching with a different name or code</p>
+                <p className="text-sm font-bold text-slate-700">No matching items found</p>
+                <p className="text-xs text-slate-400 mt-0.5">Try searching with a different name or category</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -530,37 +690,47 @@ export const Billing: React.FC = () => {
           </div>
         )}
 
-        {/* Order Type Tabs (Dine In / Delivery / PickUp) */}
+        {/* Order Type Tabs (Dine In / Take Away / Parcel / Delivery) */}
         <div className="flex border-b border-slate-200 bg-slate-50">
           <button
             onClick={() => setOrderType('DineIn')}
             className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${
               orderType === 'DineIn'
-                ? 'bg-white text-blue-700 border-t-2 border-blue-600 shadow-2xs'
+                ? 'bg-white text-blue-700 border-t-2 border-blue-600 shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             {strings.dineIn}
           </button>
           <button
+            onClick={() => setOrderType('TakeAway')}
+            className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${
+              orderType === 'TakeAway'
+                ? 'bg-white text-blue-700 border-t-2 border-blue-600 shadow-2xs font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            🛍️ {strings.takeAway}
+          </button>
+          <button
+            onClick={() => setOrderType('Parcel')}
+            className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${
+              orderType === 'Parcel'
+                ? 'bg-white text-emerald-700 border-t-2 border-emerald-600 shadow-2xs font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            📦 {strings.parcel}
+          </button>
+          <button
             onClick={() => setOrderType('Delivery')}
             className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${
               orderType === 'Delivery'
-                ? 'bg-white text-blue-700 border-t-2 border-blue-600 shadow-2xs'
+                ? 'bg-white text-blue-700 border-t-2 border-blue-600 shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            {strings.delivery}
-          </button>
-          <button
-            onClick={() => setOrderType('PickUp')}
-            className={`flex-1 py-2.5 text-xs font-bold text-center transition-all ${
-              orderType === 'PickUp'
-                ? 'bg-blue-600 text-white font-black'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
-          >
-            {strings.pickUp}
+            🛵 {strings.delivery}
           </button>
         </div>
 
@@ -571,7 +741,7 @@ export const Billing: React.FC = () => {
               title="Add / Select Customer"
               onClick={() => {
                 const phone = prompt('Enter Customer Mobile Number:');
-                if (phone) setCustomerPhone(phone);
+                if (phone !== null) handleCustomerPhoneChange(phone);
               }}
               className="p-1.5 rounded-md border border-slate-200 bg-white text-slate-600 hover:text-blue-600 touch-btn"
             >
@@ -581,7 +751,7 @@ export const Billing: React.FC = () => {
               type="text"
               placeholder="Customer Phone / Name"
               value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              onChange={(e) => handleCustomerPhoneChange(e.target.value)}
               className="flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-md bg-white focus:outline-none focus:border-blue-500 text-slate-800"
             />
           </div>
@@ -591,7 +761,7 @@ export const Billing: React.FC = () => {
               title="Order Note"
               onClick={() => {
                 const note = prompt('Enter Order Note / Special Prep Instruction:', orderNote);
-                if (note !== null) setOrderNote(note);
+                if (note !== null) handleOrderNoteChange(note);
               }}
               className={`p-1.5 rounded-md border touch-btn ${
                 orderNote ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:text-blue-600'
@@ -607,11 +777,25 @@ export const Billing: React.FC = () => {
                   onChange={(e) => setTableNumber(e.target.value)}
                   className="text-xs px-2.5 py-1.5 border border-slate-300 rounded-md bg-white font-bold text-slate-800 focus:outline-none focus:border-blue-500"
                 >
-                  {tables.map((t) => (
-                    <option key={t.id} value={t.tableNumber}>
-                      {t.tableNumber} {t.isOccupied ? `(Occupied - ₹${t.orderTotal})` : '(Vacant)'}
-                    </option>
-                  ))}
+                  {tables.map((t) => {
+                    const tKey = `TABLE:${t.tableNumber.trim().toUpperCase()}`;
+                    const draft = drafts[tKey];
+                    const draftQty = draft?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+                    const draftTotal = draft?.items?.reduce((sum, item) => sum + item.totalPrice, 0) || 0;
+
+                    let statusLabel = '(Vacant)';
+                    if (t.isOccupied) {
+                      statusLabel = `(Occupied - ₹${t.orderTotal || 0})`;
+                    } else if (draftQty > 0) {
+                      statusLabel = `(Draft: ${draftQty} items - ₹${draftTotal})`;
+                    }
+
+                    return (
+                      <option key={t.id} value={t.tableNumber}>
+                        {t.tableNumber} {statusLabel}
+                      </option>
+                    );
+                  })}
                 </select>
 
                 <button
@@ -638,25 +822,61 @@ export const Billing: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm(`Table ${tableNumber} ko empty (vacant) karna hai?`)) {
+                      if (confirm(`Vacate and clear Table ${tableNumber}?`)) {
                         vacateTable(tableNumber);
+                        clearDraft(activeCartKey);
                         setCartItems([]);
+                        setCustomerPhone('');
+                        setOrderNote('');
                         setDiscountPercent(0);
                         showToast(`Table ${tableNumber} has been vacated and marked Vacant!`);
                       }
                     }}
                     className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-[11px] font-bold flex items-center space-x-1 touch-btn shadow-2xs"
-                    title="Table Empty Karein / Make Vacant"
+                    title="Vacate Table"
                   >
                     <Trash2 className="w-3 h-3 text-slate-500" />
                     <span className="hidden sm:inline">Empty</span>
                   </button>
                 )}
+
+                {cartItems.length > 0 && !getTable(tableNumber)?.isOccupied && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Clear draft items for Table ${tableNumber}?`)) {
+                        clearDraft(activeCartKey);
+                        setCartItems([]);
+                        setCustomerPhone('');
+                        setOrderNote('');
+                        setDiscountPercent(0);
+                        showToast(`Draft cart cleared for Table ${tableNumber}.`);
+                      }
+                    }}
+                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[11px] font-bold flex items-center space-x-1 touch-btn shadow-2xs"
+                    title="Clear Draft Cart"
+                  >
+                    <Trash2 className="w-3 h-3 text-rose-500" />
+                    <span className="hidden sm:inline">Clear</span>
+                  </button>
+                )}
               </div>
             ) : (
-              <span className="text-[11px] font-mono font-black bg-blue-100 text-blue-900 px-2.5 py-1 rounded-md flex items-center space-x-1">
-                <Ticket className="w-3 h-3 text-blue-700" />
-                <span>Token #{tokenNumber}</span>
+              <span className={`text-[11px] font-mono font-black px-2.5 py-1 rounded-md flex items-center space-x-1.5 shadow-2xs ${
+                orderType === 'TakeAway'
+                  ? 'bg-amber-100 text-amber-950 border border-amber-300'
+                  : orderType === 'Parcel'
+                  ? 'bg-emerald-100 text-emerald-950 border border-emerald-300'
+                  : 'bg-blue-100 text-blue-900 border border-blue-200'
+              }`}>
+                <Ticket className="w-3.5 h-3.5" />
+                <span>
+                  {orderType === 'TakeAway'
+                    ? `TK-${tokenNumber}`
+                    : orderType === 'Parcel'
+                    ? `PR-${tokenNumber}`
+                    : `DL-${tokenNumber}`}
+                </span>
               </span>
             )}
           </div>
@@ -747,7 +967,7 @@ export const Billing: React.FC = () => {
                   {[0, 5, 10, 15, 20].map((pct) => (
                     <button
                       key={pct}
-                      onClick={() => setDiscountPercent(pct)}
+                      onClick={() => handleDiscountChange(pct)}
                       className={`text-[10px] px-2 py-0.5 rounded font-bold transition ${
                         discountPercent === pct
                           ? 'bg-blue-600 text-white'
@@ -780,6 +1000,40 @@ export const Billing: React.FC = () => {
             <div className="flex items-center justify-between text-xs text-emerald-600 font-semibold">
               <span>Discount ({discountPercent}%):</span>
               <span>-₹{discountAmount}</span>
+            </div>
+          )}
+
+          {/* Packaging Fee Row for Parcel Orders */}
+          {orderType === 'Parcel' && (
+            <div className="flex items-center justify-between p-2 bg-emerald-50/80 border border-emerald-200 rounded-lg text-xs">
+              <label className="flex items-center space-x-1.5 font-bold text-emerald-900 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enablePackaging}
+                  onChange={(e) => handlePackagingToggle(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-0"
+                />
+                <span>📦 Packaging Fee:</span>
+              </label>
+              {enablePackaging && (
+                <div className="flex items-center space-x-1">
+                  {[0, 10, 15, 20, 30].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => handlePackagingChargeSelect(amt)}
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-bold transition ${
+                        packagingCharge === amt
+                          ? 'bg-emerald-700 text-white'
+                          : 'bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+                      }`}
+                    >
+                      ₹{amt}
+                    </button>
+                  ))}
+                  <span className="text-xs font-black text-emerald-900 pl-1">+₹{packagingCharge}</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -898,7 +1152,7 @@ export const Billing: React.FC = () => {
                 className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white py-3 rounded-xl text-sm font-black flex items-center justify-center space-x-2 shadow-sm touch-btn transition"
               >
                 <Utensils className="w-4 h-4" />
-                <span>Send KOT to Kitchen (किचन KOT पाठवा)</span>
+                <span>Send KOT to Kitchen</span>
               </button>
 
               <div className="grid grid-cols-2 gap-2">
@@ -970,7 +1224,10 @@ export const Billing: React.FC = () => {
           if (orderType === 'DineIn') {
             vacateTable(tableNumber);
           }
+          clearDraft(activeCartKey);
           setCartItems([]);
+          setCustomerPhone('');
+          setOrderNote('');
           setDiscountPercent(0);
           setTokenNumber((t) => t + 1);
         }}
@@ -980,7 +1237,8 @@ export const Billing: React.FC = () => {
         cgst={cgst}
         sgst={sgst}
         grandTotal={grandTotal}
-        tableNumber={tableNumber}
+        packagingCharge={effectivePackaging}
+        tableNumber={orderType === 'DineIn' ? tableNumber : undefined}
         customerPhone={customerPhone}
         paymentMode={paymentMode}
       />
@@ -1008,7 +1266,10 @@ export const Billing: React.FC = () => {
           if (orderType === 'DineIn') {
             vacateTable(tableNumber);
           }
+          clearDraft(activeCartKey);
           setCartItems([]);
+          setCustomerPhone('');
+          setOrderNote('');
           setDiscountPercent(0);
           setTokenNumber((t) => t + 1);
         }}

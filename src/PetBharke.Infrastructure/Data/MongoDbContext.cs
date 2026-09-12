@@ -14,7 +14,7 @@ public class MongoDbContext : IMongoDbContext
     {
         var connectionString = configuration.GetConnectionString("MongoDb") 
             ?? configuration["MongoDB:ConnectionString"] 
-            ?? "mongodb+srv://prathameshsm0425:prathamesh123@cluster0.atbnfrf.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+            ?? throw new InvalidOperationException("MongoDB connection string must be configured via ConnectionStrings:MongoDb or MongoDB:ConnectionString.");
             
         var databaseName = configuration["MongoDB:DatabaseName"] ?? "petbharke";
 

@@ -41,17 +41,8 @@ public class AuthService : IAuthService
             throw new UnauthorizedException("Invalid username/email or password.");
         }
 
-        // Verify password - also allow default initial passwords if first-time onboarded user
+        // Verify password
         bool isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
-        if (!isPasswordValid && (request.Password == "Password@123" || request.Password == "Owner@123" || request.Password == "Admin@123"))
-        {
-            isPasswordValid = true;
-            user.PasswordHash = _passwordHasher.HashPassword(request.Password);
-            await _context.Users.UpdateOneAsync(
-                u => u.Id == user.Id,
-                Builders<User>.Update.Set(u => u.PasswordHash, user.PasswordHash),
-                cancellationToken: cancellationToken);
-        }
 
         if (!isPasswordValid)
         {

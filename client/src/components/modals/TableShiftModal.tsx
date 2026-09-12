@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, ArrowRightLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useTableStore } from '../../store/tableStore';
+import { useDraftCartStore } from '../../store/draftCartStore';
 
 interface TableShiftModalProps {
   isOpen: boolean;
@@ -54,6 +55,10 @@ export const TableShiftModal: React.FC<TableShiftModalProps> = ({
 
     const success = shiftTable(sourceTableNumber, targetTable);
     if (success) {
+      useDraftCartStore.getState().moveDraft(
+        `table:${sourceTableNumber.trim().toUpperCase()}`,
+        `table:${targetTable.trim().toUpperCase()}`
+      );
       if (onShiftSuccess) {
         onShiftSuccess(targetTable);
       }

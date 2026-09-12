@@ -13,6 +13,7 @@ interface BillPrintModalProps {
   cgst: number;
   sgst: number;
   grandTotal: number;
+  packagingCharge?: number;
   billNumber?: string;
   kotNumber?: string;
   tableNumber?: string;
@@ -29,6 +30,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({
   cgst,
   sgst,
   grandTotal,
+  packagingCharge = 0,
   billNumber = 'BILL-74',
   kotNumber = 'KOT-104',
   tableNumber,
@@ -59,20 +61,41 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({
         rawReceipt += sep;
         rawReceipt += `Bill No: ${billNumber}  | KOT: ${kotNumber}\n`;
         rawReceipt += `Date: ${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}\n`;
-        rawReceipt += `Type: ${orderType} ${tableNumber ? `| Table: ${tableNumber}` : ''}\n`;
+        const typeLabel =
+          orderType === 'TakeAway'
+            ? 'TAKE AWAY'
+            : orderType === 'Parcel'
+            ? 'PARCEL'
+            : orderType === 'DineIn'
+            ? 'DINE-IN'
+            : orderType === 'Delivery'
+            ? 'DELIVERY'
+            : orderType;
+        rawReceipt += `Type: ${typeLabel} ${tableNumber ? `| Table: ${tableNumber}` : ''}\n`;
         rawReceipt += `Biller: ${user?.fullName || 'Cashier'}\n`;
         rawReceipt += sep;
-        rawReceipt += `ITEM                 QTY  RATE   AMT\n`;
+        let headerRow = '';
+        if (rs.showItemSerialNo) headerRow += '#  ';
+        headerRow += 'ITEM              ';
+        if (rs.showItemQty) headerRow += ' QTY';
+        if (rs.showItemRate) headerRow += '  RATE';
+        if (rs.showItemAmount) headerRow += '   AMT';
+        rawReceipt += `${headerRow}\n`;
         rawReceipt += sep;
-        items.forEach((item) => {
-          const name = item.name.substring(0, 18).padEnd(18, ' ');
-          const qty = item.quantity.toString().padStart(3, ' ');
-          const rate = item.unitPrice.toString().padStart(5, ' ');
-          const amt = item.totalPrice.toString().padStart(6, ' ');
-          rawReceipt += `${name} ${qty} ${rate} ${amt}\n`;
+        items.forEach((item, idx) => {
+          let row = '';
+          if (rs.showItemSerialNo) row += `${(idx + 1).toString().padEnd(3, ' ')}`;
+          row += item.name.substring(0, 16).padEnd(16, ' ');
+          if (rs.showItemQty) row += ` ${item.quantity.toString().padStart(4, ' ')}`;
+          if (rs.showItemRate) row += ` ${item.unitPrice.toString().padStart(6, ' ')}`;
+          if (rs.showItemAmount) row += ` ${item.totalPrice.toString().padStart(6, ' ')}`;
+          rawReceipt += `${row}\n`;
         });
         rawReceipt += sep;
         rawReceipt += `Sub Total:            ₹${subTotal.toFixed(2)}\n`;
+        if (packagingCharge > 0) {
+          rawReceipt += `Packaging Fee:        ₹${packagingCharge.toFixed(2)}\n`;
+        }
         rawReceipt += `CGST (2.5%):          ₹${cgst.toFixed(2)}\n`;
         rawReceipt += `SGST (2.5%):          ₹${sgst.toFixed(2)}\n`;
         rawReceipt += `GRAND TOTAL:          ₹${grandTotal.toFixed(2)}\n`;
@@ -143,15 +166,15 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({
                 <h2
                   className="uppercase tracking-wider text-slate-900"
                   style={{
-                    fontSize: rs.restaurantNameSize,
-                    fontWeight: rs.restaurantNameBold ? 900 : 600,
+                    fontSize: rs.restaurantNameSize * 0.9,
+                    fontWeight: rs.restaurantNameBold ? 900 : 700,
                   }}
                 >
                   {outletName}
                 </h2>
               )}
               {rs.showAddress && (
-                <p className="text-[10px] text-slate-500 mt-0.5">{address}</p>
+                <p className="text-[10px] text-slate-500 mt-1 leading-snug">{address}</p>
               )}
               {rs.showContactNumber && (
                 <p className="text-[10px] text-slate-500">Ph: {phone}</p>
@@ -163,7 +186,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({
                 <p className="text-[10px] font-bold text-slate-700 mt-1">GSTIN: {gstin}</p>
               )}
               {rs.showFSSAI && (
-                <p className="text-[10px] text-slate-500">FSSAI Lic: {fssai}</p>
+                <p className="text-[10px] text-slate-500">FSSAI: {fssai}</p>
               )}
             </div>
 
@@ -206,7 +229,20 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({
               )}
               {rs.showOrderType && (
                 <div className="flex justify-between">
-                  <span>Type: <strong>{orderType}</strong></span>
+                  <span>
+                    Type:{' '}
+                    <strong>
+                      {orderType === 'TakeAway'
+                        ? 'TAKE AWAY'
+                        : orderType === 'Parcel'
+                        ? 'PARCEL'
+                        : orderType === 'DineIn'
+                        ? 'DINE-IN'
+                        : orderType === 'Delivery'
+                        ? 'DELIVERY'
+                        : orderType}
+                    </strong>
+                  </span>
                   {rs.showTableNo && tableNumber && <span>Table: <strong>{tableNumber}</strong></span>}
                 </div>
               )}
@@ -221,35 +257,62 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({
 
             {/* Line Items Table */}
             <div className="py-2 border-b border-dashed border-slate-300">
-              <div className="grid grid-cols-12 font-bold pb-1 border-b border-slate-200" style={{ fontSize: rs.itemFontSize * 0.85 }}>
-                <span className="col-span-6">ITEM</span>
-                <span className="col-span-2 text-center">QTY</span>
-                <span className="col-span-2 text-right">RATE</span>
-                <span className="col-span-2 text-right">AMT</span>
-              </div>
-              <div className="pt-1.5 space-y-1">
-                {items.map((item, idx) => (
-                  <div key={idx}>
-                    <div className="grid grid-cols-12" style={{ fontSize: rs.itemFontSize * 0.85 }}>
-                      <span className="col-span-6 truncate font-sans font-medium">
-                        {item.name}
+              <table className="w-full text-left border-collapse" style={{ fontSize: rs.itemFontSize * 0.85 }}>
+                <thead>
+                  <tr className="font-bold border-b border-slate-200">
+                    {rs.showItemSerialNo && <th className="py-0.5 text-left w-5">#</th>}
+                    {rs.showItemCode && <th className="py-0.5 text-left w-10">CODE</th>}
+                    <th className="py-0.5 text-left">ITEM</th>
+                    {rs.showItemQty && <th className="py-0.5 text-center w-7">QTY</th>}
+                    {rs.showItemRate && <th className="py-0.5 text-right w-12">RATE</th>}
+                    {rs.showItemAmount && <th className="py-0.5 text-right w-12">AMT</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, idx) => (
+                    <tr key={idx} className="border-b border-dashed border-slate-100 last:border-b-0">
+                      {rs.showItemSerialNo && (
+                        <td className="py-0.5 text-left align-top font-bold text-slate-400 text-[9px]">{idx + 1}</td>
+                      )}
+                      {rs.showItemCode && (
+                        <td className="py-0.5 text-left align-top font-mono text-slate-500 text-[9px]">
+                          {(item as any).code || (item as any).itemCode || `ITM-${idx + 1}`}
+                        </td>
+                      )}
+                      <td className="py-0.5 align-top">
+                        <span
+                          className="font-sans font-medium block"
+                          style={{
+                            fontWeight: rs.itemNameBold ? 700 : 500,
+                            fontSize: rs.itemNameSize * 0.85,
+                            textTransform: rs.itemNameUppercase ? 'uppercase' : 'none',
+                          }}
+                        >
+                          {item.name}
+                        </span>
                         {rs.showItemVariant && item.variantName && (
                           <span className="block text-[9px] text-slate-500">({item.variantName})</span>
                         )}
-                      </span>
-                      <span className="col-span-2 text-center">{item.quantity}</span>
-                      <span className="col-span-2 text-right">₹{item.unitPrice}</span>
-                      <span className="col-span-2 text-right font-bold">₹{item.totalPrice}</span>
-                    </div>
-                    {rs.showItemAddons && item.selectedAddOns && item.selectedAddOns.length > 0 && (
-                      <p className="text-[9px] text-slate-500 pl-1">Addons: {item.selectedAddOns.join(', ')}</p>
-                    )}
-                    {rs.showItemNote && item.itemNote && (
-                      <p className="text-[9px] text-slate-400 pl-1 italic">* {item.itemNote}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+                        {rs.showItemAddons && item.selectedAddOns && item.selectedAddOns.length > 0 && (
+                          <p className="text-[9px] text-slate-500 pl-0.5">Addons: {item.selectedAddOns.join(', ')}</p>
+                        )}
+                        {rs.showItemNote && item.itemNote && (
+                          <p className="text-[9px] text-slate-400 pl-0.5 italic">* {item.itemNote}</p>
+                        )}
+                      </td>
+                      {rs.showItemQty && (
+                        <td className="py-0.5 text-center align-top font-bold">{item.quantity}</td>
+                      )}
+                      {rs.showItemRate && (
+                        <td className="py-0.5 text-right align-top text-slate-500">₹{item.unitPrice}</td>
+                      )}
+                      {rs.showItemAmount && (
+                        <td className="py-0.5 text-right align-top font-bold">₹{item.totalPrice}</td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Totals & Taxes */}
@@ -271,6 +334,12 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({
                     <span>₹{sgst.toFixed(2)}</span>
                   </div>
                 </>
+              )}
+              {packagingCharge > 0 && (
+                <div className="flex justify-between font-semibold text-slate-700">
+                  <span>Packaging Fee (Parcel):</span>
+                  <span>₹{packagingCharge.toFixed(2)}</span>
+                </div>
               )}
               <div className="flex justify-between text-xs font-black pt-1 border-t border-slate-200 text-slate-900">
                 <span>GRAND TOTAL:</span>

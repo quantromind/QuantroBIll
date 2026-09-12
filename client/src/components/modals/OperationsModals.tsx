@@ -436,7 +436,7 @@ export const TaxSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }
               onChange={(e) => setIsInclusive(e.target.checked)}
               className="rounded text-red-600 focus:ring-0"
             />
-            <span className="font-semibold text-slate-700">Prices are GST-Inclusive (कर समाविष्ट)</span>
+            <span className="font-semibold text-slate-700">Prices are GST-Inclusive</span>
           </label>
 
           <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg touch-btn mt-2">

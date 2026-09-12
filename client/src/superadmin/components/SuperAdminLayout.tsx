@@ -10,6 +10,7 @@ import {
   X,
   ExternalLink,
   ShieldCheck,
+  Store,
 } from 'lucide-react';
 import { useSuperAdminAuthStore } from '../store/superAdminAuthStore';
 
@@ -20,7 +21,7 @@ export const SuperAdminLayout: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/superadmin/login');
+    navigate('/login');
   };
 
   const navItems = [
@@ -61,13 +62,25 @@ export const SuperAdminLayout: React.FC = () => {
         {/* Right side actions */}
         <div className="flex items-center gap-2 sm:gap-4">
           <a
+            href="/demo.html"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition border border-indigo-200 shadow-2xs"
+          >
+            <span>🌐</span>
+            <span>Interactive Demo & Flow</span>
+            <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+          </a>
+
+          <a
             href="/billing"
             target="_blank"
             rel="noreferrer"
             className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-200 shadow-2xs"
           >
-            <span>Launch POS Station</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <Store className="w-3.5 h-3.5 text-blue-600" />
+            <span>Launch POS Billing</span>
+            <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
           </a>
 
           <a

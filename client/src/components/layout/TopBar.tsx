@@ -207,7 +207,7 @@ export const TopBar: React.FC = () => {
                   }}
                   className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700 font-bold"
                 >
-                  मराठी
+                  Marathi
                 </button>
                 <button
                   onClick={() => {
@@ -216,7 +216,7 @@ export const TopBar: React.FC = () => {
                   }}
                   className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-slate-700 font-bold"
                 >
-                  हिंदी
+                  Hindi
                 </button>
               </div>
             )}

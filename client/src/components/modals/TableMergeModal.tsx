@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, GitMerge, AlertCircle, ArrowRight } from 'lucide-react';
 import { useTableStore } from '../../store/tableStore';
+import { useDraftCartStore } from '../../store/draftCartStore';
 
 interface TableMergeModalProps {
   isOpen: boolean;
@@ -83,6 +84,10 @@ export const TableMergeModal: React.FC<TableMergeModalProps> = ({
 
     const success = mergeTables(sourceTable, targetTable);
     if (success) {
+      useDraftCartStore.getState().mergeDrafts(
+        `table:${sourceTable.trim().toUpperCase()}`,
+        `table:${targetTable.trim().toUpperCase()}`
+      );
       if (onMergeSuccess) {
         onMergeSuccess(targetTable);
       }

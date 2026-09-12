@@ -15,12 +15,11 @@ interface AuthState {
 
   setAuthData: (data: AuthResponse) => void;
   setActiveOutlet: (outlet: OutletSummary) => Promise<void>;
-  switchClientProfile: (type: 'Cafe' | 'Restaurant') => void;
-  switchRole: (role: UserRole) => void;
   toggleDrawer: () => void;
   setDrawerOpen: (open: boolean) => void;
   logout: () => void;
   initializeAuth: () => void;
+  switchRole: (role: UserRole) => void;
 }
 
 export const canSettleBills = (role?: UserRole): boolean => {
@@ -38,6 +37,27 @@ export const canVoidBills = (role?: UserRole): boolean => {
 
 export const isWaiterOnly = (role?: UserRole): boolean => {
   return role === 'Waiter';
+};
+
+export const getHomeRouteForRole = (role?: UserRole | string): string => {
+  if (!role) return '/billing';
+  switch (role) {
+    case 'SuperAdmin':
+      return '/superadmin/dashboard';
+    case 'Owner':
+    case 'Admin':
+    case 'Manager':
+      return '/owner/dashboard';
+    case 'Waiter':
+      return '/tables';
+    case 'KitchenStaff':
+      return '/kds';
+    case 'DeliveryBoy':
+      return '/online-orders';
+    case 'Cashier':
+    default:
+      return '/billing';
+  }
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -62,6 +82,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem('quantrobill_active_outlet', JSON.stringify(data.activeOutlet));
     }
     localStorage.setItem('quantrobill_available_outlets', JSON.stringify(data.availableOutlets));
+
+    // Synchronize tokens across SuperAdmin and Owner stores
+    if (data.user.role === 'SuperAdmin') {
+      localStorage.setItem('quantrobill_superadmin_token', data.accessToken);
+      localStorage.setItem(
+        'quantrobill_superadmin_user',
+        JSON.stringify({
+          id: data.user.id,
+          name: data.user.fullName || data.user.username || 'System SuperAdmin',
+          email: data.user.email,
+          role: 'SuperAdmin',
+        })
+      );
+    }
+
+    if (
+      data.user.role === 'Owner' ||
+      data.user.role === 'Admin' ||
+      data.user.role === 'Manager' ||
+      data.user.role === 'SuperAdmin'
+    ) {
+      localStorage.setItem('quantrobill_owner_token', data.accessToken);
+      localStorage.setItem(
+        'quantrobill_owner_user',
+        JSON.stringify({
+          id: data.user.id,
+          name: data.user.fullName || data.user.username || 'Restaurant Owner',
+          email: data.user.email,
+          phone: (data.tenant as any)?.ownerPhone || '',
+          restaurantName: data.tenant?.businessName || 'Restaurant Portal',
+          role: data.user.role === 'Manager' ? 'GeneralManager' : 'Owner',
+          tenantId: data.tenant?.id,
+          outletId: data.activeOutlet?.id,
+        })
+      );
+    }
 
     set({
       user: data.user,
@@ -97,123 +153,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  switchClientProfile: (type: 'Cafe' | 'Restaurant') => {
-    if (type === 'Cafe') {
-      const cafeTenant: TenantSummary = {
-        id: 't_cafe_1',
-        businessName: 'The Magic Bottle - Cafe & Bakery',
-        businessType: 'Cafe',
-        subscriptionPlan: 'Premium',
-      };
-      const cafeOutlet: OutletSummary = {
-        id: 'o_cafe_1',
-        name: 'The Magic Bottle Cafe - Wakad',
-        code: 'C443077',
-        businessType: 'Cafe',
-        address: 'Shop 4, Datta Mandir Road, Wakad, Pune',
-        phone: '07969223344',
-        currency: 'INR',
-        cgstPercentage: 2.5,
-        sgstPercentage: 2.5,
-      };
-      const cafeUser: UserProfile = {
-        id: 'u_cafe_1',
-        username: 'biller',
-        email: 'biller@magicbottle.com',
-        fullName: 'Cafe Barista & Biller',
-        role: 'Cashier',
-        permissions: ['pos.bill', 'pos.kot', 'pos.view'],
-        tenantId: 't_cafe_1',
-      };
-      localStorage.setItem('quantrobill_tenant', JSON.stringify(cafeTenant));
-      localStorage.setItem('quantrobill_active_outlet', JSON.stringify(cafeOutlet));
-      localStorage.setItem('quantrobill_user', JSON.stringify(cafeUser));
-      set({
-        tenant: cafeTenant,
-        activeOutlet: cafeOutlet,
-        user: cafeUser,
-        isAuthenticated: true,
-      });
-    } else {
-      const restTenant: TenantSummary = {
-        id: 't_rest_2',
-        businessName: 'Spice Garden - Fine Dine & Bar',
-        businessType: 'Restaurant',
-        subscriptionPlan: 'Enterprise',
-      };
-      const restOutlet: OutletSummary = {
-        id: 'o_rest_2',
-        name: 'Spice Garden - Baner High Street',
-        code: 'R889021',
-        businessType: 'Restaurant',
-        address: 'Plot 12, Baner High Street, Pune',
-        phone: '09822334455',
-        currency: 'INR',
-        cgstPercentage: 2.5,
-        sgstPercentage: 2.5,
-      };
-      const restUser: UserProfile = {
-        id: 'u_rest_2',
-        username: 'restbiller',
-        email: 'biller@spicegarden.com',
-        fullName: 'Captain & Restaurant Biller',
-        role: 'Cashier',
-        permissions: ['pos.bill', 'pos.kot', 'pos.view', 'tables.manage'],
-        tenantId: 't_rest_2',
-      };
-      localStorage.setItem('quantrobill_tenant', JSON.stringify(restTenant));
-      localStorage.setItem('quantrobill_active_outlet', JSON.stringify(restOutlet));
-      localStorage.setItem('quantrobill_user', JSON.stringify(restUser));
-      set({
-        tenant: restTenant,
-        activeOutlet: restOutlet,
-        user: restUser,
-        isAuthenticated: true,
-      });
-    }
-  },
-
-  switchRole: (role: UserRole) => {
-    const currentUser = get().user || {
-      id: 'u_active',
-      username: 'user',
-      email: 'staff@restaurant.com',
-      fullName: 'Active User',
-      role: 'Cashier',
-      permissions: ['pos.bill', 'pos.kot', 'pos.view'],
-      tenantId: get().tenant?.id || 't_1',
-    };
-
-    let updatedPermissions: string[] = ['pos.kot', 'pos.view'];
-    let fullName = currentUser.fullName;
-
-    if (role === 'Owner' || role === 'SuperAdmin' || role === 'Admin') {
-      updatedPermissions = ['pos.bill', 'pos.kot', 'pos.view', 'tables.manage', 'pos.discount', 'pos.void', 'pos.reports', 'pos.settings', 'pos.cashdrawer'];
-      fullName = 'Restaurant Owner / Admin';
-    } else if (role === 'Manager') {
-      updatedPermissions = ['pos.bill', 'pos.kot', 'pos.view', 'tables.manage', 'pos.discount', 'pos.void', 'pos.reports', 'pos.cashdrawer'];
-      fullName = 'Store Manager';
-    } else if (role === 'Cashier') {
-      updatedPermissions = ['pos.bill', 'pos.kot', 'pos.view', 'tables.manage', 'pos.cashdrawer'];
-      fullName = 'Billing Cashier';
-    } else if (role === 'Waiter') {
-      updatedPermissions = ['pos.kot', 'pos.view', 'tables.manage'];
-      fullName = 'Captain / Waiter';
-    }
-
-    const updatedUser: UserProfile = {
-      ...currentUser,
-      role,
-      fullName,
-      permissions: updatedPermissions,
-    };
-
-    localStorage.setItem('quantrobill_user', JSON.stringify(updatedUser));
-    set({ user: updatedUser });
-  },
-
   toggleDrawer: () => set((state) => ({ drawerOpen: !state.drawerOpen })),
   setDrawerOpen: (open: boolean) => set({ drawerOpen: open }),
+
+  switchRole: (role: UserRole) => {
+    const current = get().user;
+    if (current) {
+      set({ user: { ...current, role } });
+    }
+  },
 
   logout: () => {
     ['quantrobill_', 'petbharke_'].forEach((prefix) => {
@@ -224,6 +172,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.removeItem(`${prefix}tenant_id`);
       localStorage.removeItem(`${prefix}active_outlet`);
       localStorage.removeItem(`${prefix}available_outlets`);
+      localStorage.removeItem(`${prefix}superadmin_token`);
+      localStorage.removeItem(`${prefix}superadmin_user`);
+      localStorage.removeItem(`${prefix}owner_token`);
+      localStorage.removeItem(`${prefix}owner_user`);
     });
     signalRService.stopConnection();
 

@@ -10,48 +10,7 @@ import {
 import type { CreditCustomer } from '../types';
 
 export const OwnerCredit: React.FC = () => {
-  const [creditCustomers, setCreditCustomers] = useState<CreditCustomer[]>([
-    {
-      id: 'cr-1',
-      name: 'Rajesh Khanna (VIP Khata)',
-      phone: '9765412389',
-      totalVisits: 22,
-      totalSpent: 34100,
-      outstandingCreditDue: 3500,
-      lastOrderDate: '09/09/2026',
-      status: 'DuePending',
-    },
-    {
-      id: 'cr-2',
-      name: 'Sharma Corporate Account',
-      phone: '9820199887',
-      totalVisits: 31,
-      totalSpent: 62400,
-      outstandingCreditDue: 8231,
-      lastOrderDate: 'Today, 12:45',
-      status: 'DuePending',
-    },
-    {
-      id: 'cr-3',
-      name: 'Anand & Co Law Firm',
-      phone: '9819000111',
-      totalVisits: 15,
-      totalSpent: 28900,
-      outstandingCreditDue: 0,
-      lastOrderDate: '05/09/2026',
-      status: 'Clear',
-    },
-    {
-      id: 'cr-4',
-      name: 'Dr. Sudhir Verma',
-      phone: '9988771122',
-      totalVisits: 9,
-      totalSpent: 14200,
-      outstandingCreditDue: 1450,
-      lastOrderDate: '08/09/2026',
-      status: 'DuePending',
-    },
-  ]);
+  const [creditCustomers, setCreditCustomers] = useState<CreditCustomer[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showSettleModal, setShowSettleModal] = useState(false);
@@ -139,9 +98,9 @@ export const OwnerCredit: React.FC = () => {
       {/* Header */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-base font-bold text-black tracking-tight">Credit Customers Ledger (Khata)</h1>
+          <h1 className="text-base font-bold text-black tracking-tight">Credit Customers Ledger</h1>
           <p className="text-[11px] text-slate-400">
-            Monitor outstanding credit balances, corporate khata accounts, and record debt settlements.
+            Monitor outstanding credit balances, corporate credit accounts, and record debt settlements.
           </p>
         </div>
 
@@ -170,7 +129,7 @@ export const OwnerCredit: React.FC = () => {
           <p className="text-xl font-black text-black mt-1">
             {creditCustomers.length - pendingAccountsCount}
           </p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Fully cleared khata</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Fully cleared balance</p>
         </div>
 
         <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-2xs">
@@ -249,6 +208,13 @@ export const OwnerCredit: React.FC = () => {
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                  No credit / udhar customers recorded yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -258,7 +224,7 @@ export const OwnerCredit: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-sm w-full border border-slate-200 shadow-xl overflow-hidden animate-in fade-in">
             <div className="p-4 bg-black text-white flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider">Settle Khata Debt</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider">Settle Credit Balance</h3>
               <button
                 onClick={() => setShowSettleModal(false)}
                 className="text-slate-400 hover:text-white cursor-pointer"
@@ -327,7 +293,7 @@ export const OwnerCredit: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-sm w-full border border-slate-200 shadow-xl overflow-hidden animate-in fade-in">
             <div className="p-4 bg-black text-white flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider">New Khata Account</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider">New Credit Account</h3>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-slate-400 hover:text-white cursor-pointer"

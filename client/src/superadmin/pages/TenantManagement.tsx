@@ -804,7 +804,7 @@ export const TenantManagement: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, enableKhataBook: e.target.checked })}
                       className="accent-blue-600 rounded"
                     />
-                    <span className="font-medium">Customer Khata</span>
+                    <span className="font-medium">Customer Credit Ledger</span>
                   </label>
                 </div>
               </div>

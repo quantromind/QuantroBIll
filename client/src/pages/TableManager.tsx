@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Grid3X3,
@@ -27,6 +27,7 @@ import { TableShiftModal } from '../components/modals/TableShiftModal';
 import { useReceiptSettingsStore } from '../store/receiptSettingsStore';
 import { useTableStore, type TableData } from '../store/tableStore';
 import { useAuthStore, isWaiterOnly, canVoidBills } from '../store/authStore';
+import { useDraftCartStore } from '../store/draftCartStore';
 
 export const TableManager: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +40,8 @@ export const TableManager: React.FC = () => {
   const canAddTable = userRole === 'Owner' || userRole === 'Manager' || userRole === 'Admin';
   const canVoidTable = canVoidBills(userRole);
 
-  const { tables, vacateTable, addTable } = useTableStore();
+  const { tables, vacateTable, createTable, getSections } = useTableStore();
+  const drafts = useDraftCartStore((state) => state.drafts);
 
   const [selectedSection, setSelectedSection] = useState<string>('All');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -58,7 +60,10 @@ export const TableManager: React.FC = () => {
   const [showShiftModal, setShowShiftModal] = useState<boolean>(false);
   const [shiftSourceTable, setShiftSourceTable] = useState<string | undefined>(undefined);
 
-  const sections = ['All', 'Main Hall', 'AC Section', 'Outdoor / Patio', 'First Floor'];
+  const dynamicSections: string[] = useMemo(() => {
+    const list = getSections();
+    return ['All', ...list];
+  }, [getSections, tables]);
 
   const filteredTables = tables.filter(
     (t) => selectedSection === 'All' || t.section === selectedSection
@@ -102,19 +107,23 @@ export const TableManager: React.FC = () => {
     };
   };
 
-  const handleAddTable = (e: React.FormEvent) => {
+  const handleAddTable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTableNumber.trim()) return;
 
-    addTable({
+    const res = await createTable({
       tableNumber: newTableNumber.trim().toUpperCase(),
       section: newSection,
       capacity: Number(newCapacity),
     });
 
-    setNewTableNumber('');
-    setShowAddModal(false);
-    showToast(`Table ${newTableNumber.trim().toUpperCase()} added successfully!`);
+    if (res.success) {
+      setNewTableNumber('');
+      setShowAddModal(false);
+      showToast(`Table ${newTableNumber.trim().toUpperCase()} added successfully!`);
+    } else {
+      showToast(res.message || 'Failed to add table.');
+    }
   };
 
   const handleTableClick = (table: TableData) => {
@@ -276,13 +285,13 @@ export const TableManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Section Filter Pills (Reference CRM Style) */}
-      <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-1">
-        {sections.map((sec) => (
+      {/* Dynamic Section Tabs */}
+      <div className="flex items-center space-x-1.5 overflow-x-auto pb-3 mb-4 scrollbar-none">
+        {dynamicSections.map((sec) => (
           <button
             key={sec}
             onClick={() => setSelectedSection(sec)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap touch-btn ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition touch-btn ${
               selectedSection === sec
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -293,99 +302,149 @@ export const TableManager: React.FC = () => {
         ))}
       </div>
 
-      {/* Visual Tables Floor Grid (Clean Blue Occupied State, Emerald Vacant State) */}
+      {/* Visual Tables Floor Grid (Clean Blue Occupied State, Amber Draft State, Emerald Vacant State) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {filteredTables.map((table) => (
-          <div
-            key={table.id}
-            onClick={() => handleTableClick(table)}
-            className={`rounded-2xl p-4 border transition-all cursor-pointer shadow-2xs hover:shadow-md touch-btn flex flex-col justify-between h-40 group ${
-              table.isOccupied
-                ? 'bg-blue-50/90 border-blue-200 text-blue-950 hover:border-blue-400'
-                : 'bg-white border-slate-200 hover:border-slate-300 text-slate-800'
-            }`}
-          >
-            <div>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-black tracking-tight">{table.tableNumber}</h3>
-                  <p className="text-[11px] opacity-70 font-medium">{table.section}</p>
-                </div>
-                <div className="flex items-center space-x-1.5">
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      table.isOccupied ? 'bg-blue-600 animate-pulse' : 'bg-emerald-500'
-                    }`}
-                    title={table.isOccupied ? 'Occupied (Tap to View Bill/Menu)' : 'Vacant (Tap to Order)'}
-                  />
-                </div>
-              </div>
+        {filteredTables.map((table) => {
+          const tKey = `TABLE:${table.tableNumber.trim().toUpperCase()}`;
+          const draft = drafts[tKey];
+          const hasDraft = Boolean(draft && draft.items && draft.items.length > 0);
+          const draftItemCount = draft?.items?.reduce((s, i) => s + i.quantity, 0) || 0;
+          const draftTotal = draft?.items?.reduce((s, i) => s + i.totalPrice, 0) || 0;
 
-              <div className="flex items-center space-x-1 text-xs opacity-80 mt-2 font-medium">
-                <Users className="w-3.5 h-3.5" />
-                <span>{table.capacity} Seats</span>
-              </div>
-            </div>
-
-            {/* Bottom State Pill */}
-            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
-              {table.isOccupied ? (
-                <>
+          return (
+            <div
+              key={table.id}
+              onClick={() => handleTableClick(table)}
+              className={`rounded-2xl p-4 border transition-all cursor-pointer shadow-2xs hover:shadow-md touch-btn flex flex-col justify-between h-40 group ${
+                table.isOccupied
+                  ? 'bg-blue-50/90 border-blue-200 text-blue-950 hover:border-blue-400'
+                  : hasDraft
+                  ? 'bg-amber-50/80 border-amber-300 hover:border-amber-400 text-amber-950'
+                  : 'bg-white border-slate-200 hover:border-slate-300 text-slate-800'
+              }`}
+            >
+              <div>
+                <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-xs font-black text-blue-800">
-                      {currencySymbol}{table.orderTotal || 0}
-                    </span>
-                    <span className="text-[10px] text-blue-600 font-semibold block">Running KOT</span>
+                    <h3 className="text-lg font-black tracking-tight">{table.tableNumber}</h3>
+                    <p className="text-[11px] opacity-70 font-medium">{table.section}</p>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <button
-                      type="button"
-                      title="View Bill Details"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTableForBill(table);
-                      }}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 shadow-2xs transition touch-btn"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    {!isWaiter && (
+                  <div className="flex items-center space-x-1.5">
+                    <span
+                      className={`w-3 h-3 rounded-full ${
+                        table.isOccupied
+                          ? 'bg-blue-600 animate-pulse'
+                          : hasDraft
+                          ? 'bg-amber-500 ring-2 ring-amber-200'
+                          : 'bg-emerald-500'
+                      }`}
+                      title={
+                        table.isOccupied
+                          ? 'Occupied (Tap to View Bill/Menu)'
+                          : hasDraft
+                          ? `Draft Active (${draftItemCount} items - Tap to Resume)`
+                          : 'Vacant (Tap to Order)'
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-1 text-xs opacity-80 mt-2 font-medium">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{table.capacity} Seats</span>
+                </div>
+              </div>
+
+              {/* Bottom State Pill */}
+              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                {table.isOccupied ? (
+                  <>
+                    <div>
+                      <span className="text-xs font-black text-blue-800">
+                        {currencySymbol}{table.orderTotal || 0}
+                      </span>
+                      <span className="text-[10px] text-blue-600 font-semibold block">Running KOT</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
                       <button
                         type="button"
-                        title="Print Bill"
+                        title="View Bill Details"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedTableForPrint(table);
+                          setSelectedTableForBill(table);
                         }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition touch-btn"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 shadow-2xs transition touch-btn"
                       >
-                        <Printer className="w-3.5 h-3.5" />
+                        <Eye className="w-3.5 h-3.5" />
                       </button>
-                    )}
-                    {canVoidTable && (
+                      {!isWaiter && (
+                        <button
+                          type="button"
+                          title="Print Bill"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTableForPrint(table);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition touch-btn"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {canVoidTable && (
+                        <button
+                          type="button"
+                          title="Empty / Vacate Table"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleVacateTable(table.tableNumber);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 shadow-2xs transition touch-btn"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : hasDraft ? (
+                  <div className="flex items-center justify-between w-full">
+                    <div>
+                      <span className="text-xs font-black text-amber-900">
+                        {currencySymbol}{draftTotal}
+                      </span>
+                      <span className="text-[10px] text-amber-700 font-semibold block">
+                        Draft ({draftItemCount} items)
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-[10px] font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded shadow-2xs">
+                        Resume
+                      </span>
                       <button
                         type="button"
-                        title="Empty / Vacate Table"
+                        title="Clear Draft"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleVacateTable(table.tableNumber);
+                          if (confirm(`Clear draft for Table ${table.tableNumber}?`)) {
+                            useDraftCartStore.getState().clearDraft(tKey);
+                            showToast(`Draft cleared for Table ${table.tableNumber}.`);
+                          }
                         }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 shadow-2xs transition touch-btn"
+                        className="w-6 h-6 flex items-center justify-center rounded bg-white hover:bg-rose-50 text-rose-600 border border-amber-200 shadow-2xs transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    )}
+                    </div>
                   </div>
-                </>
-              ) : (
-                <span className="text-emerald-600 flex items-center text-[11px] font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                  Vacant (Tap to Order)
-                </span>
-              )}
+                ) : (
+                  <span className="text-emerald-600 flex items-center text-[11px] font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Vacant (Tap to Order)
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Show Current Bill & Ordered Menu Modal */}
@@ -618,10 +677,11 @@ export const TableManager: React.FC = () => {
                   onChange={(e) => setNewSection(e.target.value)}
                   className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-semibold"
                 >
-                  <option value="Main Hall">Main Hall</option>
-                  <option value="AC Section">AC Section</option>
-                  <option value="Outdoor / Patio">Outdoor / Patio</option>
-                  <option value="First Floor">First Floor</option>
+                  {dynamicSections.filter((s: string) => s !== 'All').map((sec: string) => (
+                    <option key={sec} value={sec}>
+                      {sec}
+                    </option>
+                  ))}
                 </select>
               </div>
 

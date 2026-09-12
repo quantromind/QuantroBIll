@@ -177,7 +177,7 @@ export const OwnerReports: React.FC = () => {
                   <span className="font-bold text-black">₹{liveCard.toLocaleString()}.00</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Khata / Credit Given:</span>
+                  <span className="text-slate-500">Customer Credit Issued:</span>
                   <span className="font-bold text-black">₹8,231.00</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-slate-200 text-xs font-black text-black">

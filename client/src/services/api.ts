@@ -26,7 +26,7 @@ export const apiClient = axios.create({
   },
 });
 
-// Attach token & tenant headers to every outgoing request
+// Attach token to every outgoing request
 apiClient.interceptors.request.use((config) => {
   const isSuperAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/superadmin');
   const isOwnerRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/owner');
@@ -38,27 +38,13 @@ apiClient.interceptors.request.use((config) => {
     : isOwnerRoute
       ? (ownerToken || staffToken || superAdminToken)
       : (staffToken || ownerToken || superAdminToken);
-  const activeOutlet = localStorage.getItem('quantrobill_active_outlet') || localStorage.getItem('petbharke_active_outlet');
-  const tenantId = localStorage.getItem('quantrobill_tenant_id') || localStorage.getItem('petbharke_tenant_id');
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  if (tenantId) {
-    config.headers['X-Tenant-Id'] = tenantId;
-  }
-
-  if (activeOutlet) {
-    try {
-      const parsed = JSON.parse(activeOutlet);
-      if (parsed?.id) {
-        config.headers['X-Outlet-Id'] = parsed.id;
-      }
-    } catch {
-      // Ignore JSON parse error
-    }
-  }
+  // TenantId and OutletId are now derived exclusively from JWT claims on the backend.
+  // No client-controlled headers are sent for tenant/outlet context.
 
   return config;
 });

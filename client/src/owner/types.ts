@@ -90,7 +90,7 @@ export interface OwnerMenuItem {
 export interface OwnerSaleTransaction {
   id: string;
   billNo: string;
-  orderType: 'Dine In' | 'Take Away' | 'Delivery';
+  orderType: 'Dine In' | 'Take Away' | 'Parcel' | 'Delivery';
   tableOrToken: string;
   totalAmount: number;
   taxAmount: number;

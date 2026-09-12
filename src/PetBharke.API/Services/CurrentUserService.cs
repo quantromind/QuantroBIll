@@ -18,11 +18,9 @@ public class CurrentUserService : ICurrentUserService
     public string? Username => _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Name)?.Value
         ?? _httpContextAccessor.HttpContext?.User?.FindFirst("unique_name")?.Value;
 
-    public string? TenantId => _httpContextAccessor.HttpContext?.User?.FindFirst("tenantId")?.Value
-        ?? _httpContextAccessor.HttpContext?.Request.Headers["X-Tenant-Id"].FirstOrDefault();
+    public string? TenantId => _httpContextAccessor.HttpContext?.User?.FindFirst("tenantId")?.Value;
 
-    public string? OutletId => _httpContextAccessor.HttpContext?.User?.FindFirst("outletId")?.Value
-        ?? _httpContextAccessor.HttpContext?.Request.Headers["X-Outlet-Id"].FirstOrDefault();
+    public string? OutletId => _httpContextAccessor.HttpContext?.User?.FindFirst("outletId")?.Value;
 
     public string? Role => _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value;
 

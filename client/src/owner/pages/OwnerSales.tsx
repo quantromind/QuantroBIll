@@ -125,7 +125,7 @@ export const OwnerSales: React.FC = () => {
 
         <div className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-2xs hover:shadow-xs transition col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Khata / Credit</p>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Customer Credit</p>
             <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">
               <FileText className="w-4 h-4" />
             </div>
@@ -162,7 +162,7 @@ export const OwnerSales: React.FC = () => {
             <option value="UPI">UPI / QR</option>
             <option value="Cash">Cash</option>
             <option value="Card">Card</option>
-            <option value="Credit">Credit (Khata)</option>
+            <option value="Credit">Customer Credit</option>
           </select>
         </div>
 

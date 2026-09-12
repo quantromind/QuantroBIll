@@ -9,52 +9,8 @@ import {
 import type { OwnerExpense } from '../types';
 
 export const OwnerExpenses: React.FC = () => {
-  const [expenses, setExpenses] = useState<OwnerExpense[]>([
-    {
-      id: 'exp-1',
-      voucherNo: 'VOU-0192',
-      title: 'Dairy & Paneer Morning Delivery',
-      category: 'Raw Materials',
-      amount: 4200,
-      paidTo: 'Krishna Dairy Supplier',
-      paymentMode: 'UPI',
-      date: 'Today, 08:30 AM',
-      notes: '15kg fresh malai paneer',
-    },
-    {
-      id: 'exp-2',
-      voucherNo: 'VOU-0191',
-      title: 'Commercial LPG Cylinder (2x 19kg)',
-      category: 'Kitchen Gas / Fuel',
-      amount: 3600,
-      paidTo: 'Bharat Gas Agency',
-      paymentMode: 'Cash',
-      date: 'Today, 10:15 AM',
-      notes: 'Kitchen cylinders refill',
-    },
-    {
-      id: 'exp-3',
-      voucherNo: 'VOU-0190',
-      title: 'Staff Salary Advance',
-      category: 'Staff Advance',
-      amount: 2000,
-      paidTo: 'Raju (Waiter)',
-      paymentMode: 'Cash',
-      date: 'Today, 11:00 AM',
-      notes: 'Deducted from Sept salary',
-    },
-    {
-      id: 'exp-4',
-      voucherNo: 'VOU-0189',
-      title: 'Dishwasher plumbing pipe replacement',
-      category: 'Maintenance',
-      amount: 750,
-      paidTo: 'Local Plumber',
-      paymentMode: 'Cash',
-      date: 'Yesterday',
-      notes: 'Kitchen sink drain fix',
-    },
-  ]);
+  const [expenses, setExpenses] = useState<OwnerExpense[]>([]);
+
 
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [showAddModal, setShowAddModal] = useState(false);

@@ -224,7 +224,7 @@ export const SubscriptionPlans: React.FC = () => {
         'Everything in Professional Plan',
         'Multi-Station Kitchen Routing (Tandoor, Bar, Chinese)',
         'Central Store to Kitchen Stock Transfers',
-        'Credit Customers Ledger (Khata Book)',
+        'Credit Customers Ledger',
         'Manager Remote Void PIN Authorization',
         'Role-Based Staff Access (15 Permissions Matrix)',
         '24/7 Dedicated Account Manager SLA',

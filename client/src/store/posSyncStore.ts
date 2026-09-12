@@ -25,115 +25,11 @@ export interface KdsTicket {
   station: 'Kitchen' | 'Tandoor' | 'Bar' | 'Dessert' | 'All';
 }
 
-// Initial Stock matching OwnerInventory
-const initialIngredients: InventoryIngredient[] = [
-  { id: '3', stockItemName: 'THUMS UP 250 ML', recipeUom: 'Piece', parStockQuantity: 1000, parStockUnit: 'Pieces (Pc)', currentAvailable: 840, landingPrice: 18 },
-  { id: '4', stockItemName: 'SODA 250 ML', recipeUom: 'Piece', parStockQuantity: 500, parStockUnit: 'Pieces (Pc)', currentAvailable: 310, landingPrice: 12 },
-  { id: '5', stockItemName: 'WATER 1 LTR', recipeUom: 'Piece', parStockQuantity: 1000, parStockUnit: 'Pieces (Pc)', currentAvailable: 920, landingPrice: 10 },
-  { id: '6', stockItemName: 'WATER 500 ML', recipeUom: 'Piece', parStockQuantity: 1050, parStockUnit: 'Pieces (Pc)', currentAvailable: 680, landingPrice: 6 },
-  { id: '7', stockItemName: 'STRING 200 ML', recipeUom: 'Piece', parStockQuantity: 15, parStockUnit: 'Pieces (Pc)', currentAvailable: 12, landingPrice: 20 },
-  { id: '8', stockItemName: 'J SODA 200 ML', recipeUom: 'Piece', parStockQuantity: 1, parStockUnit: 'Pieces (Pc)', currentAvailable: 4, landingPrice: 15 },
-  { id: '9', stockItemName: 'TANGY 200 ML', recipeUom: 'Piece', parStockQuantity: 1, parStockUnit: 'Pieces (Pc)', currentAvailable: 1, landingPrice: 15 },
-  { id: '10', stockItemName: 'MOONSTAR 200 ML', recipeUom: 'Piece', parStockQuantity: 1, parStockUnit: 'Pieces (Pc)', currentAvailable: 0, landingPrice: 25 },
-  { id: '11', stockItemName: 'REDBULL 200 ML', recipeUom: 'Piece', parStockQuantity: 100, parStockUnit: 'Pieces (Pc)', currentAvailable: 45, landingPrice: 95 },
-  { id: '28', stockItemName: 'HELLA 200 ML', recipeUom: 'Piece', parStockQuantity: 1, parStockUnit: 'Pieces (Pc)', currentAvailable: 2, landingPrice: 40 },
-  { id: '29', stockItemName: 'WATER 2 LTR', recipeUom: 'Piece', parStockQuantity: 1, parStockUnit: 'Pieces (Pc)', currentAvailable: 6, landingPrice: 25 },
-  { id: '30', stockItemName: 'PREDATOR', recipeUom: 'Piece', parStockQuantity: 1, parStockUnit: 'Pieces (Pc)', currentAvailable: 1, landingPrice: 45 },
-  { id: '31', stockItemName: 'BUDWEISER PREMIUM 650 ML', recipeUom: 'Piece', parStockQuantity: 1, parStockUnit: 'Pieces (Pc)', currentAvailable: 24, landingPrice: 180 },
-  { id: '32', stockItemName: 'DAIRY MILK PANEER', recipeUom: 'Kg', parStockQuantity: 50, parStockUnit: 'Kilograms (Kg)', currentAvailable: 18.5, landingPrice: 340 },
-  { id: '33', stockItemName: 'BASMATI BIRYANI RICE', recipeUom: 'Kg', parStockQuantity: 200, parStockUnit: 'Kilograms (Kg)', currentAvailable: 110, landingPrice: 90 },
-];
+// Initial dynamic defaults for freshly onboarded restaurant tenants (starts at 0 / clean)
+const initialIngredients: InventoryIngredient[] = [];
+const initialSales: OwnerSaleTransaction[] = [];
+const initialKOTs: KdsTicket[] = [];
 
-// Initial Sales matching OwnerSales
-const initialSales: OwnerSaleTransaction[] = [
-  {
-    id: 'tx-1',
-    billNo: 'INV-2026-0891',
-    orderType: 'Dine In',
-    tableOrToken: 'Table RM3',
-    totalAmount: 1890,
-    taxAmount: 90,
-    discountAmount: 0,
-    paymentMode: 'UPI',
-    cashierName: 'gayathri',
-    timestamp: 'Today, 14:22',
-    itemsCount: 4,
-  },
-  {
-    id: 'tx-2',
-    billNo: 'INV-2026-0890',
-    orderType: 'Dine In',
-    tableOrToken: 'Table RM6',
-    totalAmount: 1404,
-    taxAmount: 66,
-    discountAmount: 100,
-    paymentMode: 'Cash',
-    cashierName: 'raju',
-    timestamp: 'Today, 14:15',
-    itemsCount: 3,
-  },
-  {
-    id: 'tx-3',
-    billNo: 'INV-2026-0889',
-    orderType: 'Delivery',
-    tableOrToken: 'RMH-D1',
-    totalAmount: 1154,
-    taxAmount: 55,
-    discountAmount: 0,
-    paymentMode: 'UPI',
-    cashierName: 'gayathri',
-    timestamp: 'Today, 14:02',
-    itemsCount: 2,
-  },
-];
-
-// Initial KOT Tickets
-const initialKOTs: KdsTicket[] = [
-  {
-    id: 'k1',
-    kotNo: 'KOT-104',
-    orderType: 'Dine In',
-    tableOrChannel: 'Table T-1',
-    tableNumber: 'T-1',
-    createdAt: Date.now() - 4 * 60 * 1000,
-    elapsedMinutes: 4,
-    items: [
-      { name: 'Cold Coffee Ice Cream Float', qty: 2, station: 'Bar' },
-      { name: 'Oreo Thick Shake (Most Loved)', qty: 1, note: 'Extra thick', station: 'Bar' },
-    ],
-    status: 'Pending',
-    station: 'Bar',
-  },
-  {
-    id: 'k2',
-    kotNo: 'KOT-105',
-    orderType: 'Delivery (Zomato)',
-    tableOrChannel: 'Order #8242905005',
-    createdAt: Date.now() - 14 * 60 * 1000,
-    elapsedMinutes: 14,
-    isUrgent: true,
-    items: [
-      { name: 'Alphonso Mango Shake', qty: 1, station: 'Bar' },
-      { name: 'Choco Belgian Shake', qty: 1, station: 'Bar' },
-    ],
-    status: 'InPrep',
-    station: 'Bar',
-  },
-  {
-    id: 'k3',
-    kotNo: 'KOT-106',
-    orderType: 'Pick Up',
-    tableOrChannel: 'Customer: Rahul',
-    createdAt: Date.now() - 2 * 60 * 1000,
-    elapsedMinutes: 2,
-    items: [
-      { name: 'Kitkat Shake', qty: 1, station: 'Bar' },
-      { name: 'Kesar Badam Pista Milkshake', qty: 1, station: 'Bar' },
-    ],
-    status: 'Pending',
-    station: 'Bar',
-  },
-];
 
 // Pure Web Audio API dual-tone synthesized chime
 export const playKitchenKdsChime = () => {
@@ -366,7 +262,7 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
 
     // Async persist to MongoDB & broadcast via SignalR
     apiClient.post('/orders', {
-      orderType: orderType === 'Delivery' ? 3 : orderType === 'TakeAway' || orderType === 'Take Away' ? 2 : 1,
+      orderType: orderType === 'Delivery' ? 2 : orderType === 'Parcel' ? 5 : orderType === 'TakeAway' || orderType === 'Take Away' ? 4 : 1,
       tableNumber: tableNumber || '',
       kotNumber,
       items: items.map((i) => ({
@@ -429,8 +325,9 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const billNo = `INV-2026-0${get().nextBillSequence}`;
 
-    let normalizedOrderType: 'Dine In' | 'Take Away' | 'Delivery' = 'Dine In';
+    let normalizedOrderType: 'Dine In' | 'Take Away' | 'Parcel' | 'Delivery' = 'Dine In';
     if (orderType === 'Delivery') normalizedOrderType = 'Delivery';
+    else if (orderType === 'Parcel') normalizedOrderType = 'Parcel';
     else if (orderType === 'TakeAway' || orderType === 'PickUp' || orderType === 'Take Away') normalizedOrderType = 'Take Away';
 
     let normalizedPaymentMode: 'Cash' | 'Card' | 'UPI' | 'Credit' = 'Cash';
@@ -463,7 +360,7 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
 
     // 3. Async persist settled invoice to MongoDB
     apiClient.post('/orders', {
-      orderType: normalizedOrderType === 'Delivery' ? 3 : normalizedOrderType === 'Take Away' ? 2 : 1,
+      orderType: normalizedOrderType === 'Delivery' ? 2 : normalizedOrderType === 'Parcel' ? 5 : normalizedOrderType === 'Take Away' ? 4 : 1,
       tableNumber: tableOrToken.replace('Table ', ''),
       billNumber: billNo,
       subTotal: totalAmount - taxAmount + discountAmount,

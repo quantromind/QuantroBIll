@@ -23,6 +23,11 @@ interface TableStoreState {
   tables: TableData[];
   fetchTablesFromApi: () => Promise<void>;
   initializeSignalRSync: () => void;
+  createTable: (table: { tableNumber: string; section: string; capacity: number }) => Promise<{ success: boolean; message?: string; table?: TableData }>;
+  updateTable: (id: string, updates: { tableNumber?: string; section?: string; capacity?: number }) => Promise<{ success: boolean; message?: string }>;
+  deleteTable: (id: string) => Promise<{ success: boolean; message?: string }>;
+  bulkGenerateTables: (req: { prefix: string; startNumber: number; endNumber: number; section: string; capacity: number }) => Promise<{ success: boolean; message?: string; count?: number }>;
+  getSections: () => string[];
   vacateTable: (tableNumber: string) => void;
   occupyTable: (tableNumber: string, items: OrderItem[], total: number) => void;
   updateTableOrder: (tableNumber: string, items: OrderItem[], total: number) => void;
@@ -33,116 +38,7 @@ interface TableStoreState {
   resetToDefaults: () => void;
 }
 
-const defaultTables: TableData[] = [
-  {
-    id: 't1',
-    tableNumber: 'T-1',
-    section: 'Main Hall',
-    capacity: 4,
-    isOccupied: true,
-    orderTotal: 420,
-    orderTime: '24m',
-    billNumber: 'BILL-1021',
-    kotNumber: 'KOT-304',
-    items: [
-      {
-        menuItemId: 'm-1',
-        name: 'Paneer Butter Masala',
-        quantity: 1,
-        unitPrice: 240,
-        totalPrice: 240,
-        isVeg: true,
-      },
-      {
-        menuItemId: 'm-2',
-        name: 'Butter Naan',
-        quantity: 3,
-        unitPrice: 40,
-        totalPrice: 120,
-        isVeg: true,
-      },
-      {
-        menuItemId: 'm-3',
-        name: 'Fresh Lime Soda',
-        quantity: 1,
-        unitPrice: 60,
-        totalPrice: 60,
-        isVeg: true,
-      },
-    ],
-  },
-  { id: 't2', tableNumber: 'T-2', section: 'Main Hall', capacity: 2, isOccupied: false, items: [] },
-  { id: 't3', tableNumber: 'T-3', section: 'Main Hall', capacity: 4, isOccupied: false, items: [] },
-  {
-    id: 't4',
-    tableNumber: 'T-4',
-    section: 'AC Section',
-    capacity: 6,
-    isOccupied: true,
-    orderTotal: 860,
-    orderTime: '45m',
-    billNumber: 'BILL-1022',
-    kotNumber: 'KOT-305',
-    items: [
-      {
-        menuItemId: 'm-4',
-        name: 'Chicken Dum Biryani',
-        quantity: 2,
-        unitPrice: 280,
-        totalPrice: 560,
-        isVeg: false,
-      },
-      {
-        menuItemId: 'm-5',
-        name: 'Butter Garlic Naan',
-        quantity: 2,
-        unitPrice: 60,
-        totalPrice: 120,
-        isVeg: true,
-      },
-      {
-        menuItemId: 'm-6',
-        name: 'Cold Coffee with Ice Cream',
-        quantity: 2,
-        unitPrice: 90,
-        totalPrice: 180,
-        isVeg: true,
-      },
-    ],
-  },
-  { id: 't5', tableNumber: 'T-5', section: 'AC Section', capacity: 4, isOccupied: false, items: [] },
-  { id: 't6', tableNumber: 'T-6', section: 'Outdoor / Patio', capacity: 2, isOccupied: false, items: [] },
-  {
-    id: 't7',
-    tableNumber: 'T-7',
-    section: 'Outdoor / Patio',
-    capacity: 4,
-    isOccupied: true,
-    orderTotal: 290,
-    orderTime: '12m',
-    billNumber: 'BILL-1023',
-    kotNumber: 'KOT-306',
-    items: [
-      {
-        menuItemId: 'm-7',
-        name: 'Veg Hakka Noodles',
-        quantity: 1,
-        unitPrice: 180,
-        totalPrice: 180,
-        isVeg: true,
-      },
-      {
-        menuItemId: 'm-8',
-        name: 'Crispy Corn Salt & Pepper',
-        quantity: 1,
-        unitPrice: 110,
-        totalPrice: 110,
-        isVeg: true,
-      },
-    ],
-  },
-  { id: 't8', tableNumber: 'T-8', section: 'First Floor', capacity: 8, isOccupied: false, items: [] },
-];
+const defaultTables: TableData[] = [];
 
 export const useTableStore = create<TableStoreState>()(
   persist(
@@ -152,13 +48,13 @@ export const useTableStore = create<TableStoreState>()(
       fetchTablesFromApi: async () => {
         try {
           const res = await apiClient.get<{ success: boolean; data: any[] }>('/tables');
-          if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          if (res.data?.success && Array.isArray(res.data.data)) {
             const mapped: TableData[] = res.data.data.map((t: any) => {
               const existing = get().tables.find((et) => et.tableNumber.toUpperCase() === t.tableNumber?.toUpperCase());
               return {
                 id: t.id,
                 tableNumber: t.tableNumber,
-                section: t.section || 'Main Dining Hall',
+                section: t.section || 'Main Hall',
                 capacity: t.seatingCapacity || 4,
                 isOccupied: t.isOccupied ?? existing?.isOccupied ?? false,
                 orderTotal: existing?.orderTotal,
@@ -197,6 +93,11 @@ export const useTableStore = create<TableStoreState>()(
               return t;
             }),
           }));
+        });
+
+        signalRService.on('TableListChanged', (data: any) => {
+          console.log('--> [tableStore] TableListChanged real-time event:', data);
+          get().fetchTablesFromApi();
         });
       },
 
@@ -271,6 +172,108 @@ export const useTableStore = create<TableStoreState>()(
               : t
           ),
         }));
+      },
+
+      createTable: async (tableInput) => {
+        try {
+          const res = await apiClient.post<{ success: boolean; message?: string; data?: any }>('/tables', {
+            tableNumber: tableInput.tableNumber,
+            section: tableInput.section,
+            seatingCapacity: tableInput.capacity,
+          });
+          if (res.data?.success && res.data.data) {
+            const t = res.data.data;
+            const newTable: TableData = {
+              id: t.id,
+              tableNumber: t.tableNumber,
+              section: t.section,
+              capacity: t.seatingCapacity,
+              isOccupied: false,
+              items: [],
+            };
+            set((state) => ({
+              tables: [...state.tables.filter((existing) => existing.tableNumber.toUpperCase() !== newTable.tableNumber.toUpperCase()), newTable],
+            }));
+            return { success: true, table: newTable };
+          }
+          return { success: false, message: res.data?.message || 'Failed to create table.' };
+        } catch (err: any) {
+          const msg = err.response?.data?.message || err.message || 'Error creating table.';
+          return { success: false, message: msg };
+        }
+      },
+
+      updateTable: async (id, updates) => {
+        try {
+          const res = await apiClient.put<{ success: boolean; message?: string }>(`/tables/${id}`, {
+            tableNumber: updates.tableNumber,
+            section: updates.section,
+            seatingCapacity: updates.capacity,
+          });
+          if (res.data?.success) {
+            set((state) => ({
+              tables: state.tables.map((t) =>
+                t.id === id
+                  ? {
+                      ...t,
+                      tableNumber: updates.tableNumber ?? t.tableNumber,
+                      section: updates.section ?? t.section,
+                      capacity: updates.capacity ?? t.capacity,
+                    }
+                  : t
+              ),
+            }));
+            return { success: true, message: 'Table updated successfully.' };
+          }
+          return { success: false, message: res.data?.message || 'Failed to update table.' };
+        } catch (err: any) {
+          return { success: false, message: err.response?.data?.message || err.message || 'Error updating table.' };
+        }
+      },
+
+      deleteTable: async (id) => {
+        try {
+          const res = await apiClient.delete<{ success: boolean; message?: string }>(`/tables/${id}`);
+          if (res.data?.success) {
+            set((state) => ({
+              tables: state.tables.filter((t) => t.id !== id),
+            }));
+            return { success: true, message: 'Table deleted successfully.' };
+          }
+          return { success: false, message: res.data?.message || 'Failed to delete table.' };
+        } catch (err: any) {
+          return { success: false, message: err.response?.data?.message || err.message || 'Error deleting table.' };
+        }
+      },
+
+      bulkGenerateTables: async (bulkReq) => {
+        try {
+          const res = await apiClient.post<{ success: boolean; message?: string; data?: any[] }>('/tables/bulk', {
+            prefix: bulkReq.prefix,
+            startNumber: bulkReq.startNumber,
+            endNumber: bulkReq.endNumber,
+            section: bulkReq.section,
+            capacity: bulkReq.capacity,
+          });
+          if (res.data?.success && Array.isArray(res.data.data)) {
+            await get().fetchTablesFromApi();
+            return { success: true, count: res.data.data.length, message: res.data.message };
+          }
+          return { success: false, message: res.data?.message || 'Failed to bulk generate tables.' };
+        } catch (err: any) {
+          return { success: false, message: err.response?.data?.message || err.message || 'Error bulk generating tables.' };
+        }
+      },
+
+      getSections: () => {
+        const sectionsSet = new Set<string>();
+        get().tables.forEach((t) => {
+          if (t.section?.trim()) sectionsSet.add(t.section.trim());
+        });
+        if (sectionsSet.size === 0) {
+          return ['Main Hall', 'AC Section', 'Outdoor / Patio', 'First Floor'];
+        }
+        return Array.from(sectionsSet);
       },
 
       addTable: (table) => {

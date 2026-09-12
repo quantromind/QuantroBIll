@@ -6,14 +6,19 @@ public enum UserRole
     Admin = 2,           // Restaurant Owner/Manager
     Cashier = 3,         // Biller
     KitchenStaff = 4,    // KDS
-    DeliveryBoy = 5      // Rider
+    DeliveryBoy = 5,     // Rider
+    Waiter = 6,          // Floor Waiter
+    Captain = 7,         // Table Captain
+    Manager = 8          // Store Manager
 }
 
 public enum OrderType
 {
     DineIn = 1,
     Delivery = 2,
-    PickUp = 3
+    PickUp = 3,
+    TakeAway = 4,
+    Parcel = 5
 }
 
 public enum OrderStatus

@@ -87,7 +87,7 @@ export interface AddOnOption {
   price: number;
 }
 
-export type OrderType = 'DineIn' | 'Delivery' | 'PickUp';
+export type OrderType = 'DineIn' | 'Delivery' | 'PickUp' | 'TakeAway' | 'Parcel';
 export type OrderStatus = 'Pending' | 'KotCreated' | 'FoodReady' | 'Dispatched' | 'Delivered' | 'Cancelled';
 export type PaymentMode = 'NotPaid' | 'Cash' | 'Card' | 'UPI' | 'Online' | 'Split' | 'Other';
 export type AggregatorSource = 'Direct' | 'Zomato' | 'Swiggy' | 'Magicpin';

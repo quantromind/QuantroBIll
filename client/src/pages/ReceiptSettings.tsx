@@ -16,6 +16,7 @@ import {
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { useReceiptSettingsStore, type ReceiptSettings as IReceiptSettings } from '../store/receiptSettingsStore';
 import { useAuthStore } from '../store/authStore';
+import { useOwnerAuthStore } from '../owner/store/ownerAuthStore';
 
 /* ───────── Template Styles Config ───────── */
 
@@ -158,31 +159,46 @@ const ToggleRow: React.FC<ToggleRowProps> = ({ label, enabled, onToggle, childre
 
 const SAMPLE_ITEMS = [
   {
+    sno: 1,
+    code: 'CB-01',
+    hsn: '1904',
     name: 'Chicken Biryani',
     variant: '(Half)',
     qty: 2,
     price: 120.0,
-    total: 260.0,
+    discount: 0.0,
+    tax: '5%',
+    total: 240.0,
     addons: 'Extra Raita (₹20.00)',
     note: 'No onion',
     isVeg: false,
   },
   {
+    sno: 2,
+    code: 'MP-02',
+    hsn: '1905',
     name: 'Margherita Pizza',
     variant: '(Single)',
     qty: 1,
     price: 180.0,
-    total: 180.0,
+    discount: 10.0,
+    tax: '5%',
+    total: 170.0,
     addons: null,
     note: null,
     isVeg: true,
   },
   {
+    sno: 3,
+    code: 'GS-03',
+    hsn: '2106',
     name: 'Green Salad',
     variant: null,
     qty: 1,
     price: 60.0,
-    total: 70.0,
+    discount: 0.0,
+    tax: '0%',
+    total: 60.0,
     addons: 'Mayo (₹10.00)',
     note: null,
     isVeg: true,
@@ -213,9 +229,10 @@ const widthToPx = (mm: number): number => {
    MAIN PAGE COMPONENT
    ═══════════════════════════════════════════ */
 
-export const ReceiptSettings: React.FC = () => {
+export const ReceiptSettings: React.FC<{ isOwnerPortal?: boolean }> = ({ isOwnerPortal = false }) => {
   const store = useReceiptSettingsStore();
   const { activeOutlet, tenant } = useAuthStore();
+  const ownerUser = useOwnerAuthStore((s) => s.user);
 
   const tabs: { id: IReceiptSettings['activeTab']; label: string; icon: React.ReactNode }[] = [
     { id: 'printer', label: 'Printer Settings', icon: <Printer className="w-3.5 h-3.5" /> },
@@ -246,13 +263,13 @@ export const ReceiptSettings: React.FC = () => {
   };
 
   /* ─── derived values for preview ─── */
-  const outletName = store.customRestaurantName || activeOutlet?.name || tenant?.businessName || 'SAMPLE RESTAURANT';
+  const outletName = store.customRestaurantName || ownerUser?.restaurantName || activeOutlet?.name || tenant?.businessName || 'SAMPLE RESTAURANT';
   const address1 = store.addressLine1 || activeOutlet?.address || '123 Main Street, Locality';
   const address2 = store.addressLine2 || 'City, State - 300001';
-  const phone = store.contactNumber || activeOutlet?.phone || '+91 98765 43210';
+  const phone = store.contactNumber || ownerUser?.phone || activeOutlet?.phone || '+91 98765 43210';
   const gstin = store.gstinNumber || '33AAAAA0000A1U';
   const fssai = store.fssaiNumber || '12345678901234';
-  const email = store.emailAddress || 'contact@myrestaurant.com';
+  const email = store.emailAddress || ownerUser?.email || 'contact@myrestaurant.com';
   const website = store.websiteUrl || 'www.myrestaurant.com';
   const curr = store.currencySymbol || '₹';
   const upiId = store.upiId || 'petbharkhao@upi';
@@ -264,13 +281,15 @@ export const ReceiptSettings: React.FC = () => {
       {/* ════ Page Header ════ */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shrink-0">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-            <Settings2 className="w-4 h-4 text-red-600" />
+          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+            <Settings2 className="w-4 h-4 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-sm font-extrabold text-slate-900">Cashier Settings</h1>
+            <h1 className="text-sm font-extrabold text-slate-900">
+              {isOwnerPortal ? 'Bill & Receipt Customizer' : 'Cashier Settings'}
+            </h1>
             <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-              Printers & Templates Configuration
+              {isOwnerPortal ? 'Templates & Thermal Printer Configuration' : 'Printers & Templates Configuration'}
             </p>
           </div>
         </div>
@@ -294,7 +313,7 @@ export const ReceiptSettings: React.FC = () => {
             onClick={() => store.setField('activeTab', tab.id)}
             className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap touch-btn transition-all ${
               store.activeTab === tab.id
-                ? 'bg-red-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -614,7 +633,7 @@ export const ReceiptSettings: React.FC = () => {
                       onClick={() => store.setField('invoiceTemplateStyle', tmpl.id)}
                       className={`flex flex-col items-center text-center p-2 rounded-lg border transition-all ${
                         isSelected
-                          ? 'border-red-600 bg-white shadow-sm ring-2 ring-red-500/20'
+                          ? 'border-blue-600 bg-white shadow-sm ring-2 ring-blue-500/20'
                           : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
@@ -625,7 +644,7 @@ export const ReceiptSettings: React.FC = () => {
                       <span
                         className={`text-[9px] mt-1 px-1.5 py-0.5 rounded font-bold ${
                           isSelected
-                            ? 'bg-red-100 text-red-700'
+                            ? 'bg-blue-100 text-blue-700'
                             : 'bg-slate-100 text-slate-500'
                         }`}
                       >
@@ -786,8 +805,8 @@ export const ReceiptSettings: React.FC = () => {
               onToggle={() => store.toggleField('showCustomerAddress')}
             />
 
-            {/* ── Items Table Formatting ── */}
-            <SectionHeader icon="🍽️" title="Items Table Formatting" />
+            {/* ── Items Table Formatting & Columns ── */}
+            <SectionHeader icon="🍽️" title="Items Table Formatting & Columns" />
 
             <ToggleRow label="Item Names" enabled={true} onToggle={() => {}}>
               <BoldButton
@@ -805,6 +824,54 @@ export const ReceiptSettings: React.FC = () => {
             </ToggleRow>
 
             <ToggleRow
+              label="Item S.No. (#)"
+              enabled={store.showItemSerialNo}
+              onToggle={() => store.toggleField('showItemSerialNo')}
+            />
+
+            <ToggleRow
+              label="Item Short Code"
+              enabled={store.showItemCode}
+              onToggle={() => store.toggleField('showItemCode')}
+            />
+
+            <ToggleRow
+              label="Item Quantity (Qty)"
+              enabled={store.showItemQty}
+              onToggle={() => store.toggleField('showItemQty')}
+            />
+
+            <ToggleRow
+              label="Item Rate / Unit Price"
+              enabled={store.showItemRate}
+              onToggle={() => store.toggleField('showItemRate')}
+            />
+
+            <ToggleRow
+              label="Item Discount Column"
+              enabled={store.showItemDiscountCol}
+              onToggle={() => store.toggleField('showItemDiscountCol')}
+            />
+
+            <ToggleRow
+              label="Item Tax / GST Column"
+              enabled={store.showItemTaxCol}
+              onToggle={() => store.toggleField('showItemTaxCol')}
+            />
+
+            <ToggleRow
+              label="Item HSN Code"
+              enabled={store.showItemHsn}
+              onToggle={() => store.toggleField('showItemHsn')}
+            />
+
+            <ToggleRow
+              label="Total Amount Column"
+              enabled={store.showItemAmount}
+              onToggle={() => store.toggleField('showItemAmount')}
+            />
+
+            <ToggleRow
               label="Size / Variant"
               enabled={store.showItemVariant}
               onToggle={() => store.toggleField('showItemVariant')}
@@ -817,7 +884,7 @@ export const ReceiptSettings: React.FC = () => {
             />
 
             <ToggleRow
-              label="Item Instructions"
+              label="Item Instructions / Note"
               enabled={store.showItemNote}
               onToggle={() => store.toggleField('showItemNote')}
             >
@@ -832,7 +899,7 @@ export const ReceiptSettings: React.FC = () => {
             </ToggleRow>
 
             <ToggleRow
-              label="Item Price"
+              label="Item Price Row"
               enabled={store.showItemPrice}
               onToggle={() => store.toggleField('showItemPrice')}
             />
@@ -1030,71 +1097,80 @@ export const ReceiptSettings: React.FC = () => {
 
                   {/* Modern Items Table */}
                   <div className="py-2 border-b border-slate-200">
-                    <div
-                      className="grid grid-cols-12 font-bold px-2 py-1 bg-slate-100 rounded text-slate-700 mb-1"
-                      style={{ fontSize: store.itemFontSize * 0.7 }}
-                    >
-                      <span className="col-span-5">Item</span>
-                      <span className="col-span-2 text-center">Qty</span>
-                      {store.showItemPrice && (
-                        <>
-                          <span className="col-span-2 text-right">Price</span>
-                          <span className="col-span-3 text-right">Amount</span>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="space-y-1.5 px-1">
-                      {SAMPLE_ITEMS.map((item, idx) => (
-                        <div key={idx} className="border-b border-slate-100 pb-1 last:border-b-0">
-                          <div
-                            className="grid grid-cols-12 items-center"
-                            style={{ fontSize: store.itemFontSize * 0.7 }}
-                          >
-                            <span
-                              className={`${store.showItemPrice ? 'col-span-5' : 'col-span-7'} font-medium leading-tight`}
-                              style={{
-                                fontWeight: store.itemNameBold ? 700 : 500,
-                                fontSize: store.itemNameSize * 0.7,
-                                textTransform: store.itemNameUppercase ? 'uppercase' : 'none',
-                              }}
-                            >
-                              {item.name}
-                              {store.showItemVariant && item.variant && (
-                                <span className="block text-slate-400 text-[9px]">{item.variant}</span>
-                              )}
-                            </span>
-                            <span className="col-span-2 text-center font-bold text-slate-800">
-                              {item.qty}
-                            </span>
-                            {store.showItemPrice && (
-                              <>
-                                <span className="col-span-2 text-right text-slate-500">
-                                  {curr}{item.price.toFixed(2)}
-                                </span>
-                                <span className="col-span-3 text-right font-bold text-slate-900">
-                                  {curr}{item.total.toFixed(2)}
-                                </span>
-                              </>
+                    <table className="w-full text-left border-collapse" style={{ fontSize: store.itemFontSize * 0.7 }}>
+                      <thead>
+                        <tr className="bg-slate-100 font-bold text-slate-700">
+                          {store.showItemSerialNo && <th className="py-1 px-1 text-left w-5">#</th>}
+                          {store.showItemCode && <th className="py-1 px-1 text-left w-10">Code</th>}
+                          <th className="py-1 px-1 text-left">Item</th>
+                          {store.showItemHsn && <th className="py-1 px-1 text-center w-9">HSN</th>}
+                          {store.showItemQty && <th className="py-1 px-1 text-center w-7">Qty</th>}
+                          {store.showItemRate && <th className="py-1 px-1 text-right w-12">Price</th>}
+                          {store.showItemDiscountCol && <th className="py-1 px-1 text-right w-10">Disc</th>}
+                          {store.showItemTaxCol && <th className="py-1 px-1 text-right w-9">Tax</th>}
+                          {store.showItemAmount && <th className="py-1 px-1 text-right w-12">Amount</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {SAMPLE_ITEMS.map((item, idx) => (
+                          <tr key={idx} className="border-b border-slate-100 last:border-b-0">
+                            {store.showItemSerialNo && (
+                              <td className="py-1 px-1 text-left align-top font-bold text-slate-400 text-[8px]">{item.sno}</td>
                             )}
-                          </div>
-                          {store.showItemAddons && item.addons && (
-                            <p className="text-[9px] text-slate-400 pl-1">+ {item.addons}</p>
-                          )}
-                          {store.showItemNote && item.note && (
-                            <p
-                              className="text-amber-700 pl-1 text-[9px] italic"
-                              style={{
-                                fontSize: store.itemNoteSize * 0.6,
-                                fontWeight: store.itemNoteBold ? 700 : 400,
-                              }}
-                            >
-                              * {item.note}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                            {store.showItemCode && (
+                              <td className="py-1 px-1 text-left align-top font-mono text-slate-500 text-[8px]">{item.code}</td>
+                            )}
+                            <td className="py-1 px-1 align-top">
+                              <span
+                                className="font-medium leading-tight block"
+                                style={{
+                                  fontWeight: store.itemNameBold ? 700 : 500,
+                                  fontSize: store.itemNameSize * 0.7,
+                                  textTransform: store.itemNameUppercase ? 'uppercase' : 'none',
+                                }}
+                              >
+                                {item.name}
+                              </span>
+                              {store.showItemVariant && item.variant && (
+                                <span className="block text-slate-400 text-[8px]">{item.variant}</span>
+                              )}
+                              {store.showItemAddons && item.addons && (
+                                <p className="text-[8px] text-slate-400 pl-0.5">+ {item.addons}</p>
+                              )}
+                              {store.showItemNote && item.note && (
+                                <p
+                                  className="text-amber-700 pl-0.5 text-[8px] italic"
+                                  style={{
+                                    fontSize: store.itemNoteSize * 0.6,
+                                    fontWeight: store.itemNoteBold ? 700 : 400,
+                                  }}
+                                >
+                                  * {item.note}
+                                </p>
+                              )}
+                            </td>
+                            {store.showItemHsn && (
+                              <td className="py-1 px-1 text-center align-top text-[8px] text-slate-500">{item.hsn}</td>
+                            )}
+                            {store.showItemQty && (
+                              <td className="py-1 px-1 text-center align-top font-bold text-slate-800">{item.qty}</td>
+                            )}
+                            {store.showItemRate && (
+                              <td className="py-1 px-1 text-right align-top text-slate-500">{curr}{item.price.toFixed(2)}</td>
+                            )}
+                            {store.showItemDiscountCol && (
+                              <td className="py-1 px-1 text-right align-top text-emerald-600">{curr}{item.discount.toFixed(2)}</td>
+                            )}
+                            {store.showItemTaxCol && (
+                              <td className="py-1 px-1 text-right align-top text-slate-500">{item.tax}</td>
+                            )}
+                            {store.showItemAmount && (
+                              <td className="py-1 px-1 text-right align-top font-bold text-slate-900">{curr}{item.total.toFixed(2)}</td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
                   {/* Modern Totals & Grand Total Banner */}
@@ -1239,11 +1315,29 @@ export const ReceiptSettings: React.FC = () => {
                     {SAMPLE_ITEMS.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-baseline text-[9px]">
                         <span className="truncate pr-1">
-                          <strong className="font-black">{item.qty}×</strong>{' '}
-                          {store.itemNameUppercase ? item.name.toUpperCase() : item.name}
+                          {store.showItemSerialNo && <span className="text-slate-500 mr-1">{item.sno}.</span>}
+                          {store.showItemCode && <span className="font-mono text-slate-500 mr-1">[{item.code}]</span>}
+                          {store.showItemQty && <strong className="font-black">{item.qty}× </strong>}
+                          <span
+                            style={{
+                              fontWeight: store.itemNameBold ? 700 : 500,
+                              textTransform: store.itemNameUppercase ? 'uppercase' : 'none',
+                            }}
+                          >
+                            {item.name}
+                          </span>
                           {store.showItemVariant && item.variant && ` ${item.variant}`}
+                          {store.showItemRate && (
+                            <span className="text-slate-500 text-[8px] ml-1">@{curr}{item.price.toFixed(0)}</span>
+                          )}
+                          {store.showItemDiscountCol && item.discount > 0 && (
+                            <span className="text-emerald-700 text-[8px] ml-1">-{curr}{item.discount.toFixed(0)}</span>
+                          )}
+                          {store.showItemTaxCol && (
+                            <span className="text-slate-400 text-[8px] ml-1">+{item.tax}</span>
+                          )}
                         </span>
-                        {store.showItemPrice && (
+                        {store.showItemAmount && (
                           <span className="font-bold shrink-0">{curr}{item.total.toFixed(0)}</span>
                         )}
                       </div>
@@ -1440,72 +1534,84 @@ export const ReceiptSettings: React.FC = () => {
 
                   {/* ── Items Table ── */}
                   <div className="py-1.5 border-b border-dashed border-slate-300">
-                    <div
-                      className="grid grid-cols-12 font-bold pb-1 border-b border-slate-200"
-                      style={{ fontSize: store.itemFontSize * 0.7 }}
-                    >
-                      <span className="col-span-5">Item</span>
-                      <span className="col-span-2 text-center">Qty</span>
-                      {store.showItemPrice && (
-                        <>
-                          <span className="col-span-2 text-right">Price</span>
-                          <span className="col-span-3 text-right">Amount</span>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="pt-1 space-y-1.5">
-                      {SAMPLE_ITEMS.map((item, idx) => (
-                        <div key={idx}>
-                          <div
-                            className="grid grid-cols-12"
-                            style={{ fontSize: store.itemFontSize * 0.7 }}
-                          >
-                            <span
-                              className={`${store.showItemPrice ? 'col-span-5' : 'col-span-7'} font-sans leading-tight`}
-                              style={{
-                                fontWeight: store.itemNameBold ? 700 : 500,
-                                fontSize: store.itemNameSize * 0.7,
-                                textTransform: store.itemNameUppercase ? 'uppercase' : 'none',
-                              }}
-                            >
-                              {item.name}
+                    <table className="w-full text-left border-collapse" style={{ fontSize: store.itemFontSize * 0.7 }}>
+                      <thead>
+                        <tr className="font-bold border-b border-slate-200">
+                          {store.showItemSerialNo && <th className="py-0.5 px-0.5 text-left w-5">#</th>}
+                          {store.showItemCode && <th className="py-0.5 px-0.5 text-left w-10">Code</th>}
+                          <th className="py-0.5 px-0.5 text-left">Item</th>
+                          {store.showItemHsn && <th className="py-0.5 px-0.5 text-center w-9">HSN</th>}
+                          {store.showItemQty && <th className="py-0.5 px-0.5 text-center w-7">Qty</th>}
+                          {store.showItemRate && <th className="py-0.5 px-0.5 text-right w-12">Price</th>}
+                          {store.showItemDiscountCol && <th className="py-0.5 px-0.5 text-right w-10">Disc</th>}
+                          {store.showItemTaxCol && <th className="py-0.5 px-0.5 text-right w-9">Tax</th>}
+                          {store.showItemAmount && <th className="py-0.5 px-0.5 text-right w-12">Amount</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {SAMPLE_ITEMS.map((item, idx) => (
+                          <tr key={idx} className="border-b border-dashed border-slate-100 last:border-b-0">
+                            {store.showItemSerialNo && (
+                              <td className="py-0.5 px-0.5 text-left align-top font-bold text-slate-400 text-[8px]">{item.sno}</td>
+                            )}
+                            {store.showItemCode && (
+                              <td className="py-0.5 px-0.5 text-left align-top font-mono text-slate-500 text-[8px]">{item.code}</td>
+                            )}
+                            <td className="py-0.5 px-0.5 align-top">
+                              <span
+                                className="font-sans leading-tight block"
+                                style={{
+                                  fontWeight: store.itemNameBold ? 700 : 500,
+                                  fontSize: store.itemNameSize * 0.7,
+                                  textTransform: store.itemNameUppercase ? 'uppercase' : 'none',
+                                }}
+                              >
+                                {item.name}
+                              </span>
                               {store.showItemVariant && item.variant && (
                                 <span className="block text-slate-500 normal-case" style={{ fontSize: store.itemFontSize * 0.6 }}>
                                   {item.variant}
                                 </span>
                               )}
-                            </span>
-                            <span className="col-span-2 text-center">{item.qty}</span>
-                            {store.showItemPrice && (
-                              <>
-                                <span className="col-span-2 text-right">{curr}{item.price.toFixed(2)}</span>
-                                <span className="col-span-3 text-right font-bold">{curr}{item.total.toFixed(2)}</span>
-                              </>
+                              {store.showItemAddons && item.addons && (
+                                <p className="text-slate-500 pl-0.5 normal-case" style={{ fontSize: store.itemFontSize * 0.6 }}>
+                                  + {item.addons}
+                                </p>
+                              )}
+                              {store.showItemNote && item.note && (
+                                <p
+                                  className="text-amber-700 pl-0.5 italic normal-case"
+                                  style={{
+                                    fontSize: store.itemNoteSize * 0.6,
+                                    fontWeight: store.itemNoteBold ? 700 : 400,
+                                  }}
+                                >
+                                  * {item.note}
+                                </p>
+                              )}
+                            </td>
+                            {store.showItemHsn && (
+                              <td className="py-0.5 px-0.5 text-center align-top text-[8px] text-slate-500">{item.hsn}</td>
                             )}
-                          </div>
-                          {store.showItemAddons && item.addons && (
-                            <p
-                              className="text-slate-500 pl-1 leading-tight"
-                              style={{ fontSize: store.itemFontSize * 0.6 }}
-                            >
-                              Addons : {item.addons}
-                            </p>
-                          )}
-                          {store.showItemNote && item.note && (
-                            <p
-                              className="text-slate-400 pl-1 italic"
-                              style={{
-                                fontSize: store.itemNoteSize * 0.6,
-                                fontWeight: store.itemNoteBold ? 700 : 400,
-                              }}
-                            >
-                              * {item.note}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                            {store.showItemQty && (
+                              <td className="py-0.5 px-0.5 text-center align-top font-bold">{item.qty}</td>
+                            )}
+                            {store.showItemRate && (
+                              <td className="py-0.5 px-0.5 text-right align-top text-slate-500">{curr}{item.price.toFixed(2)}</td>
+                            )}
+                            {store.showItemDiscountCol && (
+                              <td className="py-0.5 px-0.5 text-right align-top text-slate-500">{curr}{item.discount.toFixed(2)}</td>
+                            )}
+                            {store.showItemTaxCol && (
+                              <td className="py-0.5 px-0.5 text-right align-top text-slate-500">{item.tax}</td>
+                            )}
+                            {store.showItemAmount && (
+                              <td className="py-0.5 px-0.5 text-right align-top font-bold text-slate-900">{curr}{item.total.toFixed(2)}</td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
                   {/* ── Totals ── */}

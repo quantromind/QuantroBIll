@@ -39,11 +39,13 @@ public class OrdersController : ControllerBase
     {
         var tenantId = _currentUser.TenantId;
         var outletId = _currentUser.OutletId;
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
 
         var builder = Builders<Order>.Filter;
-        var filter = builder.Eq(o => o.IsActive, true);
+        var filter = builder.Eq(o => o.IsActive, true)
+            & builder.Eq(o => o.TenantId, tenantId);
 
-        if (!string.IsNullOrEmpty(tenantId)) filter &= builder.Eq(o => o.TenantId, tenantId);
         if (!string.IsNullOrEmpty(outletId)) filter &= builder.Eq(o => o.OutletId, outletId);
         if (status.HasValue) filter &= builder.Eq(o => o.Status, status.Value);
         if (orderType.HasValue) filter &= builder.Eq(o => o.OrderType, orderType.Value);
@@ -185,7 +187,7 @@ public class OrdersController : ControllerBase
             order.RiderDetails = request.RiderDetails;
         }
 
-        await _context.Orders.ReplaceOneAsync(o => o.Id == id, order);
+        await _context.Orders.ReplaceOneAsync(o => o.Id == id && o.TenantId == tenantId, order);
 
         var groupName = $"outlet_{tenantId}_{order.OutletId}";
         var kdsGroupName = $"kds_{tenantId}_{order.OutletId}";

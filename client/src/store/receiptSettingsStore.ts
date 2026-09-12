@@ -50,10 +50,18 @@ export interface ReceiptSettings {
   showCustomerPhone: boolean;
   showCustomerAddress: boolean;
 
-  // ─── Items Table Formatting ───
+  // ─── Items Table Formatting & Columns ───
   itemNameBold: boolean;
   itemNameSize: number;
   itemNameUppercase: boolean;
+  showItemSerialNo: boolean;
+  showItemCode: boolean;
+  showItemQty: boolean;
+  showItemRate: boolean;
+  showItemDiscountCol: boolean;
+  showItemTaxCol: boolean;
+  showItemHsn: boolean;
+  showItemAmount: boolean;
   showItemVariant: boolean;
   showItemAddons: boolean;
   showItemNote: boolean;
@@ -213,10 +221,18 @@ const defaultSettings: ReceiptSettings = {
   showCustomerPhone: false,
   showCustomerAddress: false,
 
-  // Items Table Formatting
+  // Items Table Formatting & Columns
   itemNameBold: false,
   itemNameSize: 12,
   itemNameUppercase: false,
+  showItemSerialNo: false,
+  showItemCode: false,
+  showItemQty: true,
+  showItemRate: true,
+  showItemDiscountCol: false,
+  showItemTaxCol: false,
+  showItemHsn: false,
+  showItemAmount: true,
   showItemVariant: true,
   showItemAddons: true,
   showItemNote: true,

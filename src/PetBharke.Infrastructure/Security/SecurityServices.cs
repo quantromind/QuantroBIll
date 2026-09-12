@@ -36,7 +36,7 @@ public class JwtService : IJwtService
     public JwtService(IConfiguration configuration)
     {
         _configuration = configuration;
-        _secretKey = _configuration["Jwt:Key"] ?? "PetBharkeSuperSecretSecureLongEnterpriseKey2026!@#$%^";
+        _secretKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT signing key (Jwt:Key) must be configured. Do not use hardcoded keys.");
         _issuer = _configuration["Jwt:Issuer"] ?? "PetBharkeAPI";
         _audience = _configuration["Jwt:Audience"] ?? "PetBharkeClient";
         _expiryMinutes = int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var min) ? min : 720; // 12 hours

@@ -16,7 +16,6 @@ import { Finance } from './pages/Finance';
 import { Reports } from './pages/Reports';
 import { ReceiptSettings } from './pages/ReceiptSettings';
 
-import { SuperAdminLogin } from './superadmin/pages/SuperAdminLogin';
 import { SuperAdminLayout } from './superadmin/components/SuperAdminLayout';
 import { SuperAdminPrivateRoute } from './superadmin/components/SuperAdminPrivateRoute';
 import { SuperAdminDashboard } from './superadmin/pages/SuperAdminDashboard';
@@ -24,7 +23,6 @@ import { TenantManagement } from './superadmin/pages/TenantManagement';
 import { SubscriptionPlans } from './superadmin/pages/SubscriptionPlans';
 import { FeatureToggles } from './superadmin/pages/FeatureToggles';
 
-import { OwnerLogin } from './owner/pages/OwnerLogin';
 import { OwnerLayout } from './owner/components/OwnerLayout';
 import { OwnerPrivateRoute } from './owner/components/OwnerPrivateRoute';
 import { OwnerDashboard } from './owner/pages/OwnerDashboard';
@@ -37,6 +35,7 @@ import { OwnerInventory } from './owner/pages/OwnerInventory';
 import { OwnerReceipt } from './owner/pages/OwnerReceipt';
 import { OwnerCustomers } from './owner/pages/OwnerCustomers';
 import { OwnerCredit } from './owner/pages/OwnerCredit';
+import { OwnerTables } from './owner/pages/OwnerTables';
 import { OwnerSettings } from './owner/pages/OwnerSettings';
 
 const queryClient = new QueryClient({
@@ -110,7 +109,7 @@ export const App: React.FC = () => {
           {/* ========================================= */}
           {/* 2. ISOLATED SAAS SUPERADMIN PORTAL        */}
           {/* ========================================= */}
-          <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+          <Route path="/superadmin/login" element={<Navigate to="/login" replace />} />
 
           <Route
             path="/superadmin"
@@ -130,7 +129,7 @@ export const App: React.FC = () => {
           {/* =================================================== */}
           {/* 3. ISOLATED RESTAURANT OWNER / ADMIN PORTAL (LEVEL 2) */}
           {/* =================================================== */}
-          <Route path="/owner/login" element={<OwnerLogin />} />
+          <Route path="/owner/login" element={<Navigate to="/login" replace />} />
 
           <Route
             path="/owner"
@@ -143,6 +142,7 @@ export const App: React.FC = () => {
             <Route index element={<Navigate to="/owner/dashboard" replace />} />
             <Route path="dashboard" element={<OwnerDashboard />} />
             <Route path="analytics" element={<OwnerDashboard />} />
+            <Route path="tables" element={<OwnerTables />} />
             <Route path="menu" element={<OwnerMenu />} />
             <Route path="sales" element={<OwnerSales />} />
             <Route path="reports" element={<OwnerReports />} />

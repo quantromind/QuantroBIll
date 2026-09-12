@@ -94,7 +94,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 builder.Services.AddSignalR();
 
 // 6. Authentication & JWT Bearer
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "PetBharkeSuperSecretSecureLongEnterpriseKey2026!@#$%^778899";
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT signing key (Jwt:Key) must be configured.");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "PetBharkeAPI";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "PetBharkeClient";
 

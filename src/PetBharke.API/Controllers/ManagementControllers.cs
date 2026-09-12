@@ -102,7 +102,153 @@ public class TenantsController : ControllerBase
         }
 
         var users = await _context.Users.Find(u => u.TenantId == id).ToListAsync();
-        return Ok(new { success = true, data = users.Select(u => new { u.Id, u.Username, u.Email, u.FullName, u.Role, u.IsActive }) });
+        return Ok(new
+        {
+            success = true,
+            data = users.Select(u => new
+            {
+                u.Id,
+                u.Username,
+                u.Email,
+                u.FullName,
+                u.Phone,
+                u.Pin,
+                Role = u.Role.ToString(),
+                u.OutletId,
+                u.AssignedOutletIds,
+                u.Permissions,
+                u.IsActive,
+                u.CreatedAt,
+                u.LastLoginAt
+            })
+        });
+    }
+
+    [HttpPost("{id}/users")]
+    public async Task<IActionResult> CreateTenantUser(string id, [FromBody] CreateTenantEmployeeDto request)
+    {
+        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
+        {
+            return Forbid();
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Username))
+        {
+            return BadRequest(new { success = false, message = "Username is required." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(new { success = false, message = "Password is required." });
+        }
+
+        var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
+        if (tenant == null)
+        {
+            return NotFound(new { success = false, message = "Tenant not found." });
+        }
+
+        var normalizedUsername = request.Username.Trim().ToLower();
+        var existingUser = await _context.Users
+            .Find(u => u.TenantId == id && (u.Username.ToLower() == normalizedUsername || (!string.IsNullOrEmpty(request.Email) && u.Email.ToLower() == request.Email.ToLower())))
+            .FirstOrDefaultAsync();
+
+        if (existingUser != null)
+        {
+            return BadRequest(new { success = false, message = "An employee with this username or email already exists in this restaurant." });
+        }
+
+        // Determine Outlet
+        var outletId = request.OutletId;
+        if (string.IsNullOrEmpty(outletId))
+        {
+            var defaultOutlet = await _context.Outlets.Find(o => o.TenantId == id && o.IsActive).FirstOrDefaultAsync();
+            outletId = defaultOutlet?.Id ?? string.Empty;
+        }
+
+        // Parse Role
+        if (!Enum.TryParse<UserRole>(request.Role, true, out var role))
+        {
+            role = UserRole.Cashier;
+        }
+
+        var newEmployee = new User
+        {
+            TenantId = id,
+            OutletId = outletId,
+            Username = request.Username.Trim(),
+            Email = string.IsNullOrWhiteSpace(request.Email) ? $"{request.Username.Trim().ToLower()}@{id.ToLower()}.local" : request.Email.Trim().ToLower(),
+            FullName = string.IsNullOrWhiteSpace(request.FullName) ? request.Username.Trim() : request.FullName.Trim(),
+            Phone = request.Phone?.Trim() ?? string.Empty,
+            Pin = request.Pin,
+            PasswordHash = _passwordHasher.HashPassword(request.Password),
+            Role = role,
+            AssignedOutletIds = string.IsNullOrEmpty(outletId) ? new List<string>() : new List<string> { outletId },
+            Permissions = request.Permissions ?? new List<string>(),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.Users.InsertOneAsync(newEmployee);
+
+        return Ok(new
+        {
+            success = true,
+            data = new
+            {
+                newEmployee.Id,
+                newEmployee.Username,
+                newEmployee.Email,
+                newEmployee.FullName,
+                newEmployee.Phone,
+                Role = newEmployee.Role.ToString(),
+                newEmployee.OutletId,
+                newEmployee.Permissions,
+                newEmployee.IsActive,
+                newEmployee.CreatedAt
+            },
+            message = $"Employee '{newEmployee.FullName}' ({newEmployee.Role}) created successfully."
+        });
+    }
+
+    [HttpPut("{id}/users/{userId}")]
+    public async Task<IActionResult> UpdateTenantUser(string id, string userId, [FromBody] UpdateTenantEmployeeDto request)
+    {
+        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
+        {
+            return Forbid();
+        }
+
+        var employee = await _context.Users.Find(u => u.Id == userId && u.TenantId == id).FirstOrDefaultAsync();
+        if (employee == null)
+        {
+            return NotFound(new { success = false, message = "Employee not found." });
+        }
+
+        var updateBuilder = Builders<User>.Update
+            .Set(u => u.UpdatedAt, DateTime.UtcNow);
+
+        if (!string.IsNullOrWhiteSpace(request.FullName))
+            updateBuilder = updateBuilder.Set(u => u.FullName, request.FullName.Trim());
+
+        if (!string.IsNullOrWhiteSpace(request.Phone))
+            updateBuilder = updateBuilder.Set(u => u.Phone, request.Phone.Trim());
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+            updateBuilder = updateBuilder.Set(u => u.PasswordHash, _passwordHasher.HashPassword(request.Password));
+
+        if (!string.IsNullOrWhiteSpace(request.Role) && Enum.TryParse<UserRole>(request.Role, true, out var role))
+            updateBuilder = updateBuilder.Set(u => u.Role, role);
+
+        if (request.Permissions != null)
+            updateBuilder = updateBuilder.Set(u => u.Permissions, request.Permissions);
+
+        if (request.IsActive.HasValue)
+            updateBuilder = updateBuilder.Set(u => u.IsActive, request.IsActive.Value);
+
+        await _context.Users.UpdateOneAsync(u => u.Id == userId && u.TenantId == id, updateBuilder);
+
+        return Ok(new { success = true, message = "Employee updated successfully." });
     }
 
     [HttpPost]
@@ -305,6 +451,29 @@ public class ToggleStatusDto
     public bool IsActive { get; set; }
 }
 
+public class CreateTenantEmployeeDto
+{
+    public string Username { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? FullName { get; set; }
+    public string? Phone { get; set; }
+    public string Password { get; set; } = string.Empty;
+    public string? Pin { get; set; }
+    public string Role { get; set; } = "Cashier";
+    public string? OutletId { get; set; }
+    public List<string>? Permissions { get; set; }
+}
+
+public class UpdateTenantEmployeeDto
+{
+    public string? FullName { get; set; }
+    public string? Phone { get; set; }
+    public string? Password { get; set; }
+    public string? Role { get; set; }
+    public List<string>? Permissions { get; set; }
+    public bool? IsActive { get; set; }
+}
+
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -336,7 +505,9 @@ public class OutletsController : ControllerBase
     public async Task<IActionResult> GetOutletById(string id)
     {
         var tenantId = _currentUserService.TenantId;
-        var outlet = await _context.Outlets.Find(o => o.Id == id && (string.IsNullOrEmpty(tenantId) || o.TenantId == tenantId)).FirstOrDefaultAsync();
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
+        var outlet = await _context.Outlets.Find(o => o.Id == id && o.TenantId == tenantId).FirstOrDefaultAsync();
         if (outlet == null)
             return NotFound(new { success = false, message = "Outlet not found." });
 
@@ -348,12 +519,14 @@ public class OutletsController : ControllerBase
     public async Task<IActionResult> UpdateTaxSettings(string id, [FromBody] OutletTaxSettings settings)
     {
         var tenantId = _currentUserService.TenantId;
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
         var update = Builders<Outlet>.Update
             .Set(o => o.TaxSettings, settings)
             .Set(o => o.UpdatedAt, DateTime.UtcNow);
 
         var result = await _context.Outlets.UpdateOneAsync(
-            o => o.Id == id && (string.IsNullOrEmpty(tenantId) || o.TenantId == tenantId),
+            o => o.Id == id && o.TenantId == tenantId,
             update);
 
         if (result.MatchedCount == 0)
@@ -367,12 +540,14 @@ public class OutletsController : ControllerBase
     public async Task<IActionResult> UpdatePrinterSettings(string id, [FromBody] OutletPrinterSettings settings)
     {
         var tenantId = _currentUserService.TenantId;
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
         var update = Builders<Outlet>.Update
             .Set(o => o.PrinterSettings, settings)
             .Set(o => o.UpdatedAt, DateTime.UtcNow);
 
         var result = await _context.Outlets.UpdateOneAsync(
-            o => o.Id == id && (string.IsNullOrEmpty(tenantId) || o.TenantId == tenantId),
+            o => o.Id == id && o.TenantId == tenantId,
             update);
 
         if (result.MatchedCount == 0)

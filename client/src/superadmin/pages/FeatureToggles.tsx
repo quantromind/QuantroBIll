@@ -176,7 +176,7 @@ export const FeatureToggles: React.FC = () => {
     },
     {
       key: 'enableKhataBook' as const,
-      title: 'Customer Credit Ledger (Khata Book)',
+      title: 'Customer Credit Ledger',
       description: 'Allows recording pay-later due tabs and credit limits for corporate accounts, regular guests, and VIP patrons.',
       icon: BookOpen,
       badge: 'Loyalty & Accounts',

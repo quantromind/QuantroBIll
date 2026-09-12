@@ -19,10 +19,9 @@ public class MongoRepository<T> : IRepository<T> where T : BaseEntity
         var builder = Builders<T>.Filter;
         var filter = builder.Eq(x => x.Id, id);
 
-        if (!string.IsNullOrEmpty(tenantId))
-        {
-            filter &= builder.Eq(x => x.TenantId, tenantId);
-        }
+        if (string.IsNullOrEmpty(tenantId))
+            throw new ArgumentException("tenantId is required for data isolation.", nameof(tenantId));
+        filter &= builder.Eq(x => x.TenantId, tenantId);
 
         if (!string.IsNullOrEmpty(outletId))
         {
@@ -37,10 +36,9 @@ public class MongoRepository<T> : IRepository<T> where T : BaseEntity
         var builder = Builders<T>.Filter;
         var filter = builder.Eq(x => x.IsActive, true);
 
-        if (!string.IsNullOrEmpty(tenantId))
-        {
-            filter &= builder.Eq(x => x.TenantId, tenantId);
-        }
+        if (string.IsNullOrEmpty(tenantId))
+            throw new ArgumentException("tenantId is required for data isolation.", nameof(tenantId));
+        filter &= builder.Eq(x => x.TenantId, tenantId);
 
         if (!string.IsNullOrEmpty(outletId))
         {
@@ -52,6 +50,8 @@ public class MongoRepository<T> : IRepository<T> where T : BaseEntity
 
     public async Task<T> CreateAsync(T entity, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(entity.TenantId))
+            throw new ArgumentException("tenantId is required for data isolation.", nameof(entity));
         entity.CreatedAt = DateTime.UtcNow;
         entity.IsActive = true;
         await _collection.InsertOneAsync(entity, cancellationToken: cancellationToken);
@@ -64,10 +64,9 @@ public class MongoRepository<T> : IRepository<T> where T : BaseEntity
         var builder = Builders<T>.Filter;
         var filter = builder.Eq(x => x.Id, id);
 
-        if (!string.IsNullOrEmpty(tenantId))
-        {
-            filter &= builder.Eq(x => x.TenantId, tenantId);
-        }
+        if (string.IsNullOrEmpty(tenantId))
+            throw new ArgumentException("tenantId is required for data isolation.", nameof(tenantId));
+        filter &= builder.Eq(x => x.TenantId, tenantId);
 
         if (!string.IsNullOrEmpty(outletId))
         {
@@ -83,10 +82,9 @@ public class MongoRepository<T> : IRepository<T> where T : BaseEntity
         var builder = Builders<T>.Filter;
         var filter = builder.Eq(x => x.Id, id);
 
-        if (!string.IsNullOrEmpty(tenantId))
-        {
-            filter &= builder.Eq(x => x.TenantId, tenantId);
-        }
+        if (string.IsNullOrEmpty(tenantId))
+            throw new ArgumentException("tenantId is required for data isolation.", nameof(tenantId));
+        filter &= builder.Eq(x => x.TenantId, tenantId);
 
         if (!string.IsNullOrEmpty(outletId))
         {

@@ -25,38 +25,17 @@ public class InventoryController : ControllerBase
     {
         var tenantId = _currentUser.TenantId ?? string.Empty;
         var outletId = _currentUser.OutletId ?? string.Empty;
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
 
-        var filter = Builders<InventoryItem>.Filter.Eq(i => i.IsActive, true);
-        if (!string.IsNullOrEmpty(tenantId))
-        {
-            filter &= Builders<InventoryItem>.Filter.Eq(i => i.TenantId, tenantId);
-        }
+        var filter = Builders<InventoryItem>.Filter.Eq(i => i.IsActive, true)
+            & Builders<InventoryItem>.Filter.Eq(i => i.TenantId, tenantId);
 
         var items = await _context.Inventory
             .Find(filter)
             .SortBy(i => i.Category)
             .ThenBy(i => i.Name)
             .ToListAsync();
-
-        // Seed default inventory items if empty for this tenant
-        if (items.Count == 0 && !string.IsNullOrEmpty(tenantId))
-        {
-            var defaultStock = new List<InventoryItem>
-            {
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Fresh Malai Paneer", Category = "Dairy", Unit = "kg", CurrentStock = 18.5m, MinimumStockAlert = 5.0m, CostPerUnit = 320, SupplierName = "Mother Dairy Pune" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Cooking Cream (Amul 1L)", Category = "Dairy", Unit = "litre", CurrentStock = 12.0m, MinimumStockAlert = 3.0m, CostPerUnit = 210, SupplierName = "Amul Distributor" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Table Butter (Amul 500g)", Category = "Dairy", Unit = "kg", CurrentStock = 15.0m, MinimumStockAlert = 4.0m, CostPerUnit = 275, SupplierName = "Amul Distributor" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Basmati Biryani Rice", Category = "Grains", Unit = "kg", CurrentStock = 45.0m, MinimumStockAlert = 15.0m, CostPerUnit = 110, SupplierName = "Kohinoor Traders" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Refined Maida Flour", Category = "Grains", Unit = "kg", CurrentStock = 30.0m, MinimumStockAlert = 10.0m, CostPerUnit = 42, SupplierName = "Mahalaxmi Mills" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Fresh Chicken (Boneless)", Category = "Poultry", Unit = "kg", CurrentStock = 14.0m, MinimumStockAlert = 6.0m, CostPerUnit = 260, SupplierName = "Venky's Farms" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Tomato Puree & Gravy Base", Category = "Produce", Unit = "kg", CurrentStock = 22.0m, MinimumStockAlert = 8.0m, CostPerUnit = 65, SupplierName = "Mandi Wholesale" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Refined Sunflower Oil", Category = "Oils", Unit = "litre", CurrentStock = 35.0m, MinimumStockAlert = 10.0m, CostPerUnit = 135, SupplierName = "Fortune Oil Depot" },
-                new() { TenantId = tenantId, OutletId = outletId, Name = "Thums Up Glass Bottles (300ml)", Category = "Beverages", Unit = "pcs", CurrentStock = 72.0m, MinimumStockAlert = 24.0m, CostPerUnit = 16, SupplierName = "Hindustan Coca-Cola" }
-            };
-
-            await _context.Inventory.InsertManyAsync(defaultStock);
-            items = defaultStock;
-        }
 
         return Ok(new { success = true, data = items });
     }
@@ -66,11 +45,11 @@ public class InventoryController : ControllerBase
     public async Task<IActionResult> LoadStock([FromBody] LoadStockRequest request)
     {
         var tenantId = _currentUser.TenantId;
-        var filter = Builders<InventoryItem>.Filter.Eq(i => i.Id, request.ItemId);
-        if (!string.IsNullOrEmpty(tenantId))
-        {
-            filter &= Builders<InventoryItem>.Filter.Eq(i => i.TenantId, tenantId);
-        }
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
+
+        var filter = Builders<InventoryItem>.Filter.Eq(i => i.Id, request.ItemId)
+            & Builders<InventoryItem>.Filter.Eq(i => i.TenantId, tenantId);
 
         var update = Builders<InventoryItem>.Update
             .Inc(i => i.CurrentStock, request.AddedStock)
@@ -98,6 +77,8 @@ public class InventoryController : ControllerBase
     public async Task<IActionResult> DeductInventory([FromBody] List<StockDeductionItem> deductions)
     {
         var tenantId = _currentUser.TenantId;
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
         if (deductions == null || deductions.Count == 0)
         {
             return BadRequest(new { success = false, message = "No deduction items provided." });
@@ -105,11 +86,8 @@ public class InventoryController : ControllerBase
 
         foreach (var item in deductions)
         {
-            var filter = Builders<InventoryItem>.Filter.Regex(i => i.Name, new MongoDB.Bson.BsonRegularExpression(item.ItemName, "i"));
-            if (!string.IsNullOrEmpty(tenantId))
-            {
-                filter &= Builders<InventoryItem>.Filter.Eq(i => i.TenantId, tenantId);
-            }
+            var filter = Builders<InventoryItem>.Filter.Regex(i => i.Name, new MongoDB.Bson.BsonRegularExpression(item.ItemName, "i"))
+                & Builders<InventoryItem>.Filter.Eq(i => i.TenantId, tenantId);
 
             var update = Builders<InventoryItem>.Update
                 .Inc(i => i.CurrentStock, -Math.Abs(item.Quantity))

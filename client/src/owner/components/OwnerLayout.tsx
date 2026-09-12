@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Grid3X3,
   Utensils,
   BarChart2,
   FileText,
@@ -15,8 +16,6 @@ import {
   LogOut,
   Menu,
   X,
-  ExternalLink,
-  Store,
 } from 'lucide-react';
 import { useOwnerAuthStore } from '../store/ownerAuthStore';
 
@@ -27,12 +26,13 @@ export const OwnerLayout: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/owner/login');
+    navigate('/login');
   };
 
   // Exactly matching the sidebar from Screenshot 2
   const navItems = [
     { label: 'Dashboard', path: '/owner/dashboard', icon: LayoutDashboard },
+    { label: 'Tables & Floor', path: '/owner/tables', icon: Grid3X3, badge: 'Floor' },
     { label: 'Menu', path: '/owner/menu', icon: Utensils },
     { label: 'Sales', path: '/owner/sales', icon: BarChart2 },
     { label: 'Reports', path: '/owner/reports', icon: FileText },
@@ -85,30 +85,6 @@ export const OwnerLayout: React.FC = () => {
 
         {/* Right Bar Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <a
-            href="/demo.html"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-lg transition"
-          >
-            <span>🌐</span>
-            <span>Interactive Demo & Flow</span>
-            <ExternalLink className="w-3 h-3 text-indigo-400" />
-          </a>
-
-          <a
-            href="/billing"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg transition"
-          >
-            <Store className="w-3.5 h-3.5 text-blue-600" />
-            <span>Launch POS Billing</span>
-            <ExternalLink className="w-3 h-3 text-blue-400" />
-          </a>
-
-          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
-
           {/* User Profile info */}
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">

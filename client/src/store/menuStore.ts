@@ -105,8 +105,6 @@ const DEFAULT_ITEMS: MenuItemData[] = [
   { id: 'm49', name: 'Gulab Jamun Sundae Bowl', categoryId: 'cat-desserts', price: 130, isVeg: true, isAvailable: true, code: 'GJS', description: 'Warm gulab jamuns served with rich vanilla bean ice cream' },
 ];
 
-const STORAGE_KEY_CATEGORIES = 'quantrobill_menu_categories_v4';
-const STORAGE_KEY_ITEMS = 'quantrobill_menu_items_v4';
 
 interface MenuState {
   categories: MenuCategory[];
@@ -126,22 +124,45 @@ interface MenuState {
   resetToDefaults: () => void;
 }
 
-const isLegacyCategory = (cat: any) => {
-  if (!cat || !cat.name) return false;
-  const name = cat.name.trim();
-  return name.startsWith('CT-') || name.startsWith('CT ') || name.includes('ZOMO');
+const getTenantId = (): string => {
+  try {
+    return localStorage.getItem('quantrobill_tenant_id') || '';
+  } catch {
+    return '';
+  }
+};
+
+const getCategoryStorageKey = (tenantId?: string): string => {
+  const tid = tenantId || getTenantId();
+  return tid ? `pbk_pos_categories_${tid}` : 'pbk_pos_categories_demo';
+};
+
+const getItemStorageKey = (tenantId?: string): string => {
+  const tid = tenantId || getTenantId();
+  return tid ? `pbk_pos_items_${tid}` : 'pbk_pos_items_demo';
 };
 
 const loadInitialCategories = (): MenuCategory[] => {
+  const tenantId = getTenantId();
+  if (tenantId) {
+    try {
+      const saved = localStorage.getItem(getCategoryStorageKey(tenantId));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to load categories from localStorage', e);
+    }
+    // When tenant context is active, start empty until fetched from backend (do NOT use demo categories)
+    return [];
+  }
+
   try {
-    const saved = localStorage.getItem(STORAGE_KEY_CATEGORIES) || localStorage.getItem('petbharke_menu_categories_v4');
+    const saved = localStorage.getItem('pbk_pos_categories_demo');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length >= 5) {
-        if (!parsed.some(isLegacyCategory)) {
-          return parsed;
-        }
-      }
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.error('Failed to load categories from localStorage', e);
@@ -150,13 +171,26 @@ const loadInitialCategories = (): MenuCategory[] => {
 };
 
 const loadInitialItems = (): MenuItemData[] => {
+  const tenantId = getTenantId();
+  if (tenantId) {
+    try {
+      const saved = localStorage.getItem(getItemStorageKey(tenantId));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to load items from localStorage', e);
+    }
+    // When tenant context is active, start empty until fetched from backend (do NOT use demo items)
+    return [];
+  }
+
   try {
-    const saved = localStorage.getItem(STORAGE_KEY_ITEMS) || localStorage.getItem('petbharke_menu_items_v4');
+    const saved = localStorage.getItem('pbk_pos_items_demo');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length >= 20) {
-        return parsed;
-      }
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.error('Failed to load items from localStorage', e);
@@ -171,16 +205,28 @@ export const useMenuStore = create<MenuState>((set, get) => ({
 
   fetchFromBackend: async () => {
     set({ isLoading: true });
+    const tenantId = getTenantId();
+
+    // Clean up legacy un-scoped cache if tenant is active
+    if (tenantId) {
+      try {
+        localStorage.removeItem('pbk_pos_items');
+        localStorage.removeItem('pbk_pos_categories');
+        localStorage.removeItem('petbharke_menu_items_v4');
+        localStorage.removeItem('petbharke_menu_categories_v4');
+      } catch {}
+    }
+
     try {
       const [catRes, itemRes] = await Promise.all([
         apiClient.get('/menu/categories').catch(() => null),
         apiClient.get('/menu/items').catch(() => null),
       ]);
 
-      let backendCats: MenuCategory[] | null = null;
+      let backendCats: MenuCategory[] = [];
 
-      if (catRes?.data?.data && Array.isArray(catRes.data.data) && catRes.data.data.length > 0) {
-        const mappedCats: MenuCategory[] = catRes.data.data.map((c: any, index: number) => ({
+      if (catRes?.data?.data && Array.isArray(catRes.data.data)) {
+        backendCats = catRes.data.data.map((c: any, index: number) => ({
           id: c.id,
           name: c.name,
           icon: c.iconUrl || '🍽️',
@@ -188,30 +234,26 @@ export const useMenuStore = create<MenuState>((set, get) => ({
           displayOrder: c.displayOrder || index + 1,
         }));
 
-        // Ignore if backend has legacy CT- placeholder categories
-        const hasLegacy = mappedCats.some(isLegacyCategory);
-        if (!hasLegacy && mappedCats.length >= 5) {
-          backendCats = mappedCats;
-          set({ categories: mappedCats });
-          localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(mappedCats));
+        set({ categories: backendCats });
+        if (tenantId) {
+          localStorage.setItem(getCategoryStorageKey(tenantId), JSON.stringify(backendCats));
         }
       }
 
-      if (itemRes?.data?.data && Array.isArray(itemRes.data.data) && itemRes.data.data.length > 10) {
-        const activeCats = backendCats || get().categories;
+      if (itemRes?.data?.data && Array.isArray(itemRes.data.data)) {
+        const activeCats = backendCats.length > 0 ? backendCats : get().categories;
         const backendItems: MenuItemData[] = itemRes.data.data.map((i: any) => {
-          // If categoryId doesn't exist in active categories, find matching by name or default to first
           let validCatId = i.categoryId;
           const catExists = activeCats.some((c) => c.id === validCatId);
-          if (!catExists) {
-            validCatId = activeCats[0]?.id || 'cat-shakes';
+          if (!catExists && activeCats.length > 0) {
+            validCatId = activeCats[0]?.id;
           }
 
           return {
             id: i.id,
             name: i.name,
-            categoryId: validCatId,
-            price: i.basePrice || i.price || 100,
+            categoryId: validCatId || 'cat-general',
+            price: i.basePrice || i.price || 0,
             isVeg: i.isVeg !== false,
             isAvailable: i.isAvailable !== false,
             code: i.shortCode || i.code || 'ITEM',
@@ -220,11 +262,13 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         });
 
         set({ items: backendItems });
-        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(backendItems));
+        if (tenantId) {
+          localStorage.setItem(getItemStorageKey(tenantId), JSON.stringify(backendItems));
+        }
 
         // Sync to Desktop Electron offline disk cache if running in desktop POS
         if (typeof window !== 'undefined' && (window as any).desktopApi?.saveOfflineCache) {
-          (window as any).desktopApi.saveOfflineCache('menu_catalog', {
+          (window as any).desktopApi.saveOfflineCache(`menu_catalog_${tenantId || 'default'}`, {
             categories: activeCats,
             items: backendItems,
             cachedAt: new Date().toISOString(),
@@ -237,7 +281,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       // Attempt offline recovery from Desktop Electron offline disk cache
       if (typeof window !== 'undefined' && (window as any).desktopApi?.getOfflineCache) {
         try {
-          const cached = await (window as any).desktopApi.getOfflineCache('menu_catalog');
+          const cached = await (window as any).desktopApi.getOfflineCache(`menu_catalog_${tenantId || 'default'}`);
           if (cached?.success && cached.data?.items?.length) {
             console.log('[Desktop POS] Restored menu catalog from offline disk cache');
             set({
@@ -264,7 +308,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     };
     const updated = [...get().categories, newCat];
     set({ categories: updated });
-    localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(updated));
+    localStorage.setItem(getCategoryStorageKey(), JSON.stringify(updated));
     return newCat;
   },
 
@@ -273,15 +317,15 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       c.id === id ? { ...c, name: name.trim(), ...(icon ? { icon } : {}), ...(description !== undefined ? { description } : {}) } : c
     );
     set({ categories: updated });
-    localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(updated));
+    localStorage.setItem(getCategoryStorageKey(), JSON.stringify(updated));
   },
 
   deleteCategory: (id: string) => {
     const updatedCategories = get().categories.filter((c) => c.id !== id);
     const updatedItems = get().items.filter((i) => i.categoryId !== id);
     set({ categories: updatedCategories, items: updatedItems });
-    localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(updatedCategories));
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updatedItems));
+    localStorage.setItem(getCategoryStorageKey(), JSON.stringify(updatedCategories));
+    localStorage.setItem(getItemStorageKey(), JSON.stringify(updatedItems));
   },
 
   addItem: (itemData) => {
@@ -291,7 +335,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     };
     const updated = [...get().items, newItem];
     set({ items: updated });
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
+    localStorage.setItem(getItemStorageKey(), JSON.stringify(updated));
     return newItem;
   },
 
@@ -300,13 +344,13 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       i.id === id ? { ...i, ...updatedFields } : i
     );
     set({ items: updated });
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
+    localStorage.setItem(getItemStorageKey(), JSON.stringify(updated));
   },
 
   deleteItem: (id: string) => {
     const updated = get().items.filter((i) => i.id !== id);
     set({ items: updated });
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
+    localStorage.setItem(getItemStorageKey(), JSON.stringify(updated));
   },
 
   toggleItemAvailability: (id: string) => {
@@ -314,7 +358,7 @@ export const useMenuStore = create<MenuState>((set, get) => ({
       i.id === id ? { ...i, isAvailable: !i.isAvailable } : i
     );
     set({ items: updated });
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
+    localStorage.setItem(getItemStorageKey(), JSON.stringify(updated));
 
     // Try background API update if available
     apiClient.patch(`/menu/items/${id}/toggle-availability`).catch(() => {
@@ -323,8 +367,15 @@ export const useMenuStore = create<MenuState>((set, get) => ({
   },
 
   resetToDefaults: () => {
-    set({ categories: DEFAULT_CATEGORIES, items: DEFAULT_ITEMS });
-    localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES));
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(DEFAULT_ITEMS));
+    const tenantId = getTenantId();
+    if (!tenantId) {
+      set({ categories: DEFAULT_CATEGORIES, items: DEFAULT_ITEMS });
+      localStorage.setItem('pbk_pos_categories_demo', JSON.stringify(DEFAULT_CATEGORIES));
+      localStorage.setItem('pbk_pos_items_demo', JSON.stringify(DEFAULT_ITEMS));
+    } else {
+      set({ categories: [], items: [] });
+      localStorage.removeItem(getCategoryStorageKey(tenantId));
+      localStorage.removeItem(getItemStorageKey(tenantId));
+    }
   },
 }));

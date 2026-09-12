@@ -494,8 +494,8 @@ export const MenuManager: React.FC = () => {
                     onChange={(e) => setNewItemIsVeg(e.target.value === 'veg')}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
-                    <option value="veg">Veg (हिरवा)</option>
-                    <option value="non-veg">Non-Veg (लाल)</option>
+                    <option value="veg">Veg</option>
+                    <option value="non-veg">Non-Veg</option>
                   </select>
                 </div>
               </div>
