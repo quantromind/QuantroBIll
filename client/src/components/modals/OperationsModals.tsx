@@ -565,7 +565,7 @@ export const LedDisplayModal: React.FC<{ isOpen: boolean; onClose: () => void }>
     <ModalWrapper isOpen={isOpen} onClose={onClose} title="Live LED Token Display Screen" icon={<Presentation className="w-4 h-4" />} maxWidth="max-w-2xl">
       <div className="bg-slate-50 text-slate-800 p-6 rounded-2xl space-y-6 select-none text-center border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <span className="text-xs font-bold text-rose-600 tracking-wider">PETBHARKE KITCHEN CALLOUT</span>
+          <span className="text-xs font-bold text-rose-600 tracking-wider">QUANTROBILL KITCHEN CALLOUT</span>
           <span className="text-xs font-mono text-slate-500 font-semibold">THE MAGIC BOTTLE WAKAD</span>
         </div>
 
@@ -781,7 +781,7 @@ export const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
             <div>
               <h5 className="font-bold text-slate-900">Email Support</h5>
-              <p className="text-slate-500 text-[11px]">support@petbharke.com</p>
+              <p className="text-slate-500 text-[11px]">support@quantrobill.com</p>
             </div>
             <span className="text-[11px] font-bold text-slate-600">Avg 10 min reply</span>
           </div>

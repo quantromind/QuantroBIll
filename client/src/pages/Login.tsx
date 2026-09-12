@@ -136,7 +136,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     setErrorMessage('');
 
-    if (userIdent.includes('admin@petbharke.com') || userIdent.includes('superadmin')) {
+    if (userIdent.includes('admin@quantrobill.com') || userIdent.includes('admin@petbharke.com') || userIdent.includes('superadmin')) {
       navigate('/superadmin/dashboard');
       setLoading(false);
       return;
@@ -360,7 +360,7 @@ export const Login: React.FC = () => {
         </div>
 
         <div className="text-center mt-4 text-xs text-slate-500 font-medium">
-          Connected to MongoDB Atlas (<span className="text-emerald-600 font-mono font-bold">petbharke</span>)
+          Connected to MongoDB Atlas (<span className="text-emerald-600 font-mono font-bold">quantrobill</span>)
         </div>
       </div>
     </div>

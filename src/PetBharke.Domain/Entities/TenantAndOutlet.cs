@@ -5,6 +5,7 @@ using PetBharke.Domain.Enums;
 
 namespace PetBharke.Domain.Entities;
 
+[BsonIgnoreExtraElements]
 public class Tenant
 {
     [BsonId]
@@ -14,11 +15,23 @@ public class Tenant
     [BsonElement("businessName")]
     public string BusinessName { get; set; } = string.Empty;
 
+    [BsonElement("legalName")]
+    public string LegalName { get; set; } = string.Empty;
+
     [BsonElement("ownerEmail")]
     public string OwnerEmail { get; set; } = string.Empty;
 
     [BsonElement("ownerPhone")]
     public string OwnerPhone { get; set; } = string.Empty;
+
+    [BsonElement("city")]
+    public string City { get; set; } = string.Empty;
+
+    [BsonElement("state")]
+    public string State { get; set; } = string.Empty;
+
+    [BsonElement("gstin")]
+    public string GSTIN { get; set; } = string.Empty;
 
     [BsonElement("subscriptionPlan")]
     public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.Standard;
@@ -34,6 +47,9 @@ public class Tenant
 
     [BsonElement("isActive")]
     public bool IsActive { get; set; } = true;
+
+    [BsonElement("features")]
+    public Dictionary<string, bool> Features { get; set; } = new();
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

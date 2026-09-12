@@ -1,18 +1,23 @@
-THE MAGIC BOTTLE
-Wakad, Pune, Maharashtra
-Ph: 07969 223344
+THE MAGIC BOTTLE - MILKSHAKES AND SNACKS WAKAD
+Shop 4, Datta Mandir Road, Wakad, Pune, Maharashtra 411057
+Ph: 07969223344
+GSTIN: 27AABCU9603R1ZM
 --------------------------------
-Bill No: BILL-TEST-101 | KOT: KOT-104
-Date: 12/09/2026 12:45
+Bill No: BILL-74  | KOT: KOT-104
+Date: 12/9/2026 11:51 am
 Type: DineIn | Table: T-1
+Biller: biller
 --------------------------------
 ITEM                 QTY  RATE   AMT
-Alphonso Mango Shake   2   180    360
-Paneer Tikka Grill     1   160    160
 --------------------------------
-Sub Total:            Rs.520.00
-CGST (2.5%):          Rs.13.00
-SGST (2.5%):          Rs.13.00
-GRAND TOTAL:          Rs.546.00
-Payment: Cash (PAID)
+Butter Naan          3    40    120
+Fresh Lime Soda      1    60     60
+Tandoori Paneer Ka   1   160    160
+Mexican Cheesy Cor   5   150    750
+--------------------------------
+Sub Total:            ₹1090.00
+CGST (2.5%):          ₹27.25
+SGST (2.5%):          ₹27.25
+GRAND TOTAL:          ₹1145.00
+Payment: NotPaid (PAID)
 --------------------------------

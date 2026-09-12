@@ -74,7 +74,7 @@ function registerIpcHandlers() {
         fs.mkdirSync(spoolDir, { recursive: true });
       }
 
-      const receiptContent = data.content || 'PETBHARKE RESTAURANT POS\n--------------------------------\nDemo Receipt\n';
+      const receiptContent = data.content || 'QUANTROBILL RESTAURANT POS\n--------------------------------\nDemo Receipt\n';
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = path.join(spoolDir, `receipt_${timestamp}.txt`);
 
@@ -88,7 +88,7 @@ function registerIpcHandlers() {
       const cutPaper = `${GS}V\x00`; // Paper Cut command
       const drawerKick = `${ESC}p\x00\x19\xFA`; // RJ11 Drawer kick pulse
 
-      const rawEscPosBuffer = `${initPrinter}${drawerKick}${alignCenter}${textBoldOn}*** PETBHARKE POS ***${textBoldOff}\n${receiptContent}\n${alignCenter}Thank you! Visit Again\n\n\n${cutPaper}`;
+      const rawEscPosBuffer = `${initPrinter}${drawerKick}${alignCenter}${textBoldOn}*** QUANTROBILL POS ***${textBoldOff}\n${receiptContent}\n${alignCenter}Thank you! Visit Again\n\n\n${cutPaper}`;
 
       fs.writeFileSync(filename, rawEscPosBuffer, 'utf8');
       fs.writeFileSync(path.join(spoolDir, 'last_receipt.txt'), receiptContent, 'utf8');
@@ -236,7 +236,7 @@ async function runAutomatedVerification() {
   }
 
   const windowTitle = await mainWindow.getTitle();
-  console.log('   [PASS] Electron Window loaded successfully! Title:', windowTitle || 'PetBharke POS');
+  console.log('   [PASS] Electron Window loaded successfully! Title:', windowTitle || 'QuantroBill POS');
 
   console.log('=== [DESKTOP ELECTRON AUTOMATED TEST RUN COMPLETE - ALL CHECKS PASSED] ===');
   setTimeout(() => {
@@ -253,7 +253,7 @@ async function createWindow() {
     height: 768,
     minWidth: 1024,
     minHeight: 680,
-    title: 'PetBharke POS Desktop Station',
+    title: 'QuantroBill POS Desktop Station',
     autoHideMenuBar: true,
     backgroundColor: '#f8fafc',
     webPreferences: {

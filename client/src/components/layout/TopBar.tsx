@@ -95,7 +95,7 @@ export const TopBar: React.FC = () => {
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-1.5 font-medium text-slate-700">
             <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <span className="font-semibold text-slate-800">{tenant?.businessName || 'PetBharke Restaurant POS'}</span>
+            <span className="font-semibold text-slate-800">{tenant?.businessName || 'QuantroBill Restaurant POS'}</span>
             <span className="text-slate-400">|</span>
             <span className="text-slate-600">{activeOutlet?.name || 'Main Wakad Branch'}</span>
           </div>
@@ -254,9 +254,9 @@ export const TopBar: React.FC = () => {
             onClick={() => navigate('/billing')}
             className="flex items-center space-x-1.5 cursor-pointer select-none bg-blue-600 text-white px-2.5 py-1.5 rounded-lg shadow-xs hover:bg-blue-700 transition mr-2"
           >
-            <div className="w-5 h-5 rounded bg-white text-blue-600 flex items-center justify-center text-xs font-black">P</div>
+            <div className="w-5 h-5 rounded bg-white text-blue-600 flex items-center justify-center text-xs font-black">Q</div>
             <span className="font-bold tracking-tight text-xs sm:text-sm">
-              PetBharke <span className="text-sky-200 font-semibold text-[11px]">POS</span>
+              QuantroBill <span className="text-sky-200 font-semibold text-[11px]">POS</span>
             </span>
           </div>
 

@@ -19,7 +19,7 @@ public static class DbSeeder
             superAdmin = new User
             {
                 Username = "superadmin",
-                Email = "admin@petbharke.com",
+                Email = "admin@quantrobill.com",
                 FullName = "Platform Super Admin",
                 Phone = "9999999999",
                 PasswordHash = hasher.HashPassword("Admin@123"),
@@ -29,6 +29,13 @@ public static class DbSeeder
                 CreatedAt = DateTime.UtcNow
             };
             await context.Users.InsertOneAsync(superAdmin);
+        }
+        else if (superAdmin.Email == "admin@petbharke.com")
+        {
+            await context.Users.UpdateOneAsync(
+                u => u.Id == superAdmin.Id,
+                Builders<User>.Update.Set(u => u.Email, "admin@quantrobill.com")
+            );
         }
 
         // 2. Check if Sample Tenant exists

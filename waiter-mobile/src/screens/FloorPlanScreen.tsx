@@ -100,7 +100,7 @@ export const FloorPlanScreen: React.FC<FloorPlanScreenProps> = ({
       <View style={styles.topBar}>
         <View>
           <Text style={styles.staffTitle}>{staffName}</Text>
-          <Text style={styles.branchSub}>PetBharke Restaurant • Floor Staff</Text>
+          <Text style={styles.branchSub}>QuantroBill Restaurant • Floor Staff</Text>
         </View>
 
         <TouchableOpacity onPress={onLogout} style={styles.logoutBtn}>

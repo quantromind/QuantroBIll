@@ -21,7 +21,7 @@
   |---|---|---|---|
   | **Level 1: SuperAdmin** | `quantrobill_superadmin_token` | `useSuperAdminAuthStore` | `<SuperAdminPrivateRoute>` |
   | **Level 2: Restaurant Owner** | `quantrobill_owner_token` | `useOwnerAuthStore` | `<OwnerPrivateRoute>` |
-  | **Level 3: Staff POS & Waiter** | `petbharke_access_token` | `useAuthStore` | `<PrivateRoute>` |
+  | **Level 3: Staff POS & Waiter** | `quantrobill_access_token` | `useAuthStore` | `<PrivateRoute>` |
 - Logging into the Owner Portal never invalidates an active Cashier session, and SuperAdmin tokens are never sent to tenant-level POS endpoints.
 
 ---
@@ -99,6 +99,6 @@ server {
 
 - [x] Zero hardcoded `localhost:5000` URLs in production bundles.
 - [x] TypeScript compilation passes with strict mode (`tsc -b && vite build` exit code 0).
-- [x] Session tokens partitioned across `quantrobill_superadmin_token`, `quantrobill_owner_token`, and `petbharke_access_token`.
+- [x] Session tokens partitioned across `quantrobill_superadmin_token`, `quantrobill_owner_token`, and `quantrobill_access_token`.
 - [x] Offline fallback: Waiter app & POS billing queues can operate locally and sync when connection restores.
 - [x] Black & White executive design: Lightweight, high-contrast, zero slow render cycles.

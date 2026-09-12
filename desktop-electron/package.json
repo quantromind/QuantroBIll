@@ -1,7 +1,7 @@
 {
-  "name": "petbharke-desktop",
+  "name": "quantrobill-desktop",
   "version": "1.0.0",
-  "description": "PetBharke Next-Gen Desktop POS with Thermal Printing and Offline Capability",
+  "description": "QuantroBill Next-Gen Desktop POS with Thermal Printing and Offline Capability",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -15,15 +15,15 @@
     "desktop",
     "thermal-printer"
   ],
-  "author": "PetBharke Team",
+  "author": "QuantroBill Team",
   "license": "MIT",
   "devDependencies": {
     "electron": "^31.3.1",
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.petbharke.desktoppos",
-    "productName": "PetBharke Desktop POS",
+    "appId": "com.quantrobill.desktoppos",
+    "productName": "QuantroBill Desktop POS",
     "directories": {
       "output": "dist-electron"
     },

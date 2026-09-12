@@ -590,7 +590,7 @@ export const ReceiptSettings: React.FC = () => {
             )}
 
             <ToggleRow
-              label="Powered By PetBharke"
+              label="Powered By QuantroBill"
               enabled={store.showPoweredBy}
               onToggle={() => store.toggleField('showPoweredBy')}
             />
@@ -1185,7 +1185,7 @@ export const ReceiptSettings: React.FC = () => {
                       </p>
                     )}
                     {store.showPoweredBy && (
-                      <p className="text-[8px] text-slate-400">Powered by PetBharke POS</p>
+                      <p className="text-[8px] text-slate-400">Powered by QuantroBill POS</p>
                     )}
                   </div>
                 </div>
@@ -1605,7 +1605,7 @@ export const ReceiptSettings: React.FC = () => {
                       </p>
                     )}
                     {store.showPoweredBy && (
-                      <p className="text-[8px] text-slate-400">Powered by PetBharke POS</p>
+                      <p className="text-[8px] text-slate-400">Powered by QuantroBill POS</p>
                     )}
                   </div>
                 </div>
@@ -1808,7 +1808,7 @@ export const ReceiptSettings: React.FC = () => {
             )}
 
             <ToggleRow
-              label="Powered By PetBharke"
+              label="Powered By QuantroBill"
               enabled={store.kotShowPoweredBy}
               onToggle={() => store.toggleField('kotShowPoweredBy')}
             />
@@ -2046,7 +2046,7 @@ export const ReceiptSettings: React.FC = () => {
                       </div>
                     )}
                     {store.kotShowPoweredBy && (
-                      <p className="text-[8px] text-slate-400 text-center">Powered by PetBharke POS</p>
+                      <p className="text-[8px] text-slate-400 text-center">Powered by QuantroBill POS</p>
                     )}
                   </div>
                 </div>
@@ -2267,7 +2267,7 @@ export const ReceiptSettings: React.FC = () => {
                     )}
 
                     {store.kotShowPoweredBy && (
-                      <p className="text-[8px] text-slate-400 text-center">Powered by PetBharke POS</p>
+                      <p className="text-[8px] text-slate-400 text-center">Powered by QuantroBill POS</p>
                     )}
                   </div>
                 </div>
@@ -2393,7 +2393,7 @@ export const ReceiptSettings: React.FC = () => {
             )}
 
             <ToggleRow
-              label="Powered By PetBharke"
+              label="Powered By QuantroBill"
               enabled={store.cancelKotShowPoweredBy}
               onToggle={() => store.toggleField('cancelKotShowPoweredBy')}
             />
@@ -2522,7 +2522,7 @@ export const ReceiptSettings: React.FC = () => {
                     <p className="text-[9px] font-bold text-rose-600">{store.cancelKotFooterText}</p>
                   )}
                   {store.cancelKotShowPoweredBy && (
-                    <p className="text-[8px] text-slate-400">Powered by PetBharke POSS</p>
+                    <p className="text-[8px] text-slate-400">Powered by QuantroBill POS</p>
                   )}
                 </div>
               </div>

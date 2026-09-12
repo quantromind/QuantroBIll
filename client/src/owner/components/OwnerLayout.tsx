@@ -163,7 +163,7 @@ export const OwnerLayout: React.FC = () => {
 
           {/* Sidebar Footer */}
           <div className="p-3 border-t border-slate-200 bg-slate-50/80 text-center">
-            <p className="text-[11px] font-bold text-slate-800">PetBharke POS SaaS</p>
+            <p className="text-[11px] font-bold text-slate-800">QuantroBill POS SaaS</p>
             <p className="text-[10px] text-blue-600 font-medium">Executive Tier</p>
           </div>
         </aside>

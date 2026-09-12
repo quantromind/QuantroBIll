@@ -14,11 +14,13 @@ public class TenantsController : ControllerBase
 {
     private readonly IMongoDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public TenantsController(IMongoDbContext context, ICurrentUserService currentUserService)
+    public TenantsController(IMongoDbContext context, ICurrentUserService currentUserService, IPasswordHasher passwordHasher)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _passwordHasher = passwordHasher;
     }
 
     [HttpGet]
@@ -26,7 +28,42 @@ public class TenantsController : ControllerBase
     public async Task<IActionResult> GetAllTenants()
     {
         var tenants = await _context.Tenants.Find(_ => true).ToListAsync();
-        return Ok(new { success = true, data = tenants });
+        var allOutlets = await _context.Outlets.Find(o => o.IsActive).ToListAsync();
+
+        var result = tenants.Select(t => new
+        {
+            t.Id,
+            t.BusinessName,
+            t.LegalName,
+            t.OwnerEmail,
+            t.OwnerPhone,
+            t.City,
+            t.State,
+            t.GSTIN,
+            t.SubscriptionPlan,
+            t.BusinessType,
+            t.SubscriptionExpiresAt,
+            t.MaxOutlets,
+            t.IsActive,
+            t.Features,
+            t.CreatedAt,
+            t.UpdatedAt,
+            Outlets = allOutlets.Where(o => o.TenantId == t.Id).Select(o => new
+            {
+                o.Id,
+                o.Name,
+                o.Code,
+                o.City,
+                o.Address,
+                o.Phone,
+                o.GSTIN,
+                o.IsOpen,
+                o.IsActive,
+                o.CreatedAt
+            }).ToList()
+        });
+
+        return Ok(new { success = true, data = result });
     }
 
     [HttpGet("{id}")]
@@ -63,13 +100,25 @@ public class TenantsController : ControllerBase
         var tenant = new Tenant
         {
             BusinessName = request.BusinessName,
-            OwnerEmail = request.OwnerEmail,
+            LegalName = string.IsNullOrWhiteSpace(request.LegalName) ? request.BusinessName : request.LegalName,
+            OwnerEmail = request.OwnerEmail.ToLower(),
             OwnerPhone = request.OwnerPhone,
+            City = request.City ?? "Pune",
+            State = request.State ?? "Maharashtra",
+            GSTIN = request.GSTIN ?? string.Empty,
             BusinessType = request.BusinessType,
             SubscriptionPlan = request.SubscriptionPlan,
             SubscriptionExpiresAt = DateTime.UtcNow.AddMonths(request.SubscriptionMonths > 0 ? request.SubscriptionMonths : 12),
-            MaxOutlets = request.MaxOutlets > 0 ? request.MaxOutlets : 5,
+            MaxOutlets = request.MaxOutlets > 0 ? request.MaxOutlets : 3,
             IsActive = true,
+            Features = request.Features ?? new Dictionary<string, bool>
+            {
+                { "enableKds", true },
+                { "enableWaiterApp", true },
+                { "enableAggregators", true },
+                { "enableRecipeInventory", true },
+                { "enableKhataBook", false }
+            },
             CreatedAt = DateTime.UtcNow
         };
 
@@ -78,7 +127,7 @@ public class TenantsController : ControllerBase
         var initialOutlet = new Outlet
         {
             TenantId = tenant.Id,
-            Name = $"{request.BusinessName} (Main Branch)",
+            Name = string.IsNullOrWhiteSpace(request.InitialOutletName) ? $"{request.BusinessName} (Main Branch)" : request.InitialOutletName,
             BusinessType = request.BusinessType,
             Code = $"OUT-{new Random().Next(100000, 999999)}",
             Address = request.Address ?? "Main Market",
@@ -91,7 +140,37 @@ public class TenantsController : ControllerBase
         };
         await _context.Outlets.InsertOneAsync(initialOutlet);
 
-        return Ok(new { success = true, data = tenant, outlet = initialOutlet });
+        // Check or create owner user
+        var existingUser = await _context.Users.Find(u => u.Email == request.OwnerEmail.ToLower()).FirstOrDefaultAsync();
+        User? ownerUser = null;
+        if (existingUser == null)
+        {
+            var rawPassword = string.IsNullOrWhiteSpace(request.InitialPassword) ? "Password@123" : request.InitialPassword;
+            ownerUser = new User
+            {
+                TenantId = tenant.Id,
+                OutletId = initialOutlet.Id,
+                Username = request.OwnerEmail.Split('@')[0],
+                Email = request.OwnerEmail.ToLower(),
+                FullName = string.IsNullOrWhiteSpace(request.OwnerName) ? request.BusinessName + " Owner" : request.OwnerName,
+                Phone = request.OwnerPhone,
+                PasswordHash = _passwordHasher.HashPassword(rawPassword),
+                Role = UserRole.Admin,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.Users.InsertOneAsync(ownerUser);
+        }
+
+        return Ok(new
+        {
+            success = true,
+            data = tenant,
+            outlet = initialOutlet,
+            userCreated = ownerUser != null,
+            ownerEmail = request.OwnerEmail,
+            message = "Restaurant tenant and initial outlet branch created successfully."
+        });
     }
 
     [HttpPatch("{id}/status")]
@@ -102,22 +181,110 @@ public class TenantsController : ControllerBase
             t => t.Id == id,
             Builders<Tenant>.Update.Set(t => t.IsActive, request.IsActive).Set(t => t.UpdatedAt, DateTime.UtcNow)
         );
-        if (result.MatchedCount == 0) return NotFound();
-        return Ok(new { success = true, message = "Tenant status updated." });
+        if (result.MatchedCount == 0) return NotFound(new { success = false, message = "Tenant not found." });
+        return Ok(new { success = true, message = "Tenant status updated successfully." });
+    }
+
+    [HttpPatch("{id}/plan")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> UpdateTenantPlan(string id, [FromBody] UpdatePlanDto request)
+    {
+        var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
+        if (tenant == null) return NotFound(new { success = false, message = "Tenant not found." });
+
+        var update = Builders<Tenant>.Update
+            .Set(t => t.SubscriptionPlan, request.SubscriptionPlan)
+            .Set(t => t.MaxOutlets, request.MaxOutlets > 0 ? request.MaxOutlets : tenant.MaxOutlets)
+            .Set(t => t.UpdatedAt, DateTime.UtcNow);
+
+        if (request.ExtendMonths > 0)
+        {
+            var baseDate = tenant.SubscriptionExpiresAt ?? DateTime.UtcNow;
+            if (baseDate < DateTime.UtcNow) baseDate = DateTime.UtcNow;
+            update = update.Set(t => t.SubscriptionExpiresAt, baseDate.AddMonths(request.ExtendMonths));
+        }
+
+        await _context.Tenants.UpdateOneAsync(t => t.Id == id, update);
+        return Ok(new { success = true, message = "Tenant plan updated successfully." });
+    }
+
+    [HttpPatch("{id}/features")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> UpdateTenantFeatures(string id, [FromBody] Dictionary<string, bool> features)
+    {
+        var result = await _context.Tenants.UpdateOneAsync(
+            t => t.Id == id,
+            Builders<Tenant>.Update.Set(t => t.Features, features).Set(t => t.UpdatedAt, DateTime.UtcNow)
+        );
+        if (result.MatchedCount == 0) return NotFound(new { success = false, message = "Tenant not found." });
+        return Ok(new { success = true, message = "Tenant feature toggles updated." });
+    }
+
+    [HttpPost("{id}/outlets")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> AddTenantOutlet(string id, [FromBody] CreateOutletDto request)
+    {
+        var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
+        if (tenant == null) return NotFound(new { success = false, message = "Tenant not found." });
+
+        var count = await _context.Outlets.CountDocumentsAsync(o => o.TenantId == id && o.IsActive);
+        if (count >= tenant.MaxOutlets)
+        {
+            return BadRequest(new { success = false, message = $"Outlet limit reached ({count}/{tenant.MaxOutlets}). Upgrade plan to add more outlets." });
+        }
+
+        var outlet = new Outlet
+        {
+            TenantId = id,
+            Name = request.Name,
+            BusinessType = tenant.BusinessType,
+            Code = $"OUT-{new Random().Next(100000, 999999)}",
+            Address = request.Address ?? string.Empty,
+            City = request.City ?? tenant.City,
+            Phone = request.Phone ?? tenant.OwnerPhone,
+            GSTIN = request.GSTIN ?? tenant.GSTIN,
+            IsOpen = true,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        await _context.Outlets.InsertOneAsync(outlet);
+        return Ok(new { success = true, data = outlet });
     }
 }
 
 public class CreateTenantDto
 {
     public string BusinessName { get; set; } = string.Empty;
+    public string? LegalName { get; set; }
+    public string? OwnerName { get; set; }
     public string OwnerEmail { get; set; } = string.Empty;
     public string OwnerPhone { get; set; } = string.Empty;
-    public BusinessType BusinessType { get; set; } = BusinessType.Restaurant;
-    public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.Enterprise;
+    public string? InitialPassword { get; set; }
+    public BusinessType BusinessType { get; set; } = BusinessType.Cafe;
+    public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.Standard;
     public int SubscriptionMonths { get; set; } = 12;
-    public int MaxOutlets { get; set; } = 5;
+    public int MaxOutlets { get; set; } = 3;
+    public string? InitialOutletName { get; set; }
     public string? Address { get; set; }
     public string? City { get; set; }
+    public string? State { get; set; }
+    public string? GSTIN { get; set; }
+    public Dictionary<string, bool>? Features { get; set; }
+}
+
+public class UpdatePlanDto
+{
+    public SubscriptionPlan SubscriptionPlan { get; set; } = SubscriptionPlan.Standard;
+    public int MaxOutlets { get; set; } = 3;
+    public int ExtendMonths { get; set; } = 0;
+}
+
+public class CreateOutletDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Address { get; set; }
+    public string? City { get; set; }
+    public string? Phone { get; set; }
     public string? GSTIN { get; set; }
 }
 

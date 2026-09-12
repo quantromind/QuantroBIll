@@ -105,8 +105,8 @@ const DEFAULT_ITEMS: MenuItemData[] = [
   { id: 'm49', name: 'Gulab Jamun Sundae Bowl', categoryId: 'cat-desserts', price: 130, isVeg: true, isAvailable: true, code: 'GJS', description: 'Warm gulab jamuns served with rich vanilla bean ice cream' },
 ];
 
-const STORAGE_KEY_CATEGORIES = 'petbharke_menu_categories_v4';
-const STORAGE_KEY_ITEMS = 'petbharke_menu_items_v4';
+const STORAGE_KEY_CATEGORIES = 'quantrobill_menu_categories_v4';
+const STORAGE_KEY_ITEMS = 'quantrobill_menu_items_v4';
 
 interface MenuState {
   categories: MenuCategory[];
@@ -134,7 +134,7 @@ const isLegacyCategory = (cat: any) => {
 
 const loadInitialCategories = (): MenuCategory[] => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY_CATEGORIES);
+    const saved = localStorage.getItem(STORAGE_KEY_CATEGORIES) || localStorage.getItem('petbharke_menu_categories_v4');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length >= 5) {
@@ -151,7 +151,7 @@ const loadInitialCategories = (): MenuCategory[] => {
 
 const loadInitialItems = (): MenuItemData[] => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY_ITEMS);
+    const saved = localStorage.getItem(STORAGE_KEY_ITEMS) || localStorage.getItem('petbharke_menu_items_v4');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length >= 20) {

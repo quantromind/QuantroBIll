@@ -14,15 +14,15 @@ const STORAGE_TOKEN_KEY = 'quantrobill_superadmin_token';
 const STORAGE_USER_KEY = 'quantrobill_superadmin_user';
 
 export const useSuperAdminAuthStore = create<SuperAdminAuthState>((set) => ({
-  token: localStorage.getItem(STORAGE_TOKEN_KEY),
-  user: localStorage.getItem(STORAGE_USER_KEY)
-    ? JSON.parse(localStorage.getItem(STORAGE_USER_KEY)!)
+  token: localStorage.getItem(STORAGE_TOKEN_KEY) || localStorage.getItem('petbharke_superadmin_token'),
+  user: (localStorage.getItem(STORAGE_USER_KEY) || localStorage.getItem('petbharke_superadmin_user'))
+    ? JSON.parse((localStorage.getItem(STORAGE_USER_KEY) || localStorage.getItem('petbharke_superadmin_user'))!)
     : null,
-  isAuthenticated: !!localStorage.getItem(STORAGE_TOKEN_KEY),
+  isAuthenticated: !!(localStorage.getItem(STORAGE_TOKEN_KEY) || localStorage.getItem('petbharke_superadmin_token')),
 
   initializeAuth: () => {
-    const token = localStorage.getItem(STORAGE_TOKEN_KEY);
-    const userStr = localStorage.getItem(STORAGE_USER_KEY);
+    const token = localStorage.getItem(STORAGE_TOKEN_KEY) || localStorage.getItem('petbharke_superadmin_token');
+    const userStr = localStorage.getItem(STORAGE_USER_KEY) || localStorage.getItem('petbharke_superadmin_user');
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr);

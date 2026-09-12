@@ -27,7 +27,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "PetBharke Restaurant SaaS API",
+        Title = "QuantroBill Restaurant SaaS API",
         Version = "v1",
         Description = "Enterprise multi-tenant POS & Restaurant Management platform (Petpooja functional equivalent)"
     });
@@ -158,11 +158,11 @@ using (var scope = app.Services.CreateScope())
         var dbContext = scope.ServiceProvider.GetRequiredService<IMongoDbContext>();
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         await DbSeeder.SeedDatabaseAsync(dbContext, hasher);
-        Console.WriteLine("--> [PetBharke] MongoDB Connected & Seeded Successfully.");
+        Console.WriteLine("--> [QuantroBill] MongoDB Connected & Seeded Successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"--> [PetBharke] Error during DB Seeding: {ex.Message}");
+        Console.WriteLine($"--> [QuantroBill] Error during DB Seeding: {ex.Message}");
     }
 }
 
@@ -174,7 +174,7 @@ if (app.Environment.IsDevelopment() || true)
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PetBharke API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "QuantroBill API v1");
         c.RoutePrefix = "swagger";
     });
 }

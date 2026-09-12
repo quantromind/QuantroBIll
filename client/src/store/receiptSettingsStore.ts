@@ -329,7 +329,7 @@ export const useReceiptSettingsStore = create<ReceiptSettingsStore>()(
       resetToDefaults: () => set(defaultSettings),
     }),
     {
-      name: 'petbharke-receipt-settings',
+      name: 'quantrobill-receipt-settings',
     }
   )
 );

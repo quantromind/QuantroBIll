@@ -45,23 +45,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   tenant: null,
   activeOutlet: null,
   availableOutlets: [],
-  accessToken: localStorage.getItem('petbharke_access_token'),
+  accessToken: localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token'),
   isAuthenticated: false,
   isLoading: true,
   drawerOpen: false,
 
   setAuthData: (data: AuthResponse) => {
-    localStorage.setItem('petbharke_access_token', data.accessToken);
-    localStorage.setItem('petbharke_refresh_token', data.refreshToken);
-    localStorage.setItem('petbharke_user', JSON.stringify(data.user));
+    localStorage.setItem('quantrobill_access_token', data.accessToken);
+    localStorage.setItem('quantrobill_refresh_token', data.refreshToken);
+    localStorage.setItem('quantrobill_user', JSON.stringify(data.user));
     if (data.tenant) {
-      localStorage.setItem('petbharke_tenant', JSON.stringify(data.tenant));
-      localStorage.setItem('petbharke_tenant_id', data.tenant.id);
+      localStorage.setItem('quantrobill_tenant', JSON.stringify(data.tenant));
+      localStorage.setItem('quantrobill_tenant_id', data.tenant.id);
     }
     if (data.activeOutlet) {
-      localStorage.setItem('petbharke_active_outlet', JSON.stringify(data.activeOutlet));
+      localStorage.setItem('quantrobill_active_outlet', JSON.stringify(data.activeOutlet));
     }
-    localStorage.setItem('petbharke_available_outlets', JSON.stringify(data.availableOutlets));
+    localStorage.setItem('quantrobill_available_outlets', JSON.stringify(data.availableOutlets));
 
     set({
       user: data.user,
@@ -88,7 +88,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         get().setAuthData(response.data.data);
       }
     } catch {
-      localStorage.setItem('petbharke_active_outlet', JSON.stringify(outlet));
+      localStorage.setItem('quantrobill_active_outlet', JSON.stringify(outlet));
       set({ activeOutlet: outlet });
       const tenant = get().tenant;
       if (tenant) {
@@ -125,9 +125,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         permissions: ['pos.bill', 'pos.kot', 'pos.view'],
         tenantId: 't_cafe_1',
       };
-      localStorage.setItem('petbharke_tenant', JSON.stringify(cafeTenant));
-      localStorage.setItem('petbharke_active_outlet', JSON.stringify(cafeOutlet));
-      localStorage.setItem('petbharke_user', JSON.stringify(cafeUser));
+      localStorage.setItem('quantrobill_tenant', JSON.stringify(cafeTenant));
+      localStorage.setItem('quantrobill_active_outlet', JSON.stringify(cafeOutlet));
+      localStorage.setItem('quantrobill_user', JSON.stringify(cafeUser));
       set({
         tenant: cafeTenant,
         activeOutlet: cafeOutlet,
@@ -161,9 +161,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         permissions: ['pos.bill', 'pos.kot', 'pos.view', 'tables.manage'],
         tenantId: 't_rest_2',
       };
-      localStorage.setItem('petbharke_tenant', JSON.stringify(restTenant));
-      localStorage.setItem('petbharke_active_outlet', JSON.stringify(restOutlet));
-      localStorage.setItem('petbharke_user', JSON.stringify(restUser));
+      localStorage.setItem('quantrobill_tenant', JSON.stringify(restTenant));
+      localStorage.setItem('quantrobill_active_outlet', JSON.stringify(restOutlet));
+      localStorage.setItem('quantrobill_user', JSON.stringify(restUser));
       set({
         tenant: restTenant,
         activeOutlet: restOutlet,
@@ -208,7 +208,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       permissions: updatedPermissions,
     };
 
-    localStorage.setItem('petbharke_user', JSON.stringify(updatedUser));
+    localStorage.setItem('quantrobill_user', JSON.stringify(updatedUser));
     set({ user: updatedUser });
   },
 
@@ -216,13 +216,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setDrawerOpen: (open: boolean) => set({ drawerOpen: open }),
 
   logout: () => {
-    localStorage.removeItem('petbharke_access_token');
-    localStorage.removeItem('petbharke_refresh_token');
-    localStorage.removeItem('petbharke_user');
-    localStorage.removeItem('petbharke_tenant');
-    localStorage.removeItem('petbharke_tenant_id');
-    localStorage.removeItem('petbharke_active_outlet');
-    localStorage.removeItem('petbharke_available_outlets');
+    ['quantrobill_', 'petbharke_'].forEach((prefix) => {
+      localStorage.removeItem(`${prefix}access_token`);
+      localStorage.removeItem(`${prefix}refresh_token`);
+      localStorage.removeItem(`${prefix}user`);
+      localStorage.removeItem(`${prefix}tenant`);
+      localStorage.removeItem(`${prefix}tenant_id`);
+      localStorage.removeItem(`${prefix}active_outlet`);
+      localStorage.removeItem(`${prefix}available_outlets`);
+    });
     signalRService.stopConnection();
 
     set({
@@ -239,11 +241,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initializeAuth: () => {
     try {
-      const token = localStorage.getItem('petbharke_access_token');
-      const userStr = localStorage.getItem('petbharke_user');
-      const tenantStr = localStorage.getItem('petbharke_tenant');
-      const outletStr = localStorage.getItem('petbharke_active_outlet');
-      const availableStr = localStorage.getItem('petbharke_available_outlets');
+      const token = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
+      const userStr = localStorage.getItem('quantrobill_user') || localStorage.getItem('petbharke_user');
+      const tenantStr = localStorage.getItem('quantrobill_tenant') || localStorage.getItem('petbharke_tenant');
+      const outletStr = localStorage.getItem('quantrobill_active_outlet') || localStorage.getItem('petbharke_active_outlet');
+      const availableStr = localStorage.getItem('quantrobill_available_outlets') || localStorage.getItem('petbharke_available_outlets');
 
       if (token && userStr) {
         const user = JSON.parse(userStr);

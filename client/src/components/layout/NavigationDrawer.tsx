@@ -66,7 +66,7 @@ export const NavigationDrawer: React.FC = () => {
         <div className="overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/60 bg-[#0f172a] sticky top-0 z-10">
-            <h2 className="text-base font-bold text-white tracking-wide">PetBharke POS Navigation</h2>
+            <h2 className="text-base font-bold text-white tracking-wide">QuantroBill POS Navigation</h2>
             <button
               onClick={() => setDrawerOpen(false)}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 touch-btn"

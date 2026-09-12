@@ -10,7 +10,7 @@ class SignalRService {
       return;
     }
 
-    const token = localStorage.getItem('petbharke_access_token');
+    const token = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
     const hubUrl = getBaseApiUrl().replace(/\/api$/, '') + '/hubs/order';
 
     this.hubConnection = new signalR.HubConnectionBuilder()
@@ -32,7 +32,7 @@ class SignalRService {
 
     try {
       await this.hubConnection.start();
-      console.log('--> [SignalR] Connected to PetBharke OrderHub');
+      console.log('--> [SignalR] Connected to QuantroBill OrderHub');
       await this.hubConnection.invoke('JoinOutletGroup', tenantId, outletId);
       await this.hubConnection.invoke('JoinKitchenGroup', tenantId, outletId);
     } catch (err) {

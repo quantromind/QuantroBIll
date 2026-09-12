@@ -422,7 +422,7 @@ export const useTableStore = create<TableStoreState>()(
       },
     }),
     {
-      name: 'petbharke_tables_store',
+      name: 'quantrobill_tables_store',
     }
   )
 );
