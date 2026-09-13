@@ -41,4 +41,7 @@ public class User : BaseEntity
 
     [BsonElement("refreshTokenExpiryTime")]
     public DateTime? RefreshTokenExpiryTime { get; set; }
+
+    [BsonElement("mustChangePassword")]
+    public bool MustChangePassword { get; set; } = false;
 }

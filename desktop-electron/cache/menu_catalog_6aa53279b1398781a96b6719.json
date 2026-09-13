@@ -1,0 +1,95 @@
+{
+  "categories": [
+    {
+      "id": "6aa588ba343806488b592b81",
+      "name": "Starters & Snacks",
+      "icon": "🍽️",
+      "description": "Crispy starters",
+      "displayOrder": 1
+    },
+    {
+      "id": "6aa588ba343806488b592b82",
+      "name": "Main Course & Thali",
+      "icon": "🍽️",
+      "description": "Special Malhar Thali & Gravies",
+      "displayOrder": 2
+    },
+    {
+      "id": "6aa588ba343806488b592b83",
+      "name": "Bhakri & Breads",
+      "icon": "🍽️",
+      "description": "Jowar & Bajra Bhakri",
+      "displayOrder": 3
+    },
+    {
+      "id": "6aa58a97f44f5f72c2132344",
+      "name": "Main Course",
+      "icon": "🍽️",
+      "description": "",
+      "displayOrder": 4
+    }
+  ],
+  "items": [
+    {
+      "id": "6aa588ba343806488b592b84",
+      "name": "Chicken Sukka Special",
+      "categoryId": "6aa588ba343806488b592b81",
+      "price": 260,
+      "isVeg": false,
+      "isAvailable": true,
+      "code": "ITEM",
+      "description": ""
+    },
+    {
+      "id": "6aa588ba343806488b592b85",
+      "name": "Mutton Sukka Masala",
+      "categoryId": "6aa588ba343806488b592b81",
+      "price": 340,
+      "isVeg": false,
+      "isAvailable": true,
+      "code": "ITEM",
+      "description": ""
+    },
+    {
+      "id": "6aa588ba343806488b592b86",
+      "name": "Special Malhar Chicken Thali",
+      "categoryId": "6aa588ba343806488b592b82",
+      "price": 320,
+      "isVeg": false,
+      "isAvailable": true,
+      "code": "ITEM",
+      "description": ""
+    },
+    {
+      "id": "6aa588ba343806488b592b87",
+      "name": "Special Malhar Mutton Thali",
+      "categoryId": "6aa588ba343806488b592b82",
+      "price": 420,
+      "isVeg": false,
+      "isAvailable": true,
+      "code": "ITEM",
+      "description": ""
+    },
+    {
+      "id": "6aa588ba343806488b592b88",
+      "name": "Jowar Bhakri (Fresh Hot)",
+      "categoryId": "6aa588ba343806488b592b83",
+      "price": 30,
+      "isVeg": true,
+      "isAvailable": true,
+      "code": "ITEM",
+      "description": ""
+    },
+    {
+      "id": "6aa58a97f44f5f72c2132345",
+      "name": "Paneer Butter Masala",
+      "categoryId": "6aa58a97f44f5f72c2132344",
+      "price": 240,
+      "isVeg": true,
+      "isAvailable": true,
+      "code": "PBM",
+      "description": ""
+    }
+  ],
+  "cachedAt": "2026-09-13T16:36:32.210Z"
+}

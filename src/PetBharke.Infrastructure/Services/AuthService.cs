@@ -246,7 +246,8 @@ public class AuthService : IAuthService
             FullName = user.FullName,
             Role = user.Role.ToString(),
             Permissions = user.Permissions,
-            TenantId = user.TenantId
+            TenantId = user.TenantId,
+            MustChangePassword = user.MustChangePassword
         };
     }
 
@@ -303,6 +304,7 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ExpiresAt = DateTime.UtcNow.AddHours(12),
+            MustChangePassword = user.MustChangePassword,
             User = new UserProfileDto
             {
                 Id = user.Id,
@@ -311,7 +313,8 @@ public class AuthService : IAuthService
                 FullName = user.FullName,
                 Role = user.Role.ToString(),
                 Permissions = user.Permissions,
-                TenantId = user.TenantId
+                TenantId = user.TenantId,
+                MustChangePassword = user.MustChangePassword
             },
             Tenant = tenant != null ? new TenantSummaryDto
             {

@@ -137,12 +137,13 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// 7. CORS
+// 7. CORS — read allowed origins from configuration
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:5173" };
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("PetBharkeCors", policy =>
     {
-        policy.SetIsOriginAllowed(_ => true)
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -151,9 +152,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// 8. Seed Database on Startup
-using (var scope = app.Services.CreateScope())
+// 8. Seed Database on Startup (gated in production — requires FORCE_SEED=true)
+var shouldSeed = app.Environment.IsDevelopment() ||
+    string.Equals(builder.Configuration["FORCE_SEED"], "true", StringComparison.OrdinalIgnoreCase);
+
+if (shouldSeed)
 {
+    using var scope = app.Services.CreateScope();
     try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<IMongoDbContext>();
@@ -166,11 +171,18 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"--> [QuantroBill] Error during DB Seeding: {ex.Message}");
     }
 }
+else
+{
+    Console.WriteLine("--> [QuantroBill] Skipping DB seed in production. Set FORCE_SEED=true to seed.");
+}
 
 // 9. HTTP Pipeline Middleware
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-if (app.Environment.IsDevelopment() || true)
+var swaggerEnabled = app.Environment.IsDevelopment() ||
+    string.Equals(builder.Configuration["Swagger:Enabled"], "true", StringComparison.OrdinalIgnoreCase);
+
+if (swaggerEnabled)
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -189,3 +201,6 @@ app.MapControllers();
 app.MapHub<OrderHub>("/hubs/order");
 
 app.Run();
+
+// Make Program accessible to integration tests via WebApplicationFactory<Program>
+public partial class Program { }

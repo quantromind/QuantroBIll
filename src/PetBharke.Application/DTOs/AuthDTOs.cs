@@ -32,6 +32,7 @@ public class AuthResponse
     public string AccessToken { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
+    public bool MustChangePassword { get; set; } = false;
     public UserProfileDto User { get; set; } = new();
     public TenantSummaryDto? Tenant { get; set; }
     public OutletSummaryDto? ActiveOutlet { get; set; }
@@ -47,6 +48,7 @@ public class UserProfileDto
     public string Role { get; set; } = string.Empty;
     public List<string> Permissions { get; set; } = new();
     public string TenantId { get; set; } = string.Empty;
+    public bool MustChangePassword { get; set; } = false;
 }
 
 public class TenantSummaryDto
@@ -85,5 +87,11 @@ public class OutletResolutionDto
     public string OutletName { get; set; } = string.Empty;
     public string TenantName { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
+}
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
 }
 

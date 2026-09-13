@@ -489,7 +489,7 @@ export const Billing: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row overflow-hidden select-none bg-[#f8fafc]">
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden select-none bg-[#f8fafc]">
       {/* Toast Notification */}
       {notification && (
         <div className="fixed top-14 right-6 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl z-50 text-xs font-semibold flex items-center space-x-2 border border-slate-700 animate-in fade-in">
@@ -738,7 +738,7 @@ export const Billing: React.FC = () => {
       </div>
 
       {/* RIGHT PANEL: CART & BILLING CHECKOUT (Role-Gated & Blue Themed) */}
-      <div className="w-full lg:w-96 xl:w-[420px] bg-white border-l border-slate-200 flex flex-col shrink-0 shadow-xs">
+      <div className="w-full md:w-[320px] lg:w-96 xl:w-[420px] bg-white border-l border-slate-200 flex flex-col shrink-0 shadow-xs md:sticky md:top-0 md:h-full md:overflow-y-auto">
         {/* Role Notice Banner */}
         {isWaiter ? (
           <div className="p-2.5 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs font-semibold flex items-center justify-between">

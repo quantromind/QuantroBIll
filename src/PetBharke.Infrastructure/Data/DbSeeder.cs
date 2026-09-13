@@ -26,6 +26,7 @@ public static class DbSeeder
                 Role = UserRole.SuperAdmin,
                 Permissions = new List<string> { "all", "superadmin" },
                 IsActive = true,
+                MustChangePassword = true,
                 CreatedAt = DateTime.UtcNow
             };
             await context.Users.InsertOneAsync(superAdmin);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
+using PetBharke.API.Middleware;
 using PetBharke.Application.Interfaces;
 using PetBharke.Domain.Entities;
 using PetBharke.Domain.Enums;
@@ -67,13 +68,9 @@ public class TenantsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [RequireSameTenant]
     public async Task<IActionResult> GetTenantById(string id)
     {
-        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.Role != nameof(UserRole.Owner) && _currentUserService.TenantId != id)
-        {
-            return Forbid();
-        }
-
         var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
         if (tenant == null)
             return NotFound(new { success = false, message = "Tenant not found." });
@@ -82,26 +79,18 @@ public class TenantsController : ControllerBase
     }
 
     [HttpGet("{id}/outlets")]
+    [RequireSameTenant]
     public async Task<IActionResult> GetTenantOutlets(string id)
     {
-        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
-        {
-            return Forbid();
-        }
-
         var outlets = await _context.Outlets.Find(o => o.TenantId == id && o.IsActive).ToListAsync();
         return Ok(new { success = true, data = outlets });
     }
 
     [HttpGet("{id}/users")]
     [Authorize(Roles = "SuperAdmin,Owner")]
+    [RequireSameTenant]
     public async Task<IActionResult> GetTenantUsers(string id)
     {
-        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
-        {
-            return Forbid();
-        }
-
         var users = await _context.Users.Find(u => u.TenantId == id).ToListAsync();
         return Ok(new
         {
@@ -127,12 +116,9 @@ public class TenantsController : ControllerBase
 
     [HttpPost("{id}/users")]
     [Authorize(Roles = "SuperAdmin,Owner")]
+    [RequireSameTenant]
     public async Task<IActionResult> CreateTenantUser(string id, [FromBody] CreateTenantEmployeeDto request)
     {
-        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
-        {
-            return Forbid();
-        }
 
         if (string.IsNullOrWhiteSpace(request.Username))
         {
@@ -224,12 +210,9 @@ public class TenantsController : ControllerBase
 
     [HttpPut("{id}/users/{userId}")]
     [Authorize(Roles = "SuperAdmin,Owner")]
+    [RequireSameTenant]
     public async Task<IActionResult> UpdateTenantUser(string id, string userId, [FromBody] UpdateTenantEmployeeDto request)
     {
-        if (_currentUserService.Role != nameof(UserRole.SuperAdmin) && _currentUserService.TenantId != id)
-        {
-            return Forbid();
-        }
 
         // SECURITY: Block self-escalation — no user can change their own role
         if (userId == _currentUserService.UserId && !string.IsNullOrWhiteSpace(request.Role))
