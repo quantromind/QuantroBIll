@@ -62,6 +62,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddSingleton<IMongoDbContext, MongoDbContext>();
 builder.Services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
+builder.Services.AddSingleton<IPinRateLimiter, PinRateLimiter>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 

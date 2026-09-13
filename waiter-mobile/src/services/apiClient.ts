@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
-const getBaseUrl = (): string => {
+const getDefaultBaseUrl = (): string => {
   // 1. Check custom environment variable
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
@@ -18,7 +18,7 @@ const getBaseUrl = (): string => {
   return 'http://localhost:5000/api';
 };
 
-export let API_BASE_URL = getBaseUrl();
+export let API_BASE_URL = getDefaultBaseUrl();
 
 export const mobileApiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -29,13 +29,35 @@ export const mobileApiClient = axios.create({
 });
 
 export const updateApiBaseUrl = (newUrl: string) => {
-  API_BASE_URL = newUrl;
-  mobileApiClient.defaults.baseURL = newUrl;
+  let cleanUrl = newUrl.trim();
+  // Ensure trailing /api if omitted
+  if (!cleanUrl.endsWith('/api') && !cleanUrl.endsWith('/api/')) {
+    cleanUrl = cleanUrl.replace(/\/+$/, '') + '/api';
+  }
+  cleanUrl = cleanUrl.replace(/\/+$/, '');
+  API_BASE_URL = cleanUrl;
+  mobileApiClient.defaults.baseURL = cleanUrl;
 };
 
 export const setAuthHeaders = (token: string, tenantId: string, outletId: string) => {
-  mobileApiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  mobileApiClient.defaults.headers.common['X-Tenant-Id'] = tenantId;
-  mobileApiClient.defaults.headers.common['X-Outlet-Id'] = outletId;
+  if (token) {
+    mobileApiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+  if (tenantId) {
+    mobileApiClient.defaults.headers.common['X-Tenant-Id'] = tenantId;
+  }
+  if (outletId) {
+    mobileApiClient.defaults.headers.common['X-Outlet-Id'] = outletId;
+  }
 };
 
+export const clearAuthHeaders = () => {
+  delete mobileApiClient.defaults.headers.common['Authorization'];
+  // Retain tenantId and outletId if paired, or clear if fully unpairing
+};
+
+export const clearAllHeaders = () => {
+  delete mobileApiClient.defaults.headers.common['Authorization'];
+  delete mobileApiClient.defaults.headers.common['X-Tenant-Id'];
+  delete mobileApiClient.defaults.headers.common['X-Outlet-Id'];
+};

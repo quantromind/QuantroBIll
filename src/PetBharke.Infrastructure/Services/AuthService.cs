@@ -12,15 +12,18 @@ public class AuthService : IAuthService
     private readonly IMongoDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
+    private readonly IPinRateLimiter _pinRateLimiter;
 
     public AuthService(
         IMongoDbContext context,
         IPasswordHasher passwordHasher,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IPinRateLimiter pinRateLimiter)
     {
         _context = context;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
+        _pinRateLimiter = pinRateLimiter;
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -54,6 +57,12 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> PinLoginAsync(PinLoginRequest request, CancellationToken cancellationToken = default)
     {
+        if (_pinRateLimiter.IsLocked(request.OutletId, out var remaining))
+        {
+            var mins = Math.Ceiling(remaining.TotalMinutes);
+            throw new AppException($"Too many failed PIN attempts. Outlet is locked for {mins} minute(s).", 429);
+        }
+
         var outlet = await _context.Outlets
             .Find(o => o.Id == request.OutletId && o.IsActive)
             .FirstOrDefaultAsync(cancellationToken);
@@ -69,10 +78,53 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
+            _pinRateLimiter.RecordFailure(request.OutletId);
             throw new UnauthorizedException("Invalid PIN code.");
         }
 
+        _pinRateLimiter.RecordSuccess(request.OutletId);
         return await GenerateAuthResponseForUserAsync(user, outlet.Id, cancellationToken);
+    }
+
+    public async Task<OutletResolutionDto> ResolveOutletAsync(string code, CancellationToken cancellationToken = default)
+    {
+        var cleanCode = code?.Trim();
+        if (string.IsNullOrWhiteSpace(cleanCode))
+        {
+            throw new AppException("Outlet code is required.", 400);
+        }
+
+        Outlet? outlet = null;
+        if (MongoDB.Bson.ObjectId.TryParse(cleanCode, out _))
+        {
+            outlet = await _context.Outlets
+                .Find(o => (o.Id == cleanCode || o.Code.ToLower() == cleanCode.ToLower()) && o.IsActive)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        else
+        {
+            outlet = await _context.Outlets
+                .Find(o => o.Code.ToLower() == cleanCode.ToLower() && o.IsActive)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if (outlet == null)
+        {
+            throw new NotFoundException(nameof(Outlet), cleanCode);
+        }
+
+        var tenant = await _context.Tenants
+            .Find(t => t.Id == outlet.TenantId && t.IsActive)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return new OutletResolutionDto
+        {
+            OutletId = outlet.Id,
+            TenantId = outlet.TenantId,
+            OutletName = outlet.Name,
+            TenantName = tenant?.BusinessName ?? outlet.Name,
+            Code = outlet.Code
+        };
     }
 
     public async Task<AuthResponse> RegisterTenantAsync(RegisterTenantRequest request, CancellationToken cancellationToken = default)

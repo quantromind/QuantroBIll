@@ -6,57 +6,129 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-
 import { mobileApiClient, setAuthHeaders } from '../services/apiClient';
+import { PairedOutlet, setAuthSession } from '../services/pairingService';
 
 interface LoginPinScreenProps {
-  onSuccessLogin: (staffName: string) => void;
+  pairedOutlet: PairedOutlet;
+  onSuccessLogin: (staffName: string, authData: { token: string; tenantId: string; outletId: string }) => void;
+  onUnpairDevice: () => void;
 }
 
-export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }) => {
+export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({
+  pairedOutlet,
+  onSuccessLogin,
+  onUnpairDevice,
+}) => {
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handlePressDigit = (digit: string) => {
-    if (pin.length < 4) {
-      const newPin = pin + digit;
-      setPin(newPin);
-      setError(null);
+  const handlePressDigit = async (digit: string) => {
+    if (isSubmitting || pin.length >= 4) return;
 
-      // Auto-validate 4 digits
-      if (newPin.length === 4) {
-        if (newPin === '1234' || newPin === '0000' || newPin === '5555') {
-          mobileApiClient.post('/auth/login', {
-            identifier: 'biller@spicegarden.com',
-            password: 'Biller@123'
-          }).then((res) => {
-            if (res.data?.data?.accessToken) {
-              setAuthHeaders(res.data.data.accessToken, res.data.data.tenant?.id || 'default', res.data.data.activeOutlet?.id || 'outlet-1');
-            }
-          }).catch(() => {});
+    const newPin = pin + digit;
+    setPin(newPin);
+    setError(null);
 
-          setTimeout(() => {
-            onSuccessLogin(newPin === '5555' ? 'Sunil (Waiter)' : 'Raju (Captain)');
-          }, 200);
+    // When 4 digits are completed, perform real backend PIN authentication
+    if (newPin.length === 4) {
+      setIsSubmitting(true);
+      try {
+        const res = await mobileApiClient.post('/auth/pin-login', {
+          outletId: pairedOutlet.outletId,
+          pin: newPin,
+        });
+
+        if (res.data?.success && res.data.data?.accessToken) {
+          const authData = res.data.data;
+          const token = authData.accessToken;
+          const tenantId = authData.tenant?.id || pairedOutlet.tenantId;
+          const outletId = authData.activeOutlet?.id || pairedOutlet.outletId;
+          const staffName =
+            authData.user?.fullName ||
+            authData.user?.username ||
+            (authData.user?.role === 'Waiter' ? 'Sunil (Waiter)' : 'Captain');
+
+          // Save auth session securely
+          await setAuthSession({
+            token,
+            refreshToken: authData.refreshToken,
+            staffName,
+            role: authData.user?.role,
+            userId: authData.user?.id,
+          });
+
+          // Set client auth headers for subsequent requests
+          setAuthHeaders(token, tenantId, outletId);
+
+          setPin('');
+          setIsSubmitting(false);
+          onSuccessLogin(staffName, { token, tenantId, outletId });
         } else {
-          setTimeout(() => {
-            setError('Invalid PIN. Default Captain PIN: 1234');
-            setPin('');
-          }, 300);
+          setError(res.data?.message || 'Invalid PIN code.');
+          setPin('');
+          setIsSubmitting(false);
         }
+      } catch (err: any) {
+        // Show server's actual error message directly
+        const serverMsg =
+          err.response?.data?.message ||
+          (err.response?.status === 429
+            ? 'Too many failed PIN attempts. Outlet is locked.'
+            : err.response?.status === 401
+            ? 'Invalid PIN code.'
+            : err.message || 'Error communicating with authentication server.');
+        setError(serverMsg);
+        setPin('');
+        setIsSubmitting(false);
       }
     }
   };
 
   const handleDelete = () => {
+    if (isSubmitting) return;
     setPin((prev) => prev.slice(0, -1));
     setError(null);
+  };
+
+  const confirmUnpair = () => {
+    Alert.alert(
+      'Unpair This Device?',
+      `Are you sure you want to unpair from "${pairedOutlet.outletName}"? You will need to enter an Outlet Code to pair again.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unpair Terminal',
+          style: 'destructive',
+          onPress: onUnpairDevice,
+        },
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+
+      {/* Paired Outlet Bar */}
+      <View style={styles.outletBanner}>
+        <View style={styles.outletInfo}>
+          <Text style={styles.outletName} numberOfLines={1}>
+            📍 {pairedOutlet.outletName}
+          </Text>
+          <Text style={styles.outletCode}>
+            Code: {pairedOutlet.code} • {pairedOutlet.tenantName}
+          </Text>
+        </View>
+
+        <TouchableOpacity onPress={confirmUnpair} style={styles.unpairBtn} activeOpacity={0.7}>
+          <Text style={styles.unpairText}>Switch Outlet</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Header */}
       <View style={styles.header}>
@@ -83,8 +155,20 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }
         })}
       </View>
 
-      {/* Error Message */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {/* Loading & Error Status */}
+      <View style={styles.statusArea}>
+        {isSubmitting && (
+          <View style={styles.verifyingRow}>
+            <ActivityIndicator size="small" color="#2563eb" />
+            <Text style={styles.verifyingText}>Verifying PIN with Server...</Text>
+          </View>
+        )}
+        {!isSubmitting && error && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+      </View>
 
       {/* Keypad */}
       <View style={styles.keypad}>
@@ -96,6 +180,7 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }
               style={styles.keyButton}
               activeOpacity={0.7}
               onPress={() => handlePressDigit(digit)}
+              disabled={isSubmitting}
             >
               <Text style={styles.keyText}>{digit}</Text>
             </TouchableOpacity>
@@ -110,6 +195,7 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }
               style={styles.keyButton}
               activeOpacity={0.7}
               onPress={() => handlePressDigit(digit)}
+              disabled={isSubmitting}
             >
               <Text style={styles.keyText}>{digit}</Text>
             </TouchableOpacity>
@@ -124,6 +210,7 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }
               style={styles.keyButton}
               activeOpacity={0.7}
               onPress={() => handlePressDigit(digit)}
+              disabled={isSubmitting}
             >
               <Text style={styles.keyText}>{digit}</Text>
             </TouchableOpacity>
@@ -137,6 +224,7 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }
             style={styles.keyButton}
             activeOpacity={0.7}
             onPress={() => handlePressDigit('0')}
+            disabled={isSubmitting}
           >
             <Text style={styles.keyText}>0</Text>
           </TouchableOpacity>
@@ -144,6 +232,7 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }
             style={styles.keyButtonDel}
             activeOpacity={0.7}
             onPress={handleDelete}
+            disabled={isSubmitting}
           >
             <Text style={styles.keyTextDel}>⌫</Text>
           </TouchableOpacity>
@@ -151,9 +240,11 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({ onSuccessLogin }
       </View>
 
       {/* Footer */}
-      <Text style={styles.footerNote}>
-        Demo Captain PIN: 1234 • Waiter PIN: 5555 • Connected to Live POS
-      </Text>
+      <View style={styles.footerContainer}>
+        <Text style={styles.footerNote}>
+          Multi-Tenant Protected • Rate-Limited PIN Security
+        </Text>
+      </View>
     </SafeAreaView>
   );
 };
@@ -163,33 +254,76 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  outletBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    shadowColor: '#000000',
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  outletInfo: {
+    flex: 1,
+    marginRight: 10,
+  },
+  outletName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  outletCode: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  unpairBtn: {
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  unpairText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
   },
   header: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   logoBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     backgroundColor: '#2563eb',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     shadowColor: '#2563eb',
     shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 6,
   },
   logoText: {
     color: '#ffffff',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#0f172a',
     letterSpacing: -0.5,
@@ -204,7 +338,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
-    marginVertical: 24,
+    marginVertical: 16,
   },
   dot: {
     width: 16,
@@ -213,7 +347,7 @@ const styles = StyleSheet.create({
   },
   dotEmpty: {
     backgroundColor: '#e2e8f0',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#cbd5e1',
   },
   dotFilled: {
@@ -223,12 +357,35 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  errorText: {
-    color: '#e11d48',
+  statusArea: {
+    minHeight: 38,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  verifyingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  verifyingText: {
+    color: '#2563eb',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  errorBox: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 12,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 10,
   },
   keypad: {
     maxWidth: 320,
@@ -278,10 +435,13 @@ const styles = StyleSheet.create({
   keyEmpty: {
     flex: 1,
   },
+  footerContainer: {
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   footerNote: {
     color: '#94a3b8',
     fontSize: 11,
     textAlign: 'center',
-    marginBottom: 10,
   },
 });

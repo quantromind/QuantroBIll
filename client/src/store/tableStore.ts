@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { OrderItem, PaymentMode } from '../types';
 import { apiClient } from '../services/api';
 import { signalRService } from '../services/signalr';
+import { useDraftCartStore } from './draftCartStore';
 
 export interface TableData {
   id: string;
@@ -17,6 +18,7 @@ export interface TableData {
   items?: OrderItem[];
   customerPhone?: string;
   paymentMode?: PaymentMode;
+  lastSentQuantities?: Record<string, number>;
 }
 
 interface TableStoreState {
@@ -30,7 +32,7 @@ interface TableStoreState {
   getSections: () => string[];
   vacateTable: (tableNumber: string) => void;
   occupyTable: (tableNumber: string, items: OrderItem[], total: number) => void;
-  updateTableOrder: (tableNumber: string, items: OrderItem[], total: number) => void;
+  updateTableOrder: (tableNumber: string, items: OrderItem[], total: number, lastSentQuantities?: Record<string, number>) => void;
   addTable: (table: Omit<TableData, 'id' | 'isOccupied'>) => void;
   mergeTables: (sourceTableNumber: string, targetTableNumber: string) => boolean;
   shiftTable: (fromTableNumber: string, toTableNumber: string) => boolean;
@@ -108,6 +110,11 @@ export const useTableStore = create<TableStoreState>()(
           apiClient.patch(`/tables/${targetTable.id}/status`, { isOccupied: false }).catch(() => {});
         }
 
+        // Clear associated draft in draftCartStore as well
+        try {
+          useDraftCartStore.getState().clearDraft(`table:${tableNumber.trim().toUpperCase()}`);
+        } catch {}
+
         set((state) => ({
           tables: state.tables.map((t) =>
             t.tableNumber.toUpperCase() === tableNumber.toUpperCase()
@@ -120,6 +127,7 @@ export const useTableStore = create<TableStoreState>()(
                   billNumber: undefined,
                   kotNumber: undefined,
                   paymentMode: undefined,
+                  lastSentQuantities: undefined,
                 }
               : t
           ),
@@ -150,7 +158,7 @@ export const useTableStore = create<TableStoreState>()(
         }));
       },
 
-      updateTableOrder: (tableNumber: string, items: OrderItem[], total: number) => {
+      updateTableOrder: (tableNumber: string, items: OrderItem[], total: number, lastSentQuantities?: Record<string, number>) => {
         if (items.length === 0) {
           get().vacateTable(tableNumber);
           return;
@@ -168,6 +176,7 @@ export const useTableStore = create<TableStoreState>()(
                   items,
                   billNumber: t.billNumber || `BILL-${numOnly}`,
                   kotNumber: t.kotNumber || `KOT-${numOnly}`,
+                  lastSentQuantities: lastSentQuantities !== undefined ? lastSentQuantities : t.lastSentQuantities,
                 }
               : t
           ),
@@ -322,6 +331,19 @@ export const useTableStore = create<TableStoreState>()(
 
         const newTotal = targetItems.reduce((acc, item) => acc + item.totalPrice, 0);
 
+        const mergedSentQuantities: Record<string, number> = {
+          ...(target.lastSentQuantities || {}),
+        };
+        if (source.lastSentQuantities) {
+          Object.entries(source.lastSentQuantities).forEach(([itemId, qty]) => {
+            mergedSentQuantities[itemId] = (mergedSentQuantities[itemId] || 0) + qty;
+          });
+        }
+
+        try {
+          useDraftCartStore.getState().mergeDrafts(`table:${sourceTableNumber}`, `table:${targetTableNumber}`);
+        } catch {}
+
         set((s) => ({
           tables: s.tables.map((t) => {
             if (t.tableNumber.toUpperCase() === targetTableNumber.toUpperCase()) {
@@ -333,6 +355,7 @@ export const useTableStore = create<TableStoreState>()(
                 orderTime: t.orderTime || source.orderTime || 'Just Now',
                 kotNumber: t.kotNumber || source.kotNumber,
                 billNumber: t.billNumber || source.billNumber,
+                lastSentQuantities: Object.keys(mergedSentQuantities).length > 0 ? mergedSentQuantities : undefined,
               };
             }
             if (t.tableNumber.toUpperCase() === sourceTableNumber.toUpperCase()) {
@@ -345,6 +368,7 @@ export const useTableStore = create<TableStoreState>()(
                 billNumber: undefined,
                 kotNumber: undefined,
                 paymentMode: undefined,
+                lastSentQuantities: undefined,
               };
             }
             return t;
@@ -373,6 +397,10 @@ export const useTableStore = create<TableStoreState>()(
           return false;
         }
 
+        try {
+          useDraftCartStore.getState().moveDraft(`table:${fromTableNumber}`, `table:${toTableNumber}`);
+        } catch {}
+
         set((s) => ({
           tables: s.tables.map((t) => {
             if (t.tableNumber.toUpperCase() === toTableNumber.toUpperCase()) {
@@ -386,6 +414,7 @@ export const useTableStore = create<TableStoreState>()(
                 items: from.items ? [...from.items] : [],
                 customerPhone: from.customerPhone,
                 paymentMode: from.paymentMode,
+                lastSentQuantities: from.lastSentQuantities,
               };
             }
             if (t.tableNumber.toUpperCase() === fromTableNumber.toUpperCase()) {
@@ -399,6 +428,7 @@ export const useTableStore = create<TableStoreState>()(
                 kotNumber: undefined,
                 paymentMode: undefined,
                 customerPhone: undefined,
+                lastSentQuantities: undefined,
               };
             }
             return t;

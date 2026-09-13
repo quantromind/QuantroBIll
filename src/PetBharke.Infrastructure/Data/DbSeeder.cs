@@ -587,6 +587,13 @@ public static class DbSeeder
             };
             await context.Outlets.InsertOneAsync(jmOutlet);
         }
+        else
+        {
+            var updateOutlet = Builders<Outlet>.Update
+                .Set(o => o.Code, "JM-01")
+                .Set(o => o.IsActive, true);
+            await context.Outlets.UpdateOneAsync(o => o.Id == jmOutlet.Id, updateOutlet);
+        }
 
         var existingSourabh = await context.Users.Find(u => u.Email == "sourabh@gmail.com" || u.Username == "sourabh").FirstOrDefaultAsync();
         if (existingSourabh == null)
@@ -599,6 +606,7 @@ public static class DbSeeder
                 Email = "sourabh@gmail.com",
                 FullName = "Sourabh Dhangar",
                 Phone = "9876543210",
+                Pin = "1234",
                 PasswordHash = hasher.HashPassword("Owner@123"),
                 Role = UserRole.Owner,
                 AssignedOutletIds = new List<string> { jmOutlet.Id },
@@ -613,9 +621,40 @@ public static class DbSeeder
                 .Set(u => u.TenantId, jmTenant.Id)
                 .Set(u => u.OutletId, jmOutlet.Id)
                 .Set(u => u.Role, UserRole.Owner)
+                .Set(u => u.Pin, "1234")
                 .Set(u => u.PasswordHash, hasher.HashPassword("Owner@123"))
                 .Set(u => u.IsActive, true);
             await context.Users.UpdateOneAsync(u => u.Id == existingSourabh.Id, update);
+        }
+
+        var existingJmWaiter = await context.Users.Find(u => u.Username == "jmwaiter" || u.Email == "waiter@jaymalhar.com").FirstOrDefaultAsync();
+        if (existingJmWaiter == null)
+        {
+            await context.Users.InsertOneAsync(new User
+            {
+                TenantId = jmTenant.Id,
+                OutletId = jmOutlet.Id,
+                Username = "jmwaiter",
+                Email = "waiter@jaymalhar.com",
+                FullName = "Sunil (Waiter)",
+                Phone = "9876543219",
+                Pin = "5555",
+                PasswordHash = hasher.HashPassword("Waiter@123"),
+                Role = UserRole.Cashier,
+                AssignedOutletIds = new List<string> { jmOutlet.Id },
+                Permissions = new List<string> { "pos.bill", "pos.kot", "pos.view", "tables.manage" },
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            var update = Builders<User>.Update
+                .Set(u => u.TenantId, jmTenant.Id)
+                .Set(u => u.OutletId, jmOutlet.Id)
+                .Set(u => u.Pin, "5555")
+                .Set(u => u.IsActive, true);
+            await context.Users.UpdateOneAsync(u => u.Id == existingJmWaiter.Id, update);
         }
 
         var countJmTables = await context.Tables.CountDocumentsAsync(t => t.TenantId == jmTenant.Id);

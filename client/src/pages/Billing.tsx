@@ -125,6 +125,8 @@ export const Billing: React.FC = () => {
 
   // Modals
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [isKotPrint, setIsKotPrint] = useState(false);
+  const [latestKotNo, setLatestKotNo] = useState<string>('KOT-101');
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [showShiftModal, setShowShiftModal] = useState(false);
@@ -147,16 +149,19 @@ export const Billing: React.FC = () => {
           e.preventDefault();
           setPaymentMode('Cash');
           setIsPaid(true);
+          setIsKotPrint(false);
           if (cartItems.length > 0) setShowPrintModal(true);
         } else if (e.key === 'F2') {
           e.preventDefault();
           setPaymentMode('Card');
           setIsPaid(true);
+          setIsKotPrint(false);
           if (cartItems.length > 0) setShowPrintModal(true);
         } else if (e.key === 'F3') {
           e.preventDefault();
           setPaymentMode('UPI');
           setIsPaid(true);
+          setIsKotPrint(false);
           if (cartItems.length > 0) setShowPrintModal(true);
         } else if (e.key === 'F4') {
           e.preventDefault();
@@ -355,25 +360,89 @@ export const Billing: React.FC = () => {
       showToast('Please add items to cart before generating KOT.');
       return;
     }
+
+    // 1. Determine already-sent quantities for this activeCartKey / table
+    const currentDraft = getDraft(activeCartKey);
+    const tableData = orderType === 'DineIn' ? getTable(tableNumber) : undefined;
+    let alreadySent: Record<string, number> =
+      currentDraft?.lastSentQuantities || tableData?.lastSentQuantities || {};
+
+    // If active table is occupied with items but has no sent tracking yet (e.g. loaded from backend or waiter app),
+    // initialize alreadySent from existing tableData.items so existing items are not re-sent
+    if (
+      Object.keys(alreadySent).length === 0 &&
+      tableData?.isOccupied &&
+      tableData.items &&
+      tableData.items.length > 0 &&
+      (!currentDraft || !currentDraft.lastSentQuantities)
+    ) {
+      const initialSent: Record<string, number> = {};
+      tableData.items.forEach((it) => {
+        initialSent[it.menuItemId] = (initialSent[it.menuItemId] || 0) + it.quantity;
+      });
+      alreadySent = initialSent;
+    }
+
+    // 2. Compute delta items: for each cartItem, delta qty = current qty - already-sent qty
+    const deltaItems: OrderItem[] = [];
+    cartItems.forEach((ci) => {
+      const sentQty = alreadySent[ci.menuItemId] || 0;
+      const deltaQty = ci.quantity - sentQty;
+      if (deltaQty > 0) {
+        deltaItems.push({
+          ...ci,
+          quantity: deltaQty,
+          totalPrice: deltaQty * ci.unitPrice,
+        });
+      }
+    });
+
+    // 3. If delta is empty, show toast and do not create a new KOT
+    if (deltaItems.length === 0) {
+      showToast('No new items to send to kitchen');
+      return;
+    }
+
     const destination = getOrderDestination();
+
+    // 4. Send ONLY deltaItems to KDS and backend OrderHub
     const newKot = usePosSyncStore.getState().addKOT({
       orderType,
       tableOrChannel: destination,
       tableNumber: orderType === 'DineIn' ? tableNumber : undefined,
-      items: cartItems,
+      items: deltaItems,
+    });
+    setLatestKotNo(newKot.kotNo);
+
+    // 5. Update sent-quantity tracking so it now matches the full current cartItems quantities
+    const updatedSentMap: Record<string, number> = { ...alreadySent };
+    cartItems.forEach((ci) => {
+      updatedSentMap[ci.menuItemId] = Math.max(alreadySent[ci.menuItemId] || 0, ci.quantity);
     });
 
+    // 6. Save full cart and updated sent quantities in draft and tableStore
     if (orderType === 'DineIn') {
-      updateTableOrder(tableNumber, cartItems, grandTotal);
+      updateTableOrder(tableNumber, cartItems, grandTotal, updatedSentMap);
       saveDraft(activeCartKey, {
         items: cartItems,
         customerPhone,
         orderNote,
         discountPercent,
+        lastSentQuantities: updatedSentMap,
+      });
+    } else {
+      saveDraft(activeCartKey, {
+        items: cartItems,
+        customerPhone,
+        orderNote,
+        discountPercent,
+        lastSentQuantities: updatedSentMap,
       });
     }
-    showToast(`${newKot.kotNo} generated for ${destination} - Routed to Kitchen KDS! 🔔`);
+
+    showToast(`${newKot.kotNo} generated (${deltaItems.length} new item${deltaItems.length > 1 ? 's' : ''}) for ${destination} - Routed to Kitchen KDS! 🔔`);
     if (print) {
+      setIsKotPrint(true);
       setShowPrintModal(true);
     }
   };
@@ -403,6 +472,7 @@ export const Billing: React.FC = () => {
     });
 
     if (action.includes('Print') || action.includes('EBill')) {
+      setIsKotPrint(false);
       setShowPrintModal(true);
     } else {
       showToast(`Bill ${action} successfully! Total: ₹${grandTotal}`);
@@ -1255,15 +1325,18 @@ export const Billing: React.FC = () => {
         isOpen={showPrintModal}
         onClose={() => {
           setShowPrintModal(false);
-          if (orderType === 'DineIn') {
-            vacateTable(tableNumber);
+          if (!isKotPrint) {
+            if (orderType === 'DineIn') {
+              vacateTable(tableNumber);
+            }
+            clearDraft(activeCartKey);
+            setCartItems([]);
+            setCustomerPhone('');
+            setOrderNote('');
+            setDiscountPercent(0);
+            setTokenNumber((t) => t + 1);
           }
-          clearDraft(activeCartKey);
-          setCartItems([]);
-          setCustomerPhone('');
-          setOrderNote('');
-          setDiscountPercent(0);
-          setTokenNumber((t) => t + 1);
+          setIsKotPrint(false);
         }}
         orderType={orderType}
         items={cartItems}
@@ -1272,6 +1345,7 @@ export const Billing: React.FC = () => {
         sgst={sgst}
         grandTotal={grandTotal}
         packagingCharge={effectivePackaging}
+        kotNumber={latestKotNo}
         tableNumber={orderType === 'DineIn' ? tableNumber : undefined}
         customerPhone={customerPhone}
         paymentMode={paymentMode}

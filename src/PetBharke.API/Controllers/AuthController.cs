@@ -34,6 +34,14 @@ public class AuthController : ControllerBase
         return Ok(new { success = true, data = response });
     }
 
+    [HttpGet("resolve-outlet/{code}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResolveOutlet(string code)
+    {
+        var response = await _authService.ResolveOutletAsync(code);
+        return Ok(new { success = true, data = response });
+    }
+
     [HttpPost("register-tenant")]
     [Authorize(Roles = "SuperAdmin")]
     public async Task<IActionResult> RegisterTenant([FromBody] RegisterTenantRequest request)

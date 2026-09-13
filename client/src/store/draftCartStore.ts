@@ -9,6 +9,7 @@ export interface DraftCartData {
   packagingCharge?: number;
   enablePackaging?: boolean;
   updatedAt: number;
+  lastSentQuantities?: Record<string, number>;
 }
 
 const getTenantId = (): string => {
@@ -61,6 +62,8 @@ interface DraftCartStoreState {
   getDraftTotal: (key: string) => number;
   moveDraft: (fromKey: string, toKey: string) => void;
   mergeDrafts: (sourceKey: string, targetKey: string) => void;
+  getLastSentQuantities: (key: string) => Record<string, number>;
+  updateLastSentQuantities: (key: string, sentMap: Record<string, number>) => void;
 }
 
 export const useDraftCartStore = create<DraftCartStoreState>((set, get) => {
@@ -81,6 +84,33 @@ export const useDraftCartStore = create<DraftCartStoreState>((set, get) => {
       return get().drafts[key.toUpperCase()];
     },
 
+    getLastSentQuantities: (key: string) => {
+      const draft = get().drafts[key.toUpperCase()];
+      return draft?.lastSentQuantities || {};
+    },
+
+    updateLastSentQuantities: (key: string, sentMap: Record<string, number>) => {
+      const normalizedKey = key.toUpperCase();
+      const currentDraft = get().drafts[normalizedKey] || {
+        items: [],
+        updatedAt: Date.now(),
+      };
+
+      const updatedDraft: DraftCartData = {
+        ...currentDraft,
+        lastSentQuantities: { ...(currentDraft.lastSentQuantities || {}), ...sentMap },
+        updatedAt: Date.now(),
+      };
+
+      const updatedDrafts = {
+        ...get().drafts,
+        [normalizedKey]: updatedDraft,
+      };
+
+      set({ drafts: updatedDrafts });
+      saveDraftsToStorage(updatedDrafts, get().tenantId);
+    },
+
     saveDraft: (key: string, data: Partial<DraftCartData>) => {
       const normalizedKey = key.toUpperCase();
       const currentDraft = get().drafts[normalizedKey] || {
@@ -99,11 +129,12 @@ export const useDraftCartStore = create<DraftCartStoreState>((set, get) => {
         [normalizedKey]: updatedDraft,
       };
 
-      // If items exist or fields exist, store it; if empty items and no metadata, remove
+      // If items exist or fields exist or sent quantities exist, store it; if empty items and no metadata, remove
       if (
         (!updatedDraft.items || updatedDraft.items.length === 0) &&
         !updatedDraft.customerPhone &&
-        !updatedDraft.orderNote
+        !updatedDraft.orderNote &&
+        (!updatedDraft.lastSentQuantities || Object.keys(updatedDraft.lastSentQuantities).length === 0)
       ) {
         delete updatedDrafts[normalizedKey];
       }
@@ -190,11 +221,21 @@ export const useDraftCartStore = create<DraftCartStoreState>((set, get) => {
         }
       });
 
+      const mergedSentQuantities: Record<string, number> = {
+        ...(targetDraft.lastSentQuantities || {}),
+      };
+      if (sourceDraft.lastSentQuantities) {
+        Object.entries(sourceDraft.lastSentQuantities).forEach(([itemId, qty]) => {
+          mergedSentQuantities[itemId] = (mergedSentQuantities[itemId] || 0) + qty;
+        });
+      }
+
       drafts[normTarget] = {
         ...targetDraft,
         items: consolidatedItems,
         customerPhone: targetDraft.customerPhone || sourceDraft.customerPhone,
         orderNote: [targetDraft.orderNote, sourceDraft.orderNote].filter(Boolean).join(' | '),
+        lastSentQuantities: Object.keys(mergedSentQuantities).length > 0 ? mergedSentQuantities : undefined,
         updatedAt: Date.now(),
       };
 

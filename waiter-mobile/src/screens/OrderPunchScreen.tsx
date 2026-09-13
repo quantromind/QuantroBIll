@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import type { MobileTable, MobileOrderItem } from '../types';
 import { mobileApiClient } from '../services/apiClient';
@@ -19,17 +20,13 @@ interface OrderPunchScreenProps {
   onKOTFired: (tableNum: string, items: MobileOrderItem[]) => void;
 }
 
-const defaultMenu = [
-  { id: 'm1', name: 'Paneer Butter Masala', category: 'Main Course', price: 280, isVeg: true },
-  { id: 'm2', name: 'Dal Makhani', category: 'Main Course', price: 240, isVeg: true },
-  { id: 'm3', name: 'Butter Chicken Handi', category: 'Main Course', price: 340, isVeg: false },
-  { id: 'm4', name: 'Chicken Dum Biryani', category: 'Rice', price: 320, isVeg: false },
-  { id: 'm5', name: 'Butter Naan', category: 'Breads', price: 60, isVeg: true },
-  { id: 'm6', name: 'Garlic Roti', category: 'Breads', price: 40, isVeg: true },
-  { id: 'm7', name: 'Cold Coffee Float', category: 'Drinks', price: 150, isVeg: true },
-  { id: 'm8', name: 'Oreo Thick Shake', category: 'Drinks', price: 180, isVeg: true },
-  { id: 'm9', name: 'Paneer Tikka Angara', category: 'Starters', price: 260, isVeg: true },
-];
+interface DishItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  isVeg: boolean;
+}
 
 export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
   table,
@@ -41,29 +38,49 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
   const [cart, setCart] = useState<MobileOrderItem[]>([]);
   const [noteItem, setNoteItem] = useState<string | null>(null);
   const [tempNote, setTempNote] = useState('');
-  const [menu, setMenu] = useState(defaultMenu);
-  const [categories, setCategories] = useState<string[]>(['All', 'Starters', 'Main Course', 'Breads', 'Rice', 'Drinks']);
+  const [menu, setMenu] = useState<DishItem[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    mobileApiClient.get('/menu/items')
-      .then((res) => {
-        if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-          const apiMenu = res.data.data.map((item: any) => ({
-            id: item.id,
+  const fetchMenuItems = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await mobileApiClient.get('/menu/items');
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const apiMenu: DishItem[] = res.data.data
+          .filter((item: any) => item.isAvailable !== false)
+          .map((item: any) => ({
+            id: item.id || item._id,
             name: item.name,
             category: item.categoryName || 'Main Course',
-            price: Number(item.price) || 0,
+            price: Number(item.price || item.basePrice) || 0,
             isVeg: Boolean(item.isVeg),
           }));
-          setMenu(apiMenu);
-          const uniqueCats = ['All', ...new Set(apiMenu.map((m: any) => m.category))] as string[];
-          setCategories(uniqueCats);
-        }
-      })
-      .catch(() => {
-        // Fallback to defaultMenu
-      });
+        setMenu(apiMenu);
+
+        const uniqueCats = ['All', ...Array.from(new Set(apiMenu.map((m) => m.category).filter(Boolean)))];
+        setCategories(uniqueCats);
+      } else {
+        setError(res.data?.message || 'Failed to load menu items.');
+        setMenu([]);
+      }
+    } catch (err: any) {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.message ||
+        'Error loading menu items from server. Please check your connection.';
+      setError(serverMsg);
+      setMenu([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, [fetchMenuItems]);
 
   const filteredMenu = menu.filter((item) => {
     const matchCat = selectedCategory === 'All' || item.category === selectedCategory;
@@ -71,7 +88,7 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
     return matchCat && matchSearch;
   });
 
-  const handleAddItem = (dish: any) => {
+  const handleAddItem = (dish: DishItem) => {
     setCart((prev) => {
       const existing = prev.find((ci) => ci.itemId === dish.id);
       if (existing) {
@@ -111,7 +128,7 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
 
     Alert.alert(
       'Confirm KOT Dispatch',
-      `Send ${totalQuantity} items for ${table.tableNumber} directly to Kitchen KDS?`,
+      `Send ${totalQuantity} items for ${table.tableNumber} directly to Kitchen KDS and live Desktop POS?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -137,7 +154,7 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Top Header */}
       <View style={styles.header}>
@@ -158,7 +175,7 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
       {/* Search Input */}
       <View style={styles.searchBar}>
         <TextInput
-          placeholder="Search dishes (e.g. Naan, Paneer)..."
+          placeholder="Search live menu dishes (e.g. Naan, Tikka)..."
           placeholderTextColor="#94a3b8"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -167,91 +184,121 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
       </View>
 
       {/* Category Pills */}
-      <View style={styles.categoryScroll}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsList}>
-          {categories.map((c) => (
-            <TouchableOpacity
-              key={c}
-              onPress={() => setSelectedCategory(c)}
-              style={[
-                styles.catPill,
-                selectedCategory === c ? styles.catPillActive : styles.catPillInactive,
-              ]}
-            >
-              <Text
+      {categories.length > 1 && (
+        <View style={styles.categoryScroll}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsList}>
+            {categories.map((c) => (
+              <TouchableOpacity
+                key={c}
+                onPress={() => setSelectedCategory(c)}
                 style={[
-                  styles.catText,
-                  selectedCategory === c ? styles.catTextActive : styles.catTextInactive,
+                  styles.catPill,
+                  selectedCategory === c ? styles.catPillActive : styles.catPillInactive,
                 ]}
               >
-                {c}
-              </Text>
+                <Text
+                  style={[
+                    styles.catText,
+                    selectedCategory === c ? styles.catTextActive : styles.catTextInactive,
+                  ]}
+                >
+                  {c}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Main Body: Loading, Error, or Dishes List */}
+      {isLoading ? (
+        <View style={styles.centeredState}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Loading Live Menu...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.centeredState}>
+          <View style={styles.errorCard}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorTitle}>Failed to Load Menu</Text>
+            <Text style={styles.errorSub}>{error}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={fetchMenuItems} activeOpacity={0.8}>
+              <Text style={styles.retryBtnText}>↻ Retry</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+          </View>
+        </View>
+      ) : menu.length === 0 ? (
+        <View style={styles.centeredState}>
+          <Text style={styles.emptyIcon}>📋</Text>
+          <Text style={styles.emptyTitle}>No Dishes Found</Text>
+          <Text style={styles.emptySub}>No active menu items available for this outlet.</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={fetchMenuItems} activeOpacity={0.8}>
+            <Text style={styles.retryBtnText}>↻ Refresh Menu</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.menuList}>
+          {filteredMenu.map((dish) => {
+            const inCart = cart.find((ci) => ci.itemId === dish.id);
 
-      {/* Menu List */}
-      <ScrollView contentContainerStyle={styles.menuList}>
-        {filteredMenu.map((dish) => {
-          const inCart = cart.find((ci) => ci.itemId === dish.id);
+            return (
+              <View key={dish.id} style={styles.dishCard}>
+                <View style={styles.dishLeft}>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.vegIcon}>{dish.isVeg ? '🟢' : '🔴'}</Text>
+                    <Text style={styles.dishName}>{dish.name}</Text>
+                  </View>
+                  <Text style={styles.dishCategory}>{dish.category}</Text>
+                  <Text style={styles.dishPrice}>₹{dish.price}</Text>
 
-          return (
-            <View key={dish.id} style={styles.dishCard}>
-              <View style={styles.dishLeft}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.vegIcon}>{dish.isVeg ? '🟢' : '🔴'}</Text>
-                  <Text style={styles.dishName}>{dish.name}</Text>
+                  {inCart?.notes && (
+                    <Text style={styles.noteDisplay}>Note: {inCart.notes}</Text>
+                  )}
                 </View>
-                <Text style={styles.dishPrice}>₹{dish.price}</Text>
 
-                {inCart?.notes && (
-                  <Text style={styles.noteDisplay}>Note: {inCart.notes}</Text>
-                )}
-              </View>
+                <View style={styles.dishRight}>
+                  {inCart ? (
+                    <View style={styles.qtyCounter}>
+                      <TouchableOpacity
+                        onPress={() => handleDecreaseItem(dish.id)}
+                        style={styles.counterBtn}
+                      >
+                        <Text style={styles.counterText}>-</Text>
+                      </TouchableOpacity>
 
-              <View style={styles.dishRight}>
-                {inCart ? (
-                  <View style={styles.qtyCounter}>
-                    <TouchableOpacity
-                      onPress={() => handleDecreaseItem(dish.id)}
-                      style={styles.counterBtn}
-                    >
-                      <Text style={styles.counterText}>-</Text>
-                    </TouchableOpacity>
+                      <Text style={styles.qtyText}>{inCart.quantity}</Text>
 
-                    <Text style={styles.qtyText}>{inCart.quantity}</Text>
+                      <TouchableOpacity
+                        onPress={() => handleAddItem(dish)}
+                        style={styles.counterBtn}
+                      >
+                        <Text style={styles.counterText}>+</Text>
+                      </TouchableOpacity>
 
+                      <TouchableOpacity
+                        onPress={() => {
+                          setNoteItem(dish.id);
+                          setTempNote(inCart.notes || '');
+                        }}
+                        style={styles.noteBtn}
+                      >
+                        <Text style={styles.noteBtnText}>✎</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
                     <TouchableOpacity
                       onPress={() => handleAddItem(dish)}
-                      style={styles.counterBtn}
+                      style={styles.addBtn}
                     >
-                      <Text style={styles.counterText}>+</Text>
+                      <Text style={styles.addBtnText}>+ ADD</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => {
-                        setNoteItem(dish.id);
-                        setTempNote(inCart.notes || '');
-                      }}
-                      style={styles.noteBtn}
-                    >
-                      <Text style={styles.noteBtnText}>✎</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => handleAddItem(dish)}
-                    style={styles.addBtn}
-                  >
-                    <Text style={styles.addBtnText}>+ ADD</Text>
-                  </TouchableOpacity>
-                )}
+                  )}
+                </View>
               </View>
-            </View>
-          );
-        })}
-      </ScrollView>
+            );
+          })}
+        </ScrollView>
+      )}
 
       {/* Note Modal */}
       {noteItem && (
@@ -296,7 +343,7 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
         <View style={styles.footer}>
           <View>
             <Text style={styles.footerTotal}>₹{subTotal}</Text>
-            <Text style={styles.footerItems}>{totalQuantity} Items • KOT Ready</Text>
+            <Text style={styles.footerItems}>{totalQuantity} Items • Ready to Fire</Text>
           </View>
 
           <TouchableOpacity onPress={handleFireKOT} style={styles.fireBtn}>
@@ -404,9 +451,75 @@ const styles = StyleSheet.create({
   catTextInactive: {
     color: '#64748b',
   },
+  centeredState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginTop: 12,
+  },
+  errorCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    padding: 20,
+    alignItems: 'center',
+    maxWidth: 320,
+    width: '100%',
+  },
+  errorIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#dc2626',
+    marginBottom: 6,
+  },
+  errorSub: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 14,
+    lineHeight: 18,
+  },
+  retryBtn: {
+    backgroundColor: '#2563eb',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  retryBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  emptyIcon: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
   menuList: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 110,
     gap: 10,
   },
   dishCard: {
@@ -441,11 +554,17 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     flex: 1,
   },
+  dishCategory: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '600',
+    marginTop: 2,
+  },
   dishPrice: {
     fontSize: 13,
     fontWeight: '700',
     color: '#d97706',
-    marginTop: 4,
+    marginTop: 3,
   },
   noteDisplay: {
     fontSize: 10,

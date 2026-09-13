@@ -77,3 +77,13 @@ public class RefreshTokenRequest
 {
     public string RefreshToken { get; set; } = string.Empty;
 }
+
+public class OutletResolutionDto
+{
+    public string OutletId { get; set; } = string.Empty;
+    public string TenantId { get; set; } = string.Empty;
+    public string OutletName { get; set; } = string.Empty;
+    public string TenantName { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+}
+

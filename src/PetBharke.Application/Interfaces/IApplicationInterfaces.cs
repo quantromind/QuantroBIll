@@ -55,3 +55,11 @@ public interface ICurrentUserService
     string? Role { get; }
     bool IsAuthenticated { get; }
 }
+
+public interface IPinRateLimiter
+{
+    bool IsLocked(string outletId, out TimeSpan remainingLockout);
+    void RecordFailure(string outletId);
+    void RecordSuccess(string outletId);
+}
+

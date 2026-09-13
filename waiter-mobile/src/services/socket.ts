@@ -5,13 +5,37 @@ class MobileSignalRService {
   private hubConnection: signalR.HubConnection | null = null;
   private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
   private isConnecting = false;
+  private currentTenantId: string | null = null;
+  private currentOutletId: string | null = null;
+  private currentToken: string | null = null;
 
   public async startConnection(tenantId: string, outletId: string, token?: string): Promise<void> {
-    if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
+    if (!tenantId || !outletId) {
+      console.warn('--> [Mobile SignalR] Cannot start connection without tenantId and outletId');
       return;
     }
+
+    // If already connected with identical tenant/outlet/token, nothing to do
+    if (
+      this.hubConnection &&
+      this.hubConnection.state === signalR.HubConnectionState.Connected &&
+      this.currentTenantId === tenantId &&
+      this.currentOutletId === outletId &&
+      this.currentToken === (token || null)
+    ) {
+      return;
+    }
+
+    // If already connected with different tenant/outlet/token, stop first
+    if (this.hubConnection) {
+      this.stopConnection();
+    }
+
     if (this.isConnecting) return;
     this.isConnecting = true;
+    this.currentTenantId = tenantId;
+    this.currentOutletId = outletId;
+    this.currentToken = token || null;
 
     const hubUrl = API_BASE_URL.replace(/\/api$/, '') + '/hubs/order';
 
@@ -32,12 +56,22 @@ class MobileSignalRService {
       });
     });
 
+    // Auto rejoin outlet group on reconnect
+    this.hubConnection.onreconnected(async () => {
+      console.log('--> [Mobile SignalR] Reconnected. Rejoining outlet group:', tenantId, outletId);
+      try {
+        await this.hubConnection?.invoke('JoinOutletGroup', tenantId, outletId);
+      } catch (err) {
+        console.warn('--> [Mobile SignalR] Rejoin group error:', err);
+      }
+    });
+
     try {
       await this.hubConnection.start();
-      console.log('--> [Mobile SignalR] Connected to OrderHub');
+      console.log('--> [Mobile SignalR] Connected to OrderHub for outlet:', outletId);
       await this.hubConnection.invoke('JoinOutletGroup', tenantId, outletId);
     } catch (err) {
-      console.warn('--> [Mobile SignalR] Connect error (will retry):', err);
+      console.warn('--> [Mobile SignalR] Connect error (will retry automatically):', err);
     } finally {
       this.isConnecting = false;
     }
@@ -45,9 +79,16 @@ class MobileSignalRService {
 
   public stopConnection(): void {
     if (this.hubConnection) {
-      this.hubConnection.stop();
+      try {
+        this.hubConnection.stop();
+      } catch (e) {
+        console.warn('--> [Mobile SignalR] Error stopping connection:', e);
+      }
       this.hubConnection = null;
     }
+    this.currentTenantId = null;
+    this.currentOutletId = null;
+    this.currentToken = null;
   }
 
   public on(eventName: string, callback: (...args: any[]) => void): void {
