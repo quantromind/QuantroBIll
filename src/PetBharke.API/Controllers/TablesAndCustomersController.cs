@@ -267,12 +267,26 @@ public class TablesController : ControllerBase
         }
 
         var groupName = $"outlet_{tenantId}_{outletId}";
+        var kdsGroupName = $"kds_{tenantId}_{outletId}";
+
         await _orderHub.Clients.Group(groupName).SendAsync("TableStatusChanged", new
         {
             tableNumber = tableNumber,
             isOccupied = false,
             currentOrderId = (string?)null,
             orderTotal = 0m
+        });
+
+        // Broadcast to KDS and Outlet groups that table orders are completed/settled
+        await _orderHub.Clients.Group(kdsGroupName).SendAsync("ReceiveOrderUpdate", new
+        {
+            tableNumber = tableNumber,
+            status = 5
+        });
+        await _orderHub.Clients.Group(groupName).SendAsync("ReceiveOrderUpdate", new
+        {
+            tableNumber = tableNumber,
+            status = 5
         });
 
         return Ok(new { success = true, message = $"Table {tableNumber} vacated." });

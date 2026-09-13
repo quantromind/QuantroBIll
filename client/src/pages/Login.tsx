@@ -79,22 +79,29 @@ const createDemoResponse = (
         ],
 });
 
+import { MustChangePasswordModal } from '../components/modals/MustChangePasswordModal';
+
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const { setAuthData, isAuthenticated, user } = useAuthStore();
 
   const [loginMode, setLoginMode] = useState<'password' | 'pin'>('password');
-  const [identifier, setIdentifier] = useState('sourabh@gmail.com');
-  const [password, setPassword] = useState('Owner@123');
-  const [pin, setPin] = useState('1234');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // If already authenticated, redirect to role workspace
+  // If already authenticated and not requiring password reset, redirect to role workspace
   useEffect(() => {
     if (isAuthenticated && user?.role) {
-      const homeRoute = getHomeRouteForRole(user.role);
-      navigate(homeRoute, { replace: true });
+      if (user.mustChangePassword) {
+        setShowPasswordModal(true);
+      } else {
+        const homeRoute = getHomeRouteForRole(user.role);
+        navigate(homeRoute, { replace: true });
+      }
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -133,6 +140,11 @@ export const Login: React.FC = () => {
       if (response.data?.success && response.data.data) {
         const authData = response.data.data;
         setAuthData(authData);
+
+        if (authData.mustChangePassword || authData.user?.mustChangePassword) {
+          setShowPasswordModal(true);
+          return;
+        }
 
         const targetRoute = getHomeRouteForRole(authData.user.role);
         navigate(targetRoute, { replace: true });
@@ -501,6 +513,17 @@ export const Login: React.FC = () => {
           <span>Multi-tenant data partitioning enabled via MongoDB Atlas</span>
         </div>
       </div>
+
+      <MustChangePasswordModal
+        isOpen={showPasswordModal}
+        onSuccess={() => {
+          setShowPasswordModal(false);
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser?.role) {
+            navigate(getHomeRouteForRole(currentUser.role), { replace: true });
+          }
+        }}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { UserRole, getHomeRouteForRole } from '../../types/roles';
+import { MustChangePasswordModal } from '../modals/MustChangePasswordModal';
 
 interface RoleProtectedRouteProps {
   allowedRoles: UserRole[];
@@ -13,8 +14,9 @@ interface RoleProtectedRouteProps {
  * and OwnerPrivateRoute with a single component.
  *
  * 1. Not authenticated → redirect to /login
- * 2. Authenticated but role not in allowedRoles → redirect to getHomeRouteForRole()
- * 3. Otherwise → render children
+ * 2. Authenticated but mustChangePassword → block with mandatory password reset modal
+ * 3. Authenticated but role not in allowedRoles → redirect to getHomeRouteForRole()
+ * 4. Otherwise → render children
  */
 export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   allowedRoles,
@@ -32,6 +34,14 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (user?.mustChangePassword) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <MustChangePasswordModal isOpen={true} />
+      </div>
+    );
   }
 
   const userRole = user?.role as UserRole | undefined;

@@ -326,6 +326,33 @@ const defaultSettings: ReceiptSettings = {
   cancelKotPreviewWidth: 78,
 };
 
+const getScopedStorage = () => ({
+  getItem: (name: string) => {
+    try {
+      const tenantId = localStorage.getItem('quantrobill_tenant_id') || 'demo';
+      const scopedKey = `${name}_${tenantId}`;
+      const val = localStorage.getItem(scopedKey) || localStorage.getItem(name);
+      return val ? JSON.parse(val) : null;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name: string, value: any) => {
+    try {
+      const tenantId = localStorage.getItem('quantrobill_tenant_id') || 'demo';
+      const scopedKey = `${name}_${tenantId}`;
+      localStorage.setItem(scopedKey, JSON.stringify(value));
+    } catch {}
+  },
+  removeItem: (name: string) => {
+    try {
+      const tenantId = localStorage.getItem('quantrobill_tenant_id') || 'demo';
+      const scopedKey = `${name}_${tenantId}`;
+      localStorage.removeItem(scopedKey);
+    } catch {}
+  },
+});
+
 export const useReceiptSettingsStore = create<ReceiptSettingsStore>()(
   persist(
     (set) => ({
@@ -346,6 +373,7 @@ export const useReceiptSettingsStore = create<ReceiptSettingsStore>()(
     }),
     {
       name: 'quantrobill-receipt-settings',
+      storage: getScopedStorage() as any,
     }
   )
 );

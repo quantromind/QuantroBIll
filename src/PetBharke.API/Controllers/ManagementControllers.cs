@@ -86,6 +86,31 @@ public class TenantsController : ControllerBase
         return Ok(new { success = true, data = outlets });
     }
 
+    [HttpPut("{id}")]
+    [Authorize(Roles = "SuperAdmin,Owner")]
+    [RequireSameTenant]
+    public async Task<IActionResult> UpdateTenant(string id, [FromBody] UpdateTenantDto request)
+    {
+        var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
+        if (tenant == null)
+            return NotFound(new { success = false, message = "Tenant not found." });
+
+        var update = Builders<Tenant>.Update.Set(t => t.UpdatedAt, DateTime.UtcNow);
+        if (!string.IsNullOrWhiteSpace(request.BusinessName))
+            update = update.Set(t => t.BusinessName, request.BusinessName.Trim());
+        if (!string.IsNullOrWhiteSpace(request.OwnerPhone))
+            update = update.Set(t => t.OwnerPhone, request.OwnerPhone.Trim());
+        if (!string.IsNullOrWhiteSpace(request.City))
+            update = update.Set(t => t.City, request.City.Trim());
+        if (!string.IsNullOrWhiteSpace(request.State))
+            update = update.Set(t => t.State, request.State.Trim());
+        if (!string.IsNullOrWhiteSpace(request.GSTIN))
+            update = update.Set(t => t.GSTIN, request.GSTIN.Trim());
+
+        await _context.Tenants.UpdateOneAsync(t => t.Id == id, update);
+        return Ok(new { success = true, message = "Restaurant profile updated successfully." });
+    }
+
     [HttpGet("{id}/users")]
     [Authorize(Roles = "SuperAdmin,Owner")]
     [RequireSameTenant]
@@ -392,7 +417,8 @@ public class TenantsController : ControllerBase
     }
 
     [HttpPost("{id}/outlets")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin,Owner")]
+    [RequireSameTenant]
     public async Task<IActionResult> AddTenantOutlet(string id, [FromBody] CreateOutletDto request)
     {
         var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
@@ -487,6 +513,38 @@ public class UpdateTenantEmployeeDto
     public bool? IsActive { get; set; }
 }
 
+public class UpdateTenantDto
+{
+    public string? BusinessName { get; set; }
+    public string? OwnerPhone { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? GSTIN { get; set; }
+}
+
+public class UpdateTenantPlanDto
+{
+    public int SubscriptionPlan { get; set; }
+    public int MaxOutlets { get; set; }
+    public int ExtendMonths { get; set; } = 12;
+}
+
+public class CreateOutletRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? City { get; set; }
+    public string? Address { get; set; }
+    public string? Phone { get; set; }
+}
+
+public class UpdateOutletDto
+{
+    public string? Name { get; set; }
+    public string? City { get; set; }
+    public string? Address { get; set; }
+    public string? Phone { get; set; }
+}
+
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -567,6 +625,26 @@ public class OutletsController : ControllerBase
             return NotFound(new { success = false, message = "Outlet not found." });
 
         return Ok(new { success = true, message = "Printer settings updated successfully." });
+    }
+
+    [HttpPut("{id}")]
+    [Authorize(Roles = "SuperAdmin,Owner,Manager")]
+    public async Task<IActionResult> UpdateOutlet(string id, [FromBody] UpdateOutletDto request)
+    {
+        var tenantId = _currentUserService.TenantId;
+        if (string.IsNullOrEmpty(tenantId))
+            return Unauthorized(new { success = false, message = "Tenant context required." });
+
+        var update = Builders<Outlet>.Update.Set(o => o.UpdatedAt, DateTime.UtcNow);
+        if (!string.IsNullOrWhiteSpace(request.Name)) update = update.Set(o => o.Name, request.Name.Trim());
+        if (!string.IsNullOrWhiteSpace(request.Phone)) update = update.Set(o => o.Phone, request.Phone.Trim());
+        if (!string.IsNullOrWhiteSpace(request.Address)) update = update.Set(o => o.Address, request.Address.Trim());
+        if (!string.IsNullOrWhiteSpace(request.City)) update = update.Set(o => o.City, request.City.Trim());
+
+        var result = await _context.Outlets.UpdateOneAsync(o => o.Id == id && o.TenantId == tenantId, update);
+        if (result.MatchedCount == 0) return NotFound(new { success = false, message = "Outlet not found." });
+
+        return Ok(new { success = true, message = "Outlet updated successfully." });
     }
 }
 

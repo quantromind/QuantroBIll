@@ -43,6 +43,16 @@ const defaultRolePermissions: Record<string, OwnerEmployee['permissions']> = {
     recents: true, bakery: false, salesHistory: true, reports: false, expenses: false,
     inventory: false, kitchen: false, menu: false, settings: false, help: true,
   },
+  KitchenStaff: {
+    orders: false, fineDine: false, qsr: false, foodCourt: false, restroBar: false,
+    recents: false, bakery: false, salesHistory: false, reports: false, expenses: false,
+    inventory: false, kitchen: true, menu: false, settings: false, help: true,
+  },
+  DeliveryBoy: {
+    orders: true, fineDine: false, qsr: false, foodCourt: false, restroBar: false,
+    recents: true, bakery: false, salesHistory: false, reports: false, expenses: false,
+    inventory: false, kitchen: false, menu: false, settings: false, help: true,
+  },
   Chef: {
     orders: false, fineDine: false, qsr: false, foodCourt: false, restroBar: false,
     recents: false, bakery: false, salesHistory: false, reports: false, expenses: false,
@@ -72,9 +82,10 @@ export const EmployeeManager: React.FC = () => {
   const [createError, setCreateError] = useState<string | null>(null);
   const [newFullName, setNewFullName] = useState('');
   const [newUsername, setNewUsername] = useState('');
-  const [newRole, setNewRole] = useState<'Cashier' | 'Waiter' | 'Captain' | 'Chef' | 'Manager'>('Cashier');
+  const [newRole, setNewRole] = useState<'Cashier' | 'Waiter' | 'Captain' | 'KitchenStaff' | 'DeliveryBoy' | 'Manager'>('Cashier');
   const [newPhone, setNewPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newPin, setNewPin] = useState('');
   const [newPermissions, setNewPermissions] = useState<OwnerEmployee['permissions']>(defaultRolePermissions['Cashier']);
 
   // Editable Form fields for selected employee
@@ -93,7 +104,8 @@ export const EmployeeManager: React.FC = () => {
     else if (rawRole.includes('cashier')) role = 'Cashier';
     else if (rawRole.includes('waiter')) role = 'Waiter';
     else if (rawRole.includes('captain')) role = 'Captain';
-    else if (rawRole.includes('kitchen') || rawRole.includes('chef')) role = 'Chef';
+    else if (rawRole.includes('kitchen') || rawRole.includes('chef')) role = 'KitchenStaff';
+    else if (rawRole.includes('delivery') || rawRole.includes('rider') || rawRole.includes('boy')) role = 'DeliveryBoy';
 
     // Parse permissions from array or use role defaults
     const perms: OwnerEmployee['permissions'] = { ...defaultRolePermissions[role] };
@@ -122,15 +134,17 @@ export const EmployeeManager: React.FC = () => {
       menuCode,
       contact: u.phone || '',
       password: '',
+      pin: u.pin || '',
       role,
+      isActive: u.isActive !== false,
       isActiveNow: !!u.lastLoginAt && Date.now() - new Date(u.lastLoginAt).getTime() < 30 * 60 * 1000,
       lastActive: lastLogin,
       allowedSections: {
         fineDine: true,
         fineDineTables: 23,
-        takeAway: role !== 'Chef',
+        takeAway: role !== 'KitchenStaff' && role !== 'Chef',
         takeAwayCounters: 5,
-        homeDelivery: role !== 'Chef',
+        homeDelivery: role !== 'KitchenStaff' && role !== 'Chef',
         homeDeliveryZones: 10,
       },
       permissions: perms,
@@ -266,6 +280,27 @@ export const EmployeeManager: React.FC = () => {
     }
   };
 
+  // Toggle active status (deactivate / reactivate)
+  const handleToggleStatus = async () => {
+    if (!selectedEmployee || !tenantId) return;
+    const nextStatus = selectedEmployee.isActive === false ? true : false;
+    try {
+      setSaving(true);
+      await apiClient.put(`/tenants/${tenantId}/users/${selectedEmployee.id}`, {
+        isActive: nextStatus,
+      });
+      setEmployees((prev) =>
+        prev.map((emp) => (emp.id === selectedEmpId ? { ...emp, isActive: nextStatus } : emp))
+      );
+      setSavedAlert(true);
+      setTimeout(() => setSavedAlert(false), 2500);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to update employee status.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Handle Role change in Add Modal
   const handleNewRoleChange = (role: typeof newRole) => {
     setNewRole(role);
@@ -300,6 +335,7 @@ export const EmployeeManager: React.FC = () => {
         fullName: newFullName.trim() || newUsername.trim(),
         phone: newPhone.trim(),
         password: newPassword.trim(),
+        pin: newPin.trim() || undefined,
         role: newRole,
         permissions: activePermissions,
       });
@@ -319,6 +355,7 @@ export const EmployeeManager: React.FC = () => {
         setNewUsername('');
         setNewPhone('');
         setNewPassword('');
+        setNewPin('');
         setNewRole('Cashier');
         setNewPermissions(defaultRolePermissions['Cashier']);
         setSavedAlert(true);
@@ -466,9 +503,16 @@ export const EmployeeManager: React.FC = () => {
                       </div>
                     </div>
 
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${roleBadgeColor}`}>
-                      {emp.role}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {emp.isActive === false && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200">
+                          Inactive
+                        </span>
+                      )}
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${roleBadgeColor}`}>
+                        {emp.role}
+                      </span>
+                    </div>
                   </div>
                 );
               })
@@ -542,14 +586,29 @@ export const EmployeeManager: React.FC = () => {
                     </span>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="w-full sm:w-auto px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-sm shadow-blue-500/20 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
-                  >
-                    {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                    <span>{saving ? 'SAVING...' : 'UPDATE CREDENTIALS'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleToggleStatus}
+                      disabled={saving}
+                      className={`px-3 py-2 text-xs font-bold rounded-lg transition border cursor-pointer flex items-center gap-1.5 ${
+                        selectedEmployee.isActive !== false
+                          ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                      }`}
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>{selectedEmployee.isActive !== false ? 'Deactivate' : 'Reactivate'}</span>
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="w-full sm:w-auto px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-sm shadow-blue-500/20 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      <span>Save Credentials & Permissions</span>
+                    </button>
+                  </div>
                 </div>
               </form>
 
@@ -686,7 +745,8 @@ export const EmployeeManager: React.FC = () => {
                     <option value="Cashier">Cashier (Biller)</option>
                     <option value="Waiter">Waiter (Mobile Floor)</option>
                     <option value="Captain">Captain (Floor Manager)</option>
-                    <option value="Chef">Chef (Kitchen / KDS)</option>
+                    <option value="KitchenStaff">KitchenStaff (KDS / Kitchen)</option>
+                    <option value="DeliveryBoy">DeliveryBoy (Rider / Delivery)</option>
                     <option value="Manager">Manager (Store Admin)</option>
                   </select>
                 </div>
@@ -732,18 +792,33 @@ export const EmployeeManager: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  Login Password *
-                </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Set initial password for employee"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Login Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Set initial password for employee"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    POS Quick PIN (4 digits)
+                  </label>
+                  <input
+                    type="password"
+                    maxLength={4}
+                    placeholder="e.g. 1234"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
               </div>
 
               {/* Module Capabilities Quick Preview */}

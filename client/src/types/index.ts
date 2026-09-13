@@ -14,6 +14,7 @@ export interface UserProfile {
   permissions: string[];
   tenantId: string;
   outletId?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface TenantSummary {
@@ -40,6 +41,7 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  mustChangePassword?: boolean;
   user: UserProfile;
   tenant: TenantSummary | null;
   activeOutlet: OutletSummary | null;

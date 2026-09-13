@@ -4,7 +4,9 @@ export interface OwnerEmployee {
   menuCode: string;
   contact: string;
   password?: string;
-  role: 'Manager' | 'Cashier' | 'Captain' | 'Waiter' | 'Chef' | 'Rider';
+  pin?: string;
+  role: 'Manager' | 'Cashier' | 'Captain' | 'Waiter' | 'KitchenStaff' | 'DeliveryBoy' | 'Chef' | 'Rider';
+  isActive?: boolean;
   isActiveNow: boolean;
   lastActive: string;
   allowedSections: {

@@ -134,33 +134,164 @@ public class OrdersController : ControllerBase
             order.TotalAmount = Math.Round(order.SubTotal + order.CgstAmount + order.SgstAmount - order.DiscountAmount + order.DeliveryCharges);
         }
 
-        await _context.Orders.InsertOneAsync(order);
-
         var groupName = $"outlet_{tenantId}_{outletId}";
         var kdsGroupName = $"kds_{tenantId}_{outletId}";
 
-        // Update table status if DineIn
+        // Dine-In order handling (Open tabs, Repeat KOT accumulation, Table state)
         if (order.OrderType == OrderType.DineIn && !string.IsNullOrEmpty(order.TableNumber))
         {
+            var normalizedTableNumber = order.TableNumber.Trim().ToUpper();
+            order.TableNumber = normalizedTableNumber;
+
+            var existingTable = await _context.Tables
+                .Find(t => t.TenantId == tenantId && t.TableNumber == normalizedTableNumber && t.IsActive)
+                .FirstOrDefaultAsync();
+
             var isSettled = order.Status == OrderStatus.Delivered;
-            await _context.Tables.UpdateOneAsync(
-                t => t.TenantId == tenantId && t.TableNumber == order.TableNumber,
-                Builders<RestaurantTable>.Update
-                    .Set(t => t.IsOccupied, !isSettled)
-                    .Set(t => t.CurrentOrderId, isSettled ? null : order.Id)
-            );
+
+            if (isSettled)
+            {
+                // Bill payment / settlement flow
+                if (existingTable != null && !string.IsNullOrEmpty(existingTable.CurrentOrderId))
+                {
+                    await _context.Orders.UpdateOneAsync(
+                        o => o.Id == existingTable.CurrentOrderId && o.TenantId == tenantId,
+                        Builders<Order>.Update
+                            .Set(o => o.Status, OrderStatus.Delivered)
+                            .Set(o => o.DeliveredAt, DateTime.UtcNow)
+                            .Set(o => o.Payments, order.Payments)
+                            .Set(o => o.UpdatedAt, DateTime.UtcNow)
+                    );
+                }
+
+                await _context.Orders.InsertOneAsync(order);
+
+                if (existingTable != null)
+                {
+                    await _context.Tables.UpdateOneAsync(
+                        t => t.Id == existingTable.Id,
+                        Builders<RestaurantTable>.Update
+                            .Set(t => t.IsOccupied, false)
+                            .Set(t => t.CurrentOrderId, null)
+                            .Set(t => t.UpdatedAt, DateTime.UtcNow)
+                    );
+                }
+
+                await _orderHub.Clients.Group(groupName).SendAsync("TableStatusChanged", new
+                {
+                    tableNumber = normalizedTableNumber,
+                    isOccupied = false,
+                    currentOrderId = (string?)null,
+                    orderTotal = 0m,
+                    items = new List<OrderItem>()
+                });
+
+                await _orderHub.Clients.Group(groupName).SendAsync("ReceiveOrderUpdate", order);
+                await _orderHub.Clients.Group(kdsGroupName).SendAsync("ReceiveOrderUpdate", new
+                {
+                    id = order.Id,
+                    tableNumber = normalizedTableNumber,
+                    status = 5,
+                    kotNumber = order.KotNumber
+                });
+
+                return Ok(new { success = true, data = order });
+            }
+
+            // Non-settled: Check for active open tab on this table (Repeat KOT)
+            Order? activeOrder = null;
+            if (existingTable != null && existingTable.IsOccupied && !string.IsNullOrEmpty(existingTable.CurrentOrderId))
+            {
+                activeOrder = await _context.Orders
+                    .Find(o => o.Id == existingTable.CurrentOrderId && o.TenantId == tenantId && o.Status != OrderStatus.Delivered && o.Status != OrderStatus.Cancelled)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (activeOrder != null)
+            {
+                // Repeat KOT on existing open table: accumulate items and running total
+                activeOrder.Items.AddRange(order.Items);
+                activeOrder.SubTotal = activeOrder.Items.Sum(i => i.TotalPrice);
+                activeOrder.CgstAmount = activeOrder.SubTotal * 0.025m;
+                activeOrder.SgstAmount = activeOrder.SubTotal * 0.025m;
+                activeOrder.TotalAmount = Math.Round(activeOrder.SubTotal + activeOrder.CgstAmount + activeOrder.SgstAmount - activeOrder.DiscountAmount + activeOrder.DeliveryCharges);
+                activeOrder.UpdatedAt = DateTime.UtcNow;
+
+                await _context.Orders.ReplaceOneAsync(o => o.Id == activeOrder.Id, activeOrder);
+
+                // Broadcast cumulative running total to Tables & Billing
+                await _orderHub.Clients.Group(groupName).SendAsync("TableStatusChanged", new
+                {
+                    tableNumber = normalizedTableNumber,
+                    isOccupied = true,
+                    currentOrderId = activeOrder.Id,
+                    orderTotal = activeOrder.TotalAmount,
+                    billNumber = activeOrder.BillNumber,
+                    kotNumber = order.KotNumber,
+                    items = activeOrder.Items,
+                    orderTime = activeOrder.PlacedAt.ToString("o")
+                });
+
+                // Broadcast fresh delta KOT to KDS and Outlets
+                var repeatKotData = new
+                {
+                    orderId = activeOrder.Id,
+                    kotNumber = order.KotNumber,
+                    billNumber = activeOrder.BillNumber,
+                    tableNumber = normalizedTableNumber,
+                    orderType = order.OrderType.ToString(),
+                    placedAt = DateTime.UtcNow,
+                    items = order.Items,
+                    status = "Pending",
+                    totalAmount = activeOrder.TotalAmount
+                };
+                await _orderHub.Clients.Group(kdsGroupName).SendAsync("NewKOTReceived", repeatKotData);
+                await _orderHub.Clients.Group(groupName).SendAsync("NewKOTReceived", repeatKotData);
+                await _orderHub.Clients.Group(kdsGroupName).SendAsync("ReceiveOrderUpdate", new
+                {
+                    id = activeOrder.Id,
+                    kotNumber = order.KotNumber,
+                    tableNumber = normalizedTableNumber,
+                    orderType = order.OrderType.ToString(),
+                    placedAt = DateTime.UtcNow,
+                    items = order.Items,
+                    status = 1,
+                    totalAmount = activeOrder.TotalAmount
+                });
+
+                return Ok(new { success = true, data = activeOrder });
+            }
+
+            // Fresh Dine-In Order
+            await _context.Orders.InsertOneAsync(order);
+
+            if (existingTable != null)
+            {
+                await _context.Tables.UpdateOneAsync(
+                    t => t.Id == existingTable.Id,
+                    Builders<RestaurantTable>.Update
+                        .Set(t => t.IsOccupied, true)
+                        .Set(t => t.CurrentOrderId, order.Id)
+                        .Set(t => t.UpdatedAt, DateTime.UtcNow)
+                );
+            }
 
             await _orderHub.Clients.Group(groupName).SendAsync("TableStatusChanged", new
             {
-                tableNumber = order.TableNumber,
-                isOccupied = !isSettled,
-                currentOrderId = isSettled ? null : order.Id,
-                orderTotal = isSettled ? 0 : order.TotalAmount,
+                tableNumber = normalizedTableNumber,
+                isOccupied = true,
+                currentOrderId = order.Id,
+                orderTotal = order.TotalAmount,
                 billNumber = order.BillNumber,
                 kotNumber = order.KotNumber,
-                items = isSettled ? new List<OrderItem>() : order.Items,
-                orderTime = isSettled ? null : DateTime.UtcNow.ToString("o")
+                items = order.Items,
+                orderTime = DateTime.UtcNow.ToString("o")
             });
+        }
+        else
+        {
+            // Non-DineIn (TakeAway / Delivery)
+            await _context.Orders.InsertOneAsync(order);
         }
 
         // Real-time broadcast via SignalR
@@ -176,7 +307,7 @@ public class OrdersController : ControllerBase
             orderType = order.OrderType.ToString(),
             placedAt = order.PlacedAt,
             items = order.Items,
-            status = order.Status.ToString(),
+            status = "Pending",
             totalAmount = order.TotalAmount
         };
         await _orderHub.Clients.Group(kdsGroupName).SendAsync("NewKOTReceived", kotData);

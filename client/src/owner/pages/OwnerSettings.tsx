@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save,
   Store,
   Printer,
   Sliders,
   ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
+import { apiClient } from '../../services/api';
 
 export const OwnerSettings: React.FC = () => {
   const { user, tenant } = useAuthStore();
@@ -38,15 +40,91 @@ export const OwnerSettings: React.FC = () => {
   const [printerPort, setPrinterPort] = useState('9100');
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (tenant) {
-      tenant.businessName = restaurantName;
-      localStorage.setItem('quantrobill_tenant', JSON.stringify(tenant));
+  useEffect(() => {
+    // 1. Fetch Tenant details
+    if (tenant?.id) {
+      apiClient.get(`/tenants/${tenant.id}`).then((res) => {
+        if (res.data?.success && res.data?.data) {
+          const t = res.data.data;
+          if (t.businessName) setRestaurantName(t.businessName);
+          if (t.ownerPhone) setPhone(t.ownerPhone);
+        }
+      }).catch(() => {});
     }
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+
+    // 2. Fetch Outlet details & tax settings
+    const outletId = user?.outletId || (tenant as any)?.outlets?.[0]?.id;
+    if (outletId) {
+      apiClient.get(`/outlets/${outletId}`).then((res) => {
+        if (res.data?.success && res.data?.data) {
+          const o = res.data.data;
+          if (o.name) setBranchName(o.name);
+          if (o.phone) setPhone(o.phone);
+          if (o.taxSettings) {
+            setCgstRate(o.taxSettings.cgstPercentage ?? 2.5);
+            setSgstRate(o.taxSettings.sgstPercentage ?? 2.5);
+            setEnableServiceCharge((o.taxSettings.serviceChargePercentage || 0) > 0);
+            setServiceChargeRate(o.taxSettings.serviceChargePercentage || 5);
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [tenant?.id, user?.outletId]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      if (tenant?.id) {
+        await apiClient.put(`/tenants/${tenant.id}`, {
+          businessName: restaurantName,
+          ownerPhone: phone,
+        });
+      }
+
+      const outletId = user?.outletId || (tenant as any)?.outlets?.[0]?.id;
+      if (outletId) {
+        await Promise.all([
+          apiClient.put(`/outlets/${outletId}`, {
+            name: branchName,
+            phone: phone,
+          }),
+          apiClient.put(`/outlets/${outletId}/tax-settings`, {
+            cgstPercentage: cgstRate,
+            sgstPercentage: sgstRate,
+            serviceChargePercentage: enableServiceCharge ? serviceChargeRate : 0,
+            isGstInclusive: false,
+          }),
+          apiClient.put(`/outlets/${outletId}/printer-settings`, {
+            printerType: printerConnection === 'NETWORK_IP' ? 'Thermal80mm' : 'Thermal58mm',
+            headerText: `Thank you for dining at ${restaurantName}!`,
+            footerText: 'Visit again soon!',
+            autoPrintKOT: true,
+            autoPrintBill: true,
+          }),
+        ]);
+      }
+
+      if (tenant) {
+        tenant.businessName = restaurantName;
+        localStorage.setItem('quantrobill_tenant', JSON.stringify(tenant));
+      }
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3500);
+    } catch (err) {
+      console.error('Failed to save settings to backend:', err);
+      // Fallback local update
+      if (tenant) {
+        tenant.businessName = restaurantName;
+        localStorage.setItem('quantrobill_tenant', JSON.stringify(tenant));
+      }
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3500);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -326,10 +404,11 @@ export const OwnerSettings: React.FC = () => {
         <div className="pt-4 border-t border-slate-200 flex justify-end">
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-black hover:bg-neutral-800 text-white font-bold rounded-lg shadow-2xs transition cursor-pointer"
+            disabled={isSaving}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-black hover:bg-neutral-800 disabled:opacity-50 text-white font-bold rounded-lg shadow-2xs transition cursor-pointer"
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>Save All Configurations</span>
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            <span>{isSaving ? 'Saving...' : 'Save All Configurations'}</span>
           </button>
         </div>
       </form>

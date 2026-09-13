@@ -121,6 +121,7 @@ interface MenuState {
   updateItem: (id: string, updated: Partial<MenuItemData>) => void;
   deleteItem: (id: string) => void;
   toggleItemAvailability: (id: string) => void;
+  setItemAvailability: (id: string, isAvailable: boolean) => void;
   resetToDefaults: () => void;
 }
 
@@ -364,6 +365,14 @@ export const useMenuStore = create<MenuState>((set, get) => ({
     apiClient.patch(`/menu/items/${id}/toggle-availability`).catch(() => {
       // Ignore background failure, local state is preserved
     });
+  },
+
+  setItemAvailability: (id: string, isAvailable: boolean) => {
+    const updated = get().items.map((i) =>
+      i.id === id ? { ...i, isAvailable } : i
+    );
+    set({ items: updated });
+    localStorage.setItem(getItemStorageKey(), JSON.stringify(updated));
   },
 
   resetToDefaults: () => {

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
-import { getHomeRouteForRole, SUPERADMIN_ROLES, POS_ROLES, FINANCE_ROLES, MANAGEMENT_ROLES } from './types/roles';
+import { getHomeRouteForRole, SUPERADMIN_ROLES, POS_ROLES, FINANCE_ROLES, MANAGEMENT_ROLES, UserRole } from './types/roles';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
 import { Login } from './pages/Login';
@@ -111,13 +111,62 @@ export const App: React.FC = () => {
               </RoleProtectedRoute>
             }
           >
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/online-orders" element={<OnlineOrders />} />
-            <Route path="/tables" element={<TableManager />} />
-            <Route path="/menu-manager" element={<MenuManager />} />
-            <Route path="/operations" element={<Operations />} />
-            <Route path="/kds" element={<KDS />} />
-            <Route path="/receipt-settings" element={<ReceiptSettings />} />
+            <Route
+              path="/billing"
+              element={
+                <RoleProtectedRoute allowedRoles={[UserRole.SuperAdmin, UserRole.Owner, UserRole.Manager, UserRole.Cashier, UserRole.Captain]}>
+                  <Billing />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/online-orders"
+              element={
+                <RoleProtectedRoute allowedRoles={[UserRole.SuperAdmin, UserRole.Owner, UserRole.Manager, UserRole.Cashier, UserRole.DeliveryBoy]}>
+                  <OnlineOrders />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/tables"
+              element={
+                <RoleProtectedRoute allowedRoles={[UserRole.SuperAdmin, UserRole.Owner, UserRole.Manager, UserRole.Cashier, UserRole.Waiter, UserRole.Captain]}>
+                  <TableManager />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/menu-manager"
+              element={
+                <RoleProtectedRoute allowedRoles={[UserRole.SuperAdmin, UserRole.Owner, UserRole.Manager, UserRole.Cashier]}>
+                  <MenuManager />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/operations"
+              element={
+                <RoleProtectedRoute allowedRoles={[UserRole.SuperAdmin, UserRole.Owner, UserRole.Manager, UserRole.Cashier, UserRole.Captain]}>
+                  <Operations />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/kds"
+              element={
+                <RoleProtectedRoute allowedRoles={[UserRole.SuperAdmin, UserRole.Owner, UserRole.Manager, UserRole.KitchenStaff, UserRole.Cashier]}>
+                  <KDS />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/receipt-settings"
+              element={
+                <RoleProtectedRoute allowedRoles={[UserRole.SuperAdmin, UserRole.Owner, UserRole.Manager, UserRole.Cashier]}>
+                  <ReceiptSettings />
+                </RoleProtectedRoute>
+              }
+            />
           </Route>
 
           {/* ========================================= */}

@@ -3,6 +3,7 @@ import type { OrderItem, OrderType, PaymentMode } from '../types';
 import type { OwnerSaleTransaction, InventoryIngredient } from '../owner/types';
 import { apiClient } from '../services/api';
 import { signalRService } from '../services/signalr';
+import { useMenuStore } from './menuStore';
 
 export interface KdsItem {
   name: string;
@@ -282,10 +283,27 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
       if (!order) return;
       console.log('--> [posSyncStore] SignalR real-time event received:', order);
 
-      // Status 4 = FoodReady, 5 = Delivered/Settled
+      // Status 4 = FoodReady/Dispatched, 5 = Delivered/Settled
       if (order.status === 4 || order.status === 5 || order.status === 'FoodReady' || order.status === 'Delivered') {
         set((state) => {
-          const remainingKOTs = state.activeKOTs.filter((t) => t.id !== order.id && t.kotNo !== order.kotNumber);
+          const cleanTable = order.tableNumber ? String(order.tableNumber).trim().toUpperCase() : '';
+
+          const remainingKOTs = state.activeKOTs.filter((t) => {
+            if (t.id === order.id || (order.kotNumber && t.kotNo === order.kotNumber)) return false;
+            if (cleanTable) {
+              const tTable = t.tableNumber ? String(t.tableNumber).trim().toUpperCase() : '';
+              if (tTable && tTable === cleanTable) return false;
+              if (t.tableOrChannel && t.tableOrChannel.trim().toUpperCase() === `TABLE ${cleanTable}`) return false;
+            }
+            return true;
+          });
+
+          const clearedTickets = state.activeKOTs
+            .filter((t) => !remainingKOTs.some((r) => r.id === t.id))
+            .map((t) => ({ ...t, status: 'Completed' as const }));
+
+          const nextCompleted = [...clearedTickets, ...state.completedKOTs].slice(0, 30);
+
           // If settled, ensure it is added into sales ledger
           if (order.status === 5 || order.status === 'Delivered') {
             const billDisplayNo = order.billNumber
@@ -344,10 +362,10 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
                 const key = getSalesStorageKey();
                 localStorage.setItem(key, JSON.stringify(newSales.slice(0, 500)));
               } catch {}
-              return { activeKOTs: remainingKOTs, sales: newSales };
+              return { activeKOTs: remainingKOTs, completedKOTs: nextCompleted, sales: newSales };
             }
           }
-          return { activeKOTs: remainingKOTs };
+          return { activeKOTs: remainingKOTs, completedKOTs: nextCompleted };
         });
         return;
       }
@@ -356,7 +374,7 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
       if (existing) {
         set((state) => ({
           activeKOTs: state.activeKOTs.map((t) =>
-            t.id === order.id ? { ...t, status: order.status === 2 ? 'InPrep' : t.status } : t
+            t.id === order.id ? { ...t, status: order.isPreparing ? 'InPrep' : t.status } : t
           )
         }));
       } else {
@@ -386,6 +404,51 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
           playKitchenKdsChime();
         }
       }
+    });
+
+    signalRService.on('NewKOTReceived', (kotData: any) => {
+      if (!kotData) return;
+      console.log('--> [posSyncStore] NewKOTReceived event:', kotData);
+      const existing = get().activeKOTs.find((t) => (kotData.orderId && t.id === kotData.orderId) || (kotData.kotNumber && t.kotNo === kotData.kotNumber));
+      if (existing) return;
+
+      const newTicket: KdsTicket = {
+        id: kotData.orderId || `kot-sig-${Date.now()}`,
+        kotNo: kotData.kotNumber || `KOT-${Date.now().toString().slice(-3)}`,
+        orderType: typeof kotData.orderType === 'string' ? kotData.orderType : 'Dine In',
+        tableOrChannel: kotData.tableNumber ? `Table ${kotData.tableNumber}` : 'Counter Order',
+        tableNumber: kotData.tableNumber,
+        createdAt: new Date(kotData.placedAt || Date.now()).getTime(),
+        elapsedMinutes: 0,
+        items: (kotData.items || []).map((it: any) => ({
+          name: it.name,
+          qty: it.quantity,
+          note: it.specialNotes,
+          station: 'Kitchen',
+        })),
+        status: 'Pending',
+        station: 'Kitchen',
+      };
+
+      set((state) => ({
+        activeKOTs: [newTicket, ...state.activeKOTs],
+      }));
+
+      if (get().audioChimeEnabled) {
+        playKitchenKdsChime();
+      }
+    });
+
+    signalRService.on('MenuItemAvailabilityChanged', (data: any) => {
+      if (data?.itemId) {
+        console.log('--> [posSyncStore] MenuItemAvailabilityChanged event:', data);
+        useMenuStore.getState().setItemAvailability(data.itemId, !!data.isAvailable);
+      }
+    });
+
+    signalRService.on('MenuCatalogUpdated', () => {
+      console.log('--> [posSyncStore] MenuCatalogUpdated event received. Refreshing menu catalog...');
+      useMenuStore.getState().fetchFromBackend();
     });
   },
 
@@ -431,7 +494,7 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
     }
 
     // Async persist to MongoDB & broadcast via SignalR
-    apiClient.post('/orders', {
+    apiClient.post<{ success: boolean; data: any }>('/orders', {
       orderType: orderType === 'Delivery' ? 2 : orderType === 'Parcel' ? 5 : orderType === 'TakeAway' || orderType === 'Take Away' ? 4 : 1,
       tableNumber: tableNumber || '',
       kotNumber,
@@ -445,6 +508,14 @@ export const usePosSyncStore = create<PosSyncState>((set, get) => ({
         specialNotes: i.itemNote || '',
       })),
       specialInstructions: items.find((i) => i.itemNote)?.itemNote || '',
+    }).then((res) => {
+      if (res.data?.data?.id) {
+        set((state) => ({
+          activeKOTs: state.activeKOTs.map((t) =>
+            t.kotNo === kotNumber ? { ...t, id: res.data.data.id } : t
+          ),
+        }));
+      }
     }).catch((err) => {
       console.debug('Async KOT backend persist fallback:', err?.message || err);
     });

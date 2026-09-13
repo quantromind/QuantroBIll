@@ -16,11 +16,13 @@ public class MenuController : ControllerBase
 {
     private readonly IMongoDbContext _context;
     private readonly ICurrentUserService _currentUser;
+    private readonly IHubContext<OrderHub> _orderHub;
 
-    public MenuController(IMongoDbContext context, ICurrentUserService currentUser)
+    public MenuController(IMongoDbContext context, ICurrentUserService currentUser, IHubContext<OrderHub> orderHub)
     {
         _context = context;
         _currentUser = currentUser;
+        _orderHub = orderHub;
     }
 
     [HttpGet("categories")]
@@ -52,6 +54,8 @@ public class MenuController : ControllerBase
         category.IsActive = true;
 
         await _context.Categories.InsertOneAsync(category);
+        await _orderHub.Clients.Group($"outlet_{category.TenantId}_{category.OutletId}")
+            .SendAsync("MenuCatalogUpdated");
         return Ok(new { success = true, data = category });
     }
 
@@ -66,6 +70,10 @@ public class MenuController : ControllerBase
         );
 
         if (result.MatchedCount == 0) return NotFound();
+        var tenantId = _currentUser.TenantId ?? string.Empty;
+        var outletId = _currentUser.OutletId ?? category.OutletId ?? string.Empty;
+        await _orderHub.Clients.Group($"outlet_{tenantId}_{outletId}")
+            .SendAsync("MenuCatalogUpdated");
         return Ok(new { success = true, data = category });
     }
 
@@ -79,6 +87,10 @@ public class MenuController : ControllerBase
         );
 
         if (result.MatchedCount == 0) return NotFound();
+        var tenantId = _currentUser.TenantId ?? string.Empty;
+        var outletId = _currentUser.OutletId ?? string.Empty;
+        await _orderHub.Clients.Group($"outlet_{tenantId}_{outletId}")
+            .SendAsync("MenuCatalogUpdated");
         return Ok(new { success = true, message = "Category deleted." });
     }
 
@@ -130,6 +142,8 @@ public class MenuController : ControllerBase
         item.IsActive = true;
 
         await _context.MenuItems.InsertOneAsync(item);
+        await _orderHub.Clients.Group($"outlet_{item.TenantId}_{item.OutletId}")
+            .SendAsync("MenuCatalogUpdated");
         return Ok(new { success = true, data = item });
     }
 
@@ -220,6 +234,9 @@ public class MenuController : ControllerBase
             await _context.MenuItems.InsertManyAsync(menuItemsToInsert);
         }
 
+        await _orderHub.Clients.Group($"outlet_{tenantId}_{outletId}")
+            .SendAsync("MenuCatalogUpdated");
+
         return Ok(new
         {
             success = true,
@@ -253,6 +270,10 @@ public class MenuController : ControllerBase
         );
 
         if (result.MatchedCount == 0) return NotFound();
+        var tenantId = _currentUser.TenantId ?? string.Empty;
+        var outletId = _currentUser.OutletId ?? item.OutletId ?? string.Empty;
+        await _orderHub.Clients.Group($"outlet_{tenantId}_{outletId}")
+            .SendAsync("MenuCatalogUpdated");
         return Ok(new { success = true, data = item });
     }
 
@@ -266,6 +287,10 @@ public class MenuController : ControllerBase
         );
 
         if (result.MatchedCount == 0) return NotFound();
+        var tenantId = _currentUser.TenantId ?? string.Empty;
+        var outletId = _currentUser.OutletId ?? string.Empty;
+        await _orderHub.Clients.Group($"outlet_{tenantId}_{outletId}")
+            .SendAsync("MenuCatalogUpdated");
         return Ok(new { success = true, message = "Menu item deleted." });
     }
 
@@ -287,6 +312,11 @@ public class MenuController : ControllerBase
                 .Set(m => m.IsAvailable, item.IsAvailable)
                 .Set(m => m.UpdatedAt, DateTime.UtcNow)
         );
+
+        var tenantId = _currentUser.TenantId ?? string.Empty;
+        var outletId = _currentUser.OutletId ?? item.OutletId ?? string.Empty;
+        await _orderHub.Clients.Group($"outlet_{tenantId}_{outletId}")
+            .SendAsync("MenuItemAvailabilityChanged", new { itemId = id, isAvailable = item.IsAvailable });
 
         return Ok(new { success = true, isAvailable = item.IsAvailable });
     }
