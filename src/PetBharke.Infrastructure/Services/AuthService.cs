@@ -29,14 +29,17 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var identifier = request.Identifier.Trim().ToLower();
-        var altIdentifier = identifier.Contains("@gmal.com") 
-            ? identifier.Replace("@gmal.com", "@gmail.com") 
-            : identifier.Replace("@gmail.com", "@gmal.com");
+        var cleanIdentifier = identifier
+            .Replace("@gmamil.com", "@gmail.com")
+            .Replace("@gmaill.com", "@gmail.com")
+            .Replace("@gmai.com", "@gmail.com")
+            .Replace("@gmal.com", "@gmail.com");
 
         var user = await _context.Users
             .Find(u => (u.Email.ToLower() == identifier || 
-                        u.Email.ToLower() == altIdentifier || 
-                        u.Username.ToLower() == identifier) && u.IsActive)
+                        u.Email.ToLower() == cleanIdentifier || 
+                        u.Username.ToLower() == identifier ||
+                        u.Username.ToLower() == cleanIdentifier) && u.IsActive)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (user == null)

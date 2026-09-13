@@ -263,6 +263,9 @@ public class TenantsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(request.Password))
             updateBuilder = updateBuilder.Set(u => u.PasswordHash, _passwordHasher.HashPassword(request.Password));
 
+        if (!string.IsNullOrWhiteSpace(request.Pin))
+            updateBuilder = updateBuilder.Set(u => u.Pin, request.Pin.Trim());
+
         if (!string.IsNullOrWhiteSpace(request.Role) && Enum.TryParse<UserRole>(request.Role, true, out var role))
         {
             // SECURITY: Non-SuperAdmin cannot assign SuperAdmin role
@@ -508,6 +511,7 @@ public class UpdateTenantEmployeeDto
     public string? FullName { get; set; }
     public string? Phone { get; set; }
     public string? Password { get; set; }
+    public string? Pin { get; set; }
     public string? Role { get; set; }
     public List<string>? Permissions { get; set; }
     public bool? IsActive { get; set; }

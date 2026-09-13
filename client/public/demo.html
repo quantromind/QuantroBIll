@@ -338,208 +338,531 @@
       border-radius: 50%;
     }
 
-    .arch-flow-wrapper {
+    /* =================================================== */
+    /* INTERACTIVE CLICKABLE FLOW DIAGRAM (LIGHT THEME)    */
+    /* =================================================== */
+    #tab-diagram {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 2.25rem 2rem;
+      color: #0f172a;
+      box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .flow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .flow-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #1d4ed8;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      margin-bottom: 0.4rem;
+    }
+
+    .pulse-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+    .flow-main-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 0.35rem 0;
+      letter-spacing: -0.01em;
+    }
+
+    .flow-main-subtitle {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin: 0;
+      max-width: 620px;
+      line-height: 1.45;
+    }
+
+    .flow-legend {
+      display: flex;
+      gap: 0.85rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .flow-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: #475569;
+      font-weight: 500;
+    }
+
+    .legend-dot-blue {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      background: #2563eb;
+    }
+
+    .legend-dot-dashed {
+      width: 16px;
+      height: 2px;
+      border-top: 2px dashed #2563eb;
+    }
+
+    .legend-pill-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: var(--font-mono, monospace);
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      padding: 1px 6px;
+      border-radius: 9999px;
+    }
+
+    /* Diagram Canvas */
+    .flow-canvas {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2.2rem;
       position: relative;
-      padding: 1rem 0;
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
     }
 
-    .flow-row {
+    /* Node Card: White background, blue border ~1.5px, ~10px rounded corners */
+    .flow-node {
+      background: #ffffff;
+      border: 1.5px solid #2563eb;
+      border-radius: 10px;
+      padding: 0.85rem 1.25rem;
+      width: 230px;
+      cursor: pointer;
+      user-select: none;
       display: flex;
-      justify-content: center;
-      gap: 2rem;
-      width: 100%;
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.25rem;
       position: relative;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
       z-index: 2;
     }
 
-    .arch-node {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 1.25rem 1.4rem;
-      width: 250px;
-      min-height: 120px;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      backdrop-filter: blur(12px);
+    .flow-node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18);
+      border-color: #1d4ed8;
     }
 
-    .arch-node:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-glow);
-      background: var(--bg-card-hover);
-      box-shadow: 0 12px 30px rgba(99, 102, 241, 0.2);
+    .flow-node:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: 3px;
     }
 
-    .arch-node.selected {
-      border-color: #818cf8;
-      background: rgba(30, 41, 59, 0.95);
-      box-shadow: 0 0 30px rgba(99, 102, 241, 0.35);
+    /* Active Highlight: Blue Fill */
+    .flow-node.active {
+      background: #2563eb;
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25), 0 10px 24px rgba(37, 99, 235, 0.35);
+      transform: scale(1.02);
     }
 
-    .node-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.6rem;
-    }
-
-    .node-icon {
+    .flow-node .node-icon-wrap {
       width: 36px;
       height: 36px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      background: #eff6ff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
+      margin-bottom: 0.2rem;
+      transition: all 0.2s ease;
     }
 
-    .node-title {
+    .flow-node .node-icon-wrap svg {
+      width: 20px;
+      height: 20px;
+      stroke: #2563eb;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      transition: stroke 0.2s ease;
+    }
+
+    .flow-node .flow-node-title {
+      font-size: 0.94rem;
       font-weight: 700;
-      font-size: 0.95rem;
-      line-height: 1.3;
+      color: #0f172a;
+      line-height: 1.25;
+      transition: color 0.2s ease;
     }
 
-    .node-route {
-      font-family: var(--font-mono);
+    .flow-node .flow-node-subtitle {
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: #64748b;
+      transition: color 0.2s ease;
+    }
+
+    /* Active node inverts text and icons */
+    .flow-node.active .node-icon-wrap {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .flow-node.active .node-icon-wrap svg {
+      stroke: #ffffff;
+    }
+
+    .flow-node.active .flow-node-title {
+      color: #ffffff;
+    }
+
+    .flow-node.active .flow-node-subtitle {
+      color: #dbeafe;
+    }
+
+    /* Smaller card variant for 4 payment nodes */
+    .flow-node-sm {
+      width: 100%;
+      min-width: 160px;
+      max-width: 210px;
+      padding: 0.75rem 1rem;
+    }
+
+    .flow-node-sm .flow-node-title {
+      font-size: 0.88rem;
+    }
+
+    .flow-node-sm .flow-node-subtitle {
       font-size: 0.72rem;
-      color: var(--cyan);
-      display: block;
-      margin-top: 0.2rem;
     }
 
-    .node-desc {
-      font-size: 0.76rem;
-      color: var(--text-muted);
-      line-height: 1.4;
-      margin-bottom: 0.75rem;
-    }
-
-    .node-action-bar {
+    /* Vertical Dashed Connector */
+    .flow-connector-v {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
-      padding-top: 0.6rem;
-      border-top: 1px solid var(--border-subtle);
+      height: 40px;
+      position: relative;
+      z-index: 1;
     }
 
-    .node-tag {
-      font-size: 0.65rem;
-      font-weight: 700;
-      padding: 0.15rem 0.45rem;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-muted);
-      font-family: var(--font-mono);
+    .flow-connector-v svg {
+      width: 24px;
+      height: 40px;
+      overflow: visible;
     }
 
-    .node-link-btn {
-      font-size: 0.72rem;
-      color: var(--primary-light);
-      text-decoration: none;
-      font-weight: 600;
+    /* Stage 2 Row: Order Details (center) + Side Branch (Flag large order) */
+    .flow-stage-branch-row {
       display: flex;
       align-items: center;
-      gap: 0.25rem;
-      transition: color 0.2s;
+      justify-content: center;
+      position: relative;
+      width: 100%;
     }
 
-    .node-link-btn:hover {
-      color: white;
-      text-decoration: underline;
-    }
-
-    .bus-node {
-      width: 440px;
-      border-color: rgba(99, 102, 241, 0.6);
-      background: linear-gradient(135deg, rgba(30, 27, 75, 0.7), rgba(15, 23, 42, 0.85));
-      box-shadow: 0 0 35px rgba(99, 102, 241, 0.25);
-    }
-
-    .bus-node .node-icon {
-      background: linear-gradient(135deg, #6366f1, #06b6d4);
-      color: white;
-    }
-
-    /* Node Inspector Drawer */
-    .inspector-drawer {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-top: 2rem;
-      display: none;
-      animation: fadeIn 0.25s ease;
-    }
-
-    .inspector-drawer.active {
-      display: block;
-    }
-
-    .drawer-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .drawer-title-group {
+    .flow-connector-branch {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      position: relative;
+      width: 130px;
+      height: 32px;
+      justify-content: center;
+      margin: 0 -4px;
     }
 
-    .drawer-badge {
-      padding: 0.25rem 0.6rem;
+    .flow-connector-branch svg {
+      width: 100%;
+      height: 24px;
+      position: absolute;
+      top: 4px;
+      left: 0;
+      overflow: visible;
+    }
+
+    .branch-pill-label {
+      position: relative;
+      z-index: 3;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #93c5fd;
       border-radius: 9999px;
-      font-size: 0.72rem;
+      padding: 2px 9px;
+      font-size: 0.7rem;
       font-weight: 700;
-      font-family: var(--font-mono);
-      background: rgba(99, 102, 241, 0.2);
-      color: var(--primary-light);
+      font-family: var(--font-mono, monospace);
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
     }
 
-    .drawer-grid {
+    /* Stage 5: Payment Branches Grid */
+    .payment-branches-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin-top: 2px;
+    }
+
+    .payment-tree-svg-container {
+      width: 100%;
+      max-width: 880px;
+      height: 44px;
+      display: flex;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .payment-tree-svg-container svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .payment-cards-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 880px;
+      z-index: 2;
     }
 
-    .drawer-block {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--border-subtle);
+    /* Connector line animation & traveling pulse */
+    @keyframes dashMove {
+      to {
+        stroke-dashoffset: -18;
+      }
+    }
+
+    .active-flow line,
+    .active-flow path {
+      stroke: #1d4ed8 !important;
+      stroke-width: 2.2px !important;
+      animation: dashMove 0.75s linear infinite;
+    }
+
+    .active-flow .pulse-dot {
+      opacity: 1;
+      animation: pulseDotTravel 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulseDotTravel {
+      0% {
+        transform: scale(0.8);
+        opacity: 0.3;
+      }
+      50% {
+        transform: scale(1.4);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(0.8);
+        opacity: 0.3;
+      }
+    }
+
+    /* On-Click Redirect Info Panel */
+    .redirect-panel {
+      background: #ffffff;
+      border: 1.5px solid #2563eb;
       border-radius: 12px;
-      padding: 1rem;
+      padding: 1.25rem 1.6rem;
+      width: 100%;
+      max-width: 880px;
+      margin-top: 2.25rem;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+      position: relative;
     }
 
-    .block-title {
-      font-size: 0.78rem;
+    /* Short fade/slide animation (150-200ms) */
+    .redirect-panel.animate-in {
+      animation: panelSlideFade 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes panelSlideFade {
+      0% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .redirect-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 0.85rem;
+    }
+
+    .redirect-title-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.92rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-dim);
-      margin-bottom: 0.5rem;
+      color: #1e40af;
+      background: #eff6ff;
+      padding: 0.35rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid #bfdbfe;
     }
 
-    .code-snippet {
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      color: #cbd5e1;
-      white-space: pre-wrap;
-      line-height: 1.5;
+    .redirect-title-badge strong {
+      color: #1d4ed8;
     }
+
+    .redirect-component-tag {
+      font-family: var(--font-mono, monospace);
+      font-size: 0.78rem;
+      color: #475569;
+      background: #f8fafc;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .panel-launch-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.45rem 0.95rem;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #ffffff;
+      text-decoration: none;
+      transition: background 0.15s ease, transform 0.15s ease;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+
+    .panel-launch-btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+      color: #ffffff;
+    }
+
+    .redirect-desc {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: #334155;
+      margin: 0 0 1rem 0;
+    }
+
+    .redirect-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      border: 1px solid #f1f5f9;
+    }
+
+    .meta-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .meta-col .meta-lbl {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .meta-col .meta-val {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 860px) {
+      .flow-stage-branch-row {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .flow-connector-branch {
+        transform: rotate(90deg);
+        height: 48px;
+      }
+      .payment-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .payment-tree-svg-container {
+        display: none;
+      }
+      .redirect-meta-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .payment-cards-grid {
+        grid-template-columns: 1fr;
+      }
+      .flow-node {
+        width: 100%;
+        max-width: 280px;
+      }
+      #tab-diagram {
+        padding: 1.5rem 1rem;
+      }
+    }
+
+    /* Accessibility: prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      .flow-node,
+      .redirect-panel,
+      .panel-launch-btn,
+      .active-flow line,
+      .active-flow path,
+      .pulse-dot {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
 
     /* 2. ROLE GUIDES */
     .roles-grid {
@@ -915,7 +1238,7 @@
     <!-- Top Navigation Tabs -->
     <div class="nav-tabs">
       <button class="tab-btn active" onclick="switchTab('tab-diagram')">
-        <span>🌐</span> Interactive Architecture
+        <span>🔄</span> Interactive Screen Flow
       </button>
       <button class="tab-btn" onclick="switchTab('tab-guides')">
         <span>📖</span> Step-by-Step Usage Guides
@@ -966,290 +1289,218 @@
     <!-- =================================================== -->
     <!-- TAB 1: INTERACTIVE ARCHITECTURE DIAGRAM            -->
     <!-- =================================================== -->
+    <!-- =================================================== -->
+    <!-- TAB 1: INTERACTIVE CLICKABLE FLOW DIAGRAM          -->
+    <!-- =================================================== -->
     <section id="tab-diagram" class="tab-panel active">
-      <div class="section-header">
+      <!-- Section Header with Light Theme -->
+      <div class="flow-header">
         <div>
-          <div class="section-title">
-            <span>🌐</span> Reactive Multi-Client Architecture Flow
+          <div class="flow-badge-pill">
+            <span class="pulse-status-dot"></span> Live Restaurant Lifecycle
           </div>
-          <div class="section-subtitle">
-            Click on any module node below to inspect its live data packets, reactive store bindings, and launch its live screen.
-          </div>
+          <h2 class="flow-main-title">Interactive Order Flow & Screen Redirection</h2>
+          <p class="flow-main-subtitle">
+            Click any step in the pipeline below to simulate navigation between real QuantroBill screens, view live route destinations, and inspect reactive data triggers.
+          </p>
         </div>
-        <div class="diagram-legend">
-          <div class="legend-item"><span class="legend-dot" style="background:#818cf8;"></span> Order Ingress (Punchers)</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#06b6d4;"></span> Reactive Data Bus</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Execution & Output</div>
-          <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Executive Analytics</div>
+        <div class="flow-legend">
+          <div class="flow-legend-item">
+            <span class="legend-dot-blue"></span> Active Screen (Clicked)
+          </div>
+          <div class="flow-legend-item">
+            <span class="legend-dot-dashed"></span> Dashed Flow Connector
+          </div>
+          <div class="flow-legend-item">
+            <span class="legend-pill-tag">table &gt; 6 pax</span> Branch Trigger
+          </div>
         </div>
       </div>
 
-      <div class="diagram-container">
-        <div class="arch-flow-wrapper">
+      <!-- Diagram Canvas -->
+      <div class="flow-canvas">
 
-          <!-- Level 1: Ingress Clients -->
-          <div class="flow-row">
-            <!-- Node: Waiter Mobile -->
-            <div class="arch-node" onclick="inspectNode('waiter-mobile')" id="node-waiter">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">📱</div>
-                  <div>
-                    <div class="node-title">Waiter Mobile App</div>
-                    <span class="node-route">waiter-mobile/ (RN)</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Handheld order puncher with 4-digit PIN, floor grid, cooking notes & 1-tap KOT fire.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">POST /api/orders</span>
-                <a href="#tab-guides" onclick="switchTab('tab-guides')" class="node-link-btn">How to use →</a>
-              </div>
-            </div>
-
-            <!-- Node: Cashier POS -->
-            <div class="arch-node" onclick="inspectNode('staff-pos')" id="node-pos">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(244, 63, 94, 0.15); color: #fb7185;">🧾</div>
-                  <div>
-                    <div class="node-title">Staff POS Billing</div>
-                    <span class="node-route">/billing</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  High-speed cashier register, F1-F4 hotkeys, table merge/split, and invoice settlement.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">Billing.tsx</span>
-                <a href="/billing" target="_blank" class="node-link-btn">Launch Screen ↗</a>
-              </div>
-            </div>
+        <!-- 1. NEW ORDER (Billing screen) -->
+        <div class="flow-node active" id="node-new-order" onclick="selectFlowNode('new-order')" tabindex="0" role="button" aria-label="New order on Billing screen">
+          <div class="node-icon-wrap">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
           </div>
-
-          <!-- Connecting Arrow -->
-          <div style="color: var(--primary-light); font-size: 1.4rem; animation: bounce 1.5s infinite;">
-            ⬇️ <span style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-dim);">Fires KOT / Settles Bill</span> ⬇️
-          </div>
-
-          <!-- Level 2: Central Reactive Bus -->
-          <div class="flow-row">
-            <div class="arch-node bus-node selected" onclick="inspectNode('pos-sync-bus')" id="node-bus">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon">⚡</div>
-                  <div>
-                    <div class="node-title" style="font-size: 1.15rem;">Central Reactive Data Bus</div>
-                    <span class="node-route" style="color:#a5b4fc;">client/src/store/posSyncStore.ts</span>
-                  </div>
-                </div>
-                <div class="node-desc" style="font-size: 0.82rem;">
-                  Core coordination engine. Dispatches KOTs, plays dual-tone Web Audio chimes, manages active kitchen timers, settles invoices, and runs recipe ingredient auto-depletion.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe;">Zustand Reactive Bus</span>
-                <span style="font-size: 0.72rem; color: #34d399; font-weight: 700;">● Active Synchronizer</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Connecting Split Arrow -->
-          <div style="color: var(--cyan); font-size: 1.4rem;">
-            ⮋ ⮋ ⮋ <span style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-dim);">Instant Multi-Module Reactive Broadcast</span> ⮋ ⮋ ⮋
-          </div>
-
-          <!-- Level 3: Reactive Consumer Outlets -->
-          <div class="flow-row">
-            <!-- Node: Kitchen KDS -->
-            <div class="arch-node" onclick="inspectNode('kitchen-kds')" id="node-kds">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">👨‍🍳</div>
-                  <div>
-                    <div class="node-title">Kitchen KDS</div>
-                    <span class="node-route">/kds</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Paperless kitchen display with urgency timers (<10m, 10-20m, >20m red pulsing), bump & chime.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">Web Audio + ESC/POS</span>
-                <a href="/kds" target="_blank" class="node-link-btn">Launch ↗</a>
-              </div>
-            </div>
-
-            <!-- Node: Table Floor Plan -->
-            <div class="arch-node" onclick="inspectNode('table-manager')" id="node-tables">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🪑</div>
-                  <div>
-                    <div class="node-title">Floor Tables</div>
-                    <span class="node-route">/tables</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Real-time occupancy colors (Green/Red/Yellow), running bill amounts & Shift/Merge operations.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">tableStore.ts</span>
-                <a href="/tables" target="_blank" class="node-link-btn">Launch ↗</a>
-              </div>
-            </div>
-
-            <!-- Node: Owner Sales Register -->
-            <div class="arch-node" onclick="inspectNode('owner-sales')" id="node-sales">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">💳</div>
-                  <div>
-                    <div class="node-title">Owner Sales</div>
-                    <span class="node-route">/owner/sales</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Real-time cashier audit register updating instantly on every settled transaction.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">Sales Register</span>
-                <a href="/owner/sales" target="_blank" class="node-link-btn">Launch ↗</a>
-              </div>
-            </div>
-
-            <!-- Node: Owner Reports -->
-            <div class="arch-node" onclick="inspectNode('owner-reports')" id="node-reports">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">📑</div>
-                  <div>
-                    <div class="node-title">Day-End Z-Report</div>
-                    <span class="node-route">/owner/reports</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Daily closing audit, GST breakdowns (CGST + SGST) and Cash/Card/UPI tender reconciliation.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">Z-Report Audit</span>
-                <a href="/owner/reports" target="_blank" class="node-link-btn">Launch ↗</a>
-              </div>
-            </div>
-
-            <!-- Node: Owner Inventory -->
-            <div class="arch-node" onclick="inspectNode('owner-inventory')" id="node-inventory">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(236, 72, 153, 0.15); color: #f472b6;">📦</div>
-                  <div>
-                    <div class="node-title">Recipe Inventory</div>
-                    <span class="node-route">/owner/inventory</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Auto-decrements raw materials (Paneer, Rice, Cream, Beverage bottles) when bills are paid.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">Auto-Depletion</span>
-                <a href="/owner/inventory" target="_blank" class="node-link-btn">Launch ↗</a>
-              </div>
-            </div>
-
-            <!-- Node: Owner Dashboard -->
-            <div class="arch-node" onclick="inspectNode('owner-dashboard')" id="node-dashboard">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(251, 146, 60, 0.15); color: #fb923c;">📊</div>
-                  <div>
-                    <div class="node-title">Owner Executive</div>
-                    <span class="node-route">/owner/dashboard</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Live Tables breakdown (Dine Fine, Custom, Takeaway, Delivery) & Running Orders KPI bar.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">Live KPI Bar</span>
-                <a href="/owner/dashboard" target="_blank" class="node-link-btn">Launch ↗</a>
-              </div>
-            </div>
-
-            <!-- Node: SuperAdmin SaaS -->
-            <div class="arch-node" onclick="inspectNode('superadmin')" id="node-superadmin">
-              <div>
-                <div class="node-header">
-                  <div class="node-icon" style="background: rgba(52, 211, 153, 0.15); color: #6ee7b7;">🛡️</div>
-                  <div>
-                    <div class="node-title">SuperAdmin SaaS</div>
-                    <span class="node-route">/superadmin/login</span>
-                  </div>
-                </div>
-                <div class="node-desc">
-                  Isolated multi-tenant SaaS controller, restaurant onboarding, subscriptions & feature flags.
-                </div>
-              </div>
-              <div class="node-action-bar">
-                <span class="node-tag">Isolated Portal</span>
-                <a href="/superadmin/login" target="_blank" class="node-link-btn">Launch ↗</a>
-              </div>
-            </div>
-          </div>
-
+          <div class="flow-node-title">New order</div>
+          <div class="flow-node-subtitle">Billing screen</div>
         </div>
 
-        <!-- Node Inspector Drawer -->
-        <div class="inspector-drawer active" id="inspectorDrawer">
-          <div class="drawer-header">
-            <div class="drawer-title-group">
-              <span id="drawerIcon" style="font-size: 1.5rem;">⚡</span>
-              <div>
-                <h3 id="drawerTitle" style="font-size: 1.15rem; font-weight: 700;">Central Reactive Data Bus</h3>
-                <span id="drawerRoute" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--cyan);">client/src/store/posSyncStore.ts</span>
-              </div>
+        <!-- Connector: New Order -> Order Details -->
+        <div class="flow-connector-v active-flow" id="conn-new-to-details">
+          <svg width="24" height="40" viewBox="0 0 24 40" fill="none">
+            <line x1="12" y1="0" x2="12" y2="32" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-down)" />
+            <circle class="pulse-dot" cx="12" cy="16" r="3" fill="#2563eb" opacity="0"/>
+          </svg>
+        </div>
+
+        <!-- 2. ORDER DETAILS (Billing screen) + SIDE BRANCH: Flag large order (Table screen) -->
+        <div class="flow-stage-branch-row">
+          <!-- Main Spine Node: Order details -->
+          <div class="flow-node" id="node-order-details" onclick="selectFlowNode('order-details')" tabindex="0" role="button" aria-label="Order details on Billing screen">
+            <div class="node-icon-wrap">
+              <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="m9 14 2 2 4-4"/></svg>
             </div>
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-              <span class="drawer-badge" id="drawerBadge">Zustand Reactive Bus</span>
-              <a href="/billing" target="_blank" class="action-btn btn-primary" id="drawerLaunchBtn">
-                <span>🚀</span> Open Live Screen
-              </a>
-            </div>
+            <div class="flow-node-title">Order details</div>
+            <div class="flow-node-subtitle">Billing screen</div>
           </div>
-          <div class="drawer-grid">
-            <div class="drawer-block">
-              <div class="block-title">Reactive Actions & Store Methods</div>
-              <div class="code-snippet" id="drawerMethods">addKOT(tableNo, items, notes, serverName)
-startPrepKOT(kotId)
-bumpKOT(kotId)
-recallLastKOT()
-recordSettledBill(tableNo, orderType, paymentMode, subtotal, tax, finalTotal, items)
-deductInventoryForItems(items)
-playKitchenKdsChime()</div>
+
+          <!-- Side Branch Connector with [table > 6 pax] pill badge -->
+          <div class="flow-connector-branch" id="conn-details-to-flag">
+            <div class="branch-pill-label">table &gt; 6 pax</div>
+            <svg width="130" height="24" viewBox="0 0 130 24" fill="none">
+              <line x1="0" y1="12" x2="118" y2="12" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-right)" />
+              <circle class="pulse-dot" cx="65" cy="12" r="3" fill="#2563eb" opacity="0"/>
+            </svg>
+          </div>
+
+          <!-- Side Branch Node: Flag large order -->
+          <div class="flow-node" id="node-flag-large-order" onclick="selectFlowNode('flag-large-order')" tabindex="0" role="button" aria-label="Flag large order on Table screen">
+            <div class="node-icon-wrap">
+              <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="15" x2="12.01" y2="15"/></svg>
             </div>
-            <div class="drawer-block">
-              <div class="block-title">Real-Time Data Payload Contract</div>
-              <div class="code-snippet" id="drawerPayload">{
-  "id": "KOT-104",
-  "tableNo": "T-3",
-  "items": [{ "name": "Paneer Butter Masala", "quantity": 2, "rate": 280 }],
-  "specialNotes": "Extra spicy, less oil",
-  "urgency": "normal",
-  "server": "Ramesh Waiter"
-}</div>
+            <div class="flow-node-title">Flag large order</div>
+            <div class="flow-node-subtitle">Table screen</div>
+          </div>
+        </div>
+
+        <!-- Connector: Order Details -> Send to Kitchen -->
+        <div class="flow-connector-v" id="conn-details-to-kitchen">
+          <svg width="24" height="40" viewBox="0 0 24 40" fill="none">
+            <line x1="12" y1="0" x2="12" y2="32" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-down)" />
+            <circle class="pulse-dot" cx="12" cy="16" r="3" fill="#2563eb" opacity="0"/>
+          </svg>
+        </div>
+
+        <!-- 3. SEND TO KITCHEN (KDS screen) -->
+        <div class="flow-node" id="node-send-to-kitchen" onclick="selectFlowNode('send-to-kitchen')" tabindex="0" role="button" aria-label="Send to kitchen on KDS screen">
+          <div class="node-icon-wrap">
+            <svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+          </div>
+          <div class="flow-node-title">Send to kitchen</div>
+          <div class="flow-node-subtitle">KDS screen</div>
+        </div>
+
+        <!-- Connector: Send to Kitchen -> Interact with order -->
+        <div class="flow-connector-v" id="conn-kitchen-to-interact">
+          <svg width="24" height="40" viewBox="0 0 24 40" fill="none">
+            <line x1="12" y1="0" x2="12" y2="32" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-down)" />
+            <circle class="pulse-dot" cx="12" cy="16" r="3" fill="#2563eb" opacity="0"/>
+          </svg>
+        </div>
+
+        <!-- 4. INTERACT WITH ORDER -->
+        <div class="flow-node" id="node-interact-order" onclick="selectFlowNode('interact-order')" tabindex="0" role="button" aria-label="Interact with order">
+          <div class="node-icon-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </div>
+          <div class="flow-node-title">Interact with order</div>
+          <div class="flow-node-subtitle">Touch KDS / Prep actions</div>
+        </div>
+
+        <!-- 5. 4 PAYMENT BRANCHES: Cash, Card, UPI, Split bill -->
+        <div class="payment-branches-section">
+          <!-- Fork connector lines to each payment tender -->
+          <div class="payment-tree-svg-container">
+            <svg class="tree-svg-desktop" viewBox="0 0 880 44" fill="none">
+              <path id="conn-interact-to-cash" d="M 440 0 V 18 H 110 V 36" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-down)" />
+              <path id="conn-interact-to-card" d="M 440 0 V 18 H 330 V 36" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-down)" />
+              <path id="conn-interact-to-upi" d="M 440 0 V 18 H 550 V 36" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-down)" />
+              <path id="conn-interact-to-split" d="M 440 0 V 18 H 770 V 36" stroke="#2563eb" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrow-blue-down)" />
+            </svg>
+          </div>
+
+          <!-- The 4 Payment Cards Grid -->
+          <div class="payment-cards-grid">
+            <!-- Branch 1: Cash -->
+            <div class="flow-node flow-node-sm" id="node-pay-cash" onclick="selectFlowNode('pay-cash')" tabindex="0" role="button" aria-label="Cash payment on Billing screen">
+              <div class="node-icon-wrap">
+                <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+              </div>
+              <div class="flow-node-title">Cash</div>
+              <div class="flow-node-subtitle">Billing screen</div>
+            </div>
+
+            <!-- Branch 2: Card -->
+            <div class="flow-node flow-node-sm" id="node-pay-card" onclick="selectFlowNode('pay-card')" tabindex="0" role="button" aria-label="Card payment on Billing screen">
+              <div class="node-icon-wrap">
+                <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="5" y1="16" x2="9" y2="16"/></svg>
+              </div>
+              <div class="flow-node-title">Card</div>
+              <div class="flow-node-subtitle">Billing screen</div>
+            </div>
+
+            <!-- Branch 3: UPI -->
+            <div class="flow-node flow-node-sm" id="node-pay-upi" onclick="selectFlowNode('pay-upi')" tabindex="0" role="button" aria-label="UPI dynamic QR payment on Billing screen">
+              <div class="node-icon-wrap">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 21h7"/></svg>
+              </div>
+              <div class="flow-node-title">UPI</div>
+              <div class="flow-node-subtitle">Billing screen</div>
+            </div>
+
+            <!-- Branch 4: Split bill -->
+            <div class="flow-node flow-node-sm" id="node-pay-split" onclick="selectFlowNode('pay-split')" tabindex="0" role="button" aria-label="Split bill on Split Bill modal">
+              <div class="node-icon-wrap">
+                <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              </div>
+              <div class="flow-node-title">Split bill</div>
+              <div class="flow-node-subtitle">Split Bill modal</div>
             </div>
           </div>
         </div>
 
       </div>
+
+      <!-- Global SVG Arrow Markers Definition -->
+      <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+        <defs>
+          <marker id="arrow-blue-down" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb" />
+          </marker>
+          <marker id="arrow-blue-right" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb" />
+          </marker>
+        </defs>
+      </svg>
+
+      <!-- INTERACTIVE ON-CLICK REDIRECT PANEL -->
+      <div id="redirectPanel" class="redirect-panel animate-in">
+        <div class="redirect-panel-header">
+          <div class="redirect-title-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Redirects to: <strong id="panelScreenName">Billing screen (/billing)</strong>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span class="redirect-component-tag" id="panelComponentTag">Billing.tsx</span>
+            <a href="/billing" target="_blank" class="panel-launch-btn" id="panelLaunchBtn">
+              Open Screen
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+            </a>
+          </div>
+        </div>
+        <p class="redirect-desc" id="panelDesc">
+          Cashier starts a new order session by selecting a dining table or takeout mode, initializing an active cart in the reactive store.
+        </p>
+        <div class="redirect-meta-grid">
+          <div class="meta-col">
+            <span class="meta-lbl">Real App Action</span>
+            <span class="meta-val" id="panelAction">Table selection & cashier register checkout</span>
+          </div>
+          <div class="meta-col">
+            <span class="meta-lbl">Trigger Event</span>
+            <span class="meta-val" id="panelTrigger">Table card click / [Space] hotkey</span>
+          </div>
+          <div class="meta-col">
+            <span class="meta-lbl">Reactive Effect</span>
+            <span class="meta-val" id="panelEffect">Locks table in TableManager and initializes reactive cart</span>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- =================================================== -->
@@ -1931,121 +2182,177 @@ playKitchenKdsChime()</div>
       });
     }
 
-    // Node Inspector Data
-    const nodeDetails = {
-      'waiter-mobile': {
-        icon: '📱',
-        title: 'Waiter Mobile Handheld App',
-        route: 'waiter-mobile/ (React Native Expo 52)',
-        badge: 'Order Ingress',
+    // ===================================================
+    // INTERACTIVE FLOW DIAGRAM CONTROLLER
+    // ===================================================
+    const flowNodesData = {
+      'new-order': {
+        title: 'New order',
+        screen: 'Billing screen (/billing)',
+        component: 'Billing.tsx',
         launchUrl: '/billing',
-        methods: `apiClient.post('/api/orders', { tableNo, items, notes, serverPin })\nuseWaiterStore.punchKOT()\nHaptics.notificationAsync()`,
-        payload: `{\n  "tableNo": "T-3",\n  "serverPin": "1234",\n  "items": [\n    { "name": "Butter Naan", "quantity": 4, "rate": 45 },\n    { "name": "Dal Makhani", "quantity": 1, "rate": 240 }\n  ],\n  "specialNotes": "Well done naan, crisp"\n}`
+        desc: 'Cashier initiates a new customer order by picking a floor table (T-1 to T-12), choosing Dine-In/Takeaway/Delivery mode, or entering customer info.',
+        action: 'Table selection & active order session initialization',
+        trigger: 'Table card click, mode button toggle, or [Space] search',
+        effect: 'Locks table in TableManager and sets active order in posSyncStore',
+        connectorId: null
       },
-      'staff-pos': {
-        icon: '🧾',
-        title: 'Staff POS Billing Engine',
-        route: '/billing',
-        badge: 'Cashier Register',
+      'order-details': {
+        title: 'Order details',
+        screen: 'Billing screen (/billing)',
+        component: 'Billing.tsx',
         launchUrl: '/billing',
-        methods: `handleKOT() -> posSyncStore.addKOT()\nhandleSaveBill() -> posSyncStore.recordSettledBill()\nhandleSplitComplete() -> multi-tender settlement\nKeyboard shortcuts: [Space], [F1], [F2], [F3], [F4]`,
-        payload: `{\n  "billNo": "INV-0104",\n  "tableNo": "T-1",\n  "orderType": "Dine In",\n  "paymentMode": "UPI",\n  "subtotal": 520,\n  "cgst": 13,\n  "sgst": 13,\n  "grandTotal": 546\n}`
+        desc: 'Cashier punches menu dishes, adjusts portions & quantity, types cooking instructions (e.g. "Less spicy"), and reviews computed taxes.',
+        action: 'Item selection & special cooking note customization',
+        trigger: 'Menu card click, barcode search, or category filter',
+        effect: 'Real-time cart calculation with CGST/SGST and pax threshold validation',
+        connectorId: 'conn-new-to-details'
       },
-      'pos-sync-bus': {
-        icon: '⚡',
-        title: 'Central Reactive Data Bus',
-        route: 'client/src/store/posSyncStore.ts',
-        badge: 'Zustand Reactive Bus',
-        launchUrl: '/billing',
-        methods: `addKOT(tableNo, items, notes, serverName)\nstartPrepKOT(kotId)\nbumpKOT(kotId)\nrecallLastKOT()\nrecordSettledBill(tableNo, orderType, paymentMode, subtotal, tax, finalTotal, items)\ndeductInventoryForItems(items)\nplayKitchenKdsChime()`,
-        payload: `{\n  "id": "KOT-104",\n  "tableNo": "T-3",\n  "items": [{ "name": "Paneer Butter Masala", "quantity": 2, "rate": 280 }],\n  "specialNotes": "Extra spicy, less oil",\n  "urgency": "normal",\n  "server": "Ramesh Waiter"\n}`
-      },
-      'kitchen-kds': {
-        icon: '👨‍🍳',
-        title: 'Kitchen Display System (KDS)',
-        route: '/kds',
-        badge: 'Touch KDS Screen',
-        launchUrl: '/kds',
-        methods: `posSyncStore.subscribe(kots)\nplayKitchenKdsChime() (Dual-tone Web Audio 880Hz/1046.5Hz)\nstartPrepKOT()\nbumpKOT() -> archives ticket\npreviewThermalReceipt() -> ESC/POS modal`,
-        payload: `{\n  "kotId": "KOT-104",\n  "prepTimeRemaining": "08:42",\n  "status": "Preparing",\n  "station": "Main Kitchen",\n  "urgencyBadge": "normal"\n}`
-      },
-      'table-manager': {
-        icon: '🪑',
-        title: 'Table Management Floor Plan',
-        route: '/tables',
-        badge: 'Floor Operations',
+      'flag-large-order': {
+        title: 'Flag large order',
+        screen: 'Table screen (/tables)',
+        component: 'TableManager.tsx',
         launchUrl: '/tables',
-        methods: `occupyTable(tableId, total, guests)\nshiftTable(sourceTableId, destTableId)\nmergeTables(sourceTableId, destTableId)\nvacateTable(tableId)`,
-        payload: `{\n  "tableId": "T-2",\n  "status": "occupied",\n  "runningTotal": 780,\n  "occupiedSince": "24 mins ago",\n  "section": "Main Hall"\n}`
+        desc: 'When table party size exceeds 6 guests (table > 6 pax), the system raises a VIP large-order alert and prompts steward table merging.',
+        action: 'Large party flag & steward floor prioritization',
+        trigger: 'Guest count > 6 entered or TableMergeModal triggered',
+        effect: 'Highlights table with priority badge and prompts table merge options',
+        connectorId: 'conn-details-to-flag'
       },
-      'owner-sales': {
-        icon: '💳',
-        title: 'Owner Real-Time Sales Register',
-        route: '/owner/sales',
-        badge: 'Audit Register',
-        launchUrl: '/owner/sales',
-        methods: `posSyncStore.subscribe(sales)\nfilterSales(cashierId, dateRange, paymentMode)\nexportSalesCSV()`,
-        payload: `{\n  "id": "SALE-0104",\n  "invoiceNumber": "INV-0104",\n  "timestamp": "2026-09-11T11:15:00Z",\n  "orderType": "Dine In",\n  "paymentMode": "Cash",\n  "finalAmount": 780\n}`
+      'send-to-kitchen': {
+        title: 'Send to kitchen',
+        screen: 'KDS screen (/kds)',
+        component: 'KDS.tsx',
+        launchUrl: '/kds',
+        desc: 'Cashier fires the KOT ticket; order instantly renders on chef touchscreen stations with preparation urgency timers and a dual-tone Web Audio chime.',
+        action: 'Kitchen Order Ticket (KOT) fire dispatch',
+        trigger: '[KOT] button click or [Ctrl+K] hotkey shortcut',
+        effect: 'Emits KOT via posSyncStore and sounds kitchen chime (880Hz + 1046Hz)',
+        connectorId: 'conn-details-to-kitchen'
       },
-      'owner-reports': {
-        icon: '📑',
-        title: 'Owner Day-End Z-Report',
-        route: '/owner/reports',
-        badge: 'Closing Audit',
-        launchUrl: '/owner/reports',
-        methods: `computeZReportMetrics(sales)\ncalculateTaxBreakdown()\ntenderReconciliation(cash, card, upi)`,
-        payload: `{\n  "date": "2026-09-11",\n  "grossSales": 48250,\n  "cgstCollected": 1206.25,\n  "sgstCollected": 1206.25,\n  "cashTender": 18400,\n  "upiTender": 24350,\n  "cardTender": 5500\n}`
+      'interact-order': {
+        title: 'Interact with order',
+        screen: 'KDS screen & Billing (/kds)',
+        component: 'KDS.tsx & posSyncStore.ts',
+        launchUrl: '/kds',
+        desc: 'Chefs tap tickets to start timers or bump finished dishes; cashier pulls live table status for bill settlement and tender processing.',
+        action: 'Chef prep timer & bump dispatch / cashier pull',
+        trigger: 'Touchscreen tap on KOT card or ticket bump button',
+        effect: 'Transitions order state (Pending → In Prep → Bumped) and notifies floor staff',
+        connectorId: 'conn-kitchen-to-interact'
       },
-      'owner-inventory': {
-        icon: '📦',
-        title: 'Raw Inventory Stock & Auto-Depletion',
-        route: '/owner/inventory',
-        badge: 'Recipe Linked',
-        launchUrl: '/owner/inventory',
-        methods: `deductInventoryForItems(items)\ncheckParStockAlerts()\nloadStockReceipt()`,
-        payload: `{\n  "item": "Fresh Paneer",\n  "unit": "KG",\n  "currentStock": 14.8,\n  "deduction": "-0.200 KG",\n  "trigger": "INV-0104 (1x Paneer Butter Masala)"\n}`
+      'pay-cash': {
+        title: 'Cash',
+        screen: 'Billing screen (/billing)',
+        component: 'Billing.tsx',
+        launchUrl: '/billing',
+        desc: 'Cashier tenders cash, calculates change due, kicks open cash drawer, prints thermal invoice slip, and decrements pantry recipe stock.',
+        action: 'Cash tender settlement & cash drawer kick',
+        trigger: 'Cash tender button click or [F1] hotkey',
+        effect: 'Logs Cash tender in Owner Sales, prints ESC/POS receipt, and vacates table',
+        connectorId: 'conn-interact-to-cash'
       },
-      'owner-dashboard': {
-        icon: '📊',
-        title: 'Owner Executive Operations Dashboard',
-        route: '/owner/dashboard',
-        badge: 'Executive View',
-        launchUrl: '/owner/dashboard',
-        methods: `computeLiveTablesBreakdown(tables)\naggregateRunningOrdersKPI(kots)\nmonitorStaffActivity()`,
-        payload: `{\n  "liveDineInTables": 6,\n  "liveTakeawayOrders": 2,\n  "liveDeliveryOrders": 1,\n  "runningRevenue": 5640\n}`
+      'pay-card': {
+        title: 'Card',
+        screen: 'Billing screen (/billing)',
+        component: 'Billing.tsx',
+        launchUrl: '/billing',
+        desc: 'Cashier triggers EDC card swipe/tap settlement, enters bank approval code, and reconciles credit/debit card batch settlement.',
+        action: 'EDC POS card swipe/chip settlement',
+        trigger: 'Card tender button click or [F2] hotkey',
+        effect: 'Records card transaction reference in day-end Z-Report audit register',
+        connectorId: 'conn-interact-to-card'
       },
-      'superadmin': {
-        icon: '🛡️',
-        title: 'SuperAdmin SaaS Platform Hub',
-        route: '/superadmin/login',
-        badge: 'Platform SaaS',
-        launchUrl: '/superadmin/login',
-        methods: `onboardTenant(brandName, gstin, outlets)\nupdateSubscriptionTier(tenantId, tier)\ntoggleFeatures(tenantId, featureFlags)`,
-        payload: `{\n  "tenantId": "t-petpooja-demo",\n  "subscription": "Enterprise",\n  "expiry": "2027-09-11",\n  "features": { "kds": true, "waiterMobile": true, "khata": true }\n}`
+      'pay-upi': {
+        title: 'UPI',
+        screen: 'Billing screen (/billing)',
+        component: 'Billing.tsx',
+        launchUrl: '/billing',
+        desc: 'Generates dynamic BharatPe/GPay/PhonePe QR code on customer-facing display with invoice total; verifies instant webhook credit.',
+        action: 'Dynamic UPI QR generation & reconciliation',
+        trigger: 'UPI tender button click or [F3] hotkey',
+        effect: 'Renders dynamic payment QR and auto-settles invoice upon webhook receipt',
+        connectorId: 'conn-interact-to-upi'
+      },
+      'pay-split': {
+        title: 'Split bill',
+        screen: 'Split Bill modal (/billing)',
+        component: 'SplitBillModal.tsx',
+        launchUrl: '/billing',
+        desc: 'Splits invoice evenly across guests (2–8 ways) or separates specific itemized dishes across multiple tender modes.',
+        action: 'Multi-tender / itemized bill splitting modal',
+        trigger: 'Split Bill button click or [F4] hotkey',
+        effect: 'Opens SplitBillModal.tsx, computes fractional GST, and prints itemized sub-receipts',
+        connectorId: 'conn-interact-to-split'
       }
     };
 
-    function inspectNode(nodeKey) {
-      const data = nodeDetails[nodeKey];
+    let currentActiveFlowNode = null;
+
+    function selectFlowNode(nodeKey) {
+      const data = flowNodesData[nodeKey];
       if (!data) return;
 
-      document.querySelectorAll('.arch-node').forEach(node => node.classList.remove('selected'));
-      const activeEl = document.querySelector(`.arch-node[onclick="inspectNode('${nodeKey}')"]`);
-      if (activeEl) activeEl.classList.add('selected');
+      // 1. Highlight clicked node, reset other nodes
+      document.querySelectorAll('.flow-node').forEach(node => {
+        node.classList.remove('active');
+      });
+      const activeEl = document.getElementById('node-' + nodeKey);
+      if (activeEl) {
+        activeEl.classList.add('active');
+      }
 
-      document.getElementById('drawerIcon').innerText = data.icon;
-      document.getElementById('drawerTitle').innerText = data.title;
-      document.getElementById('drawerRoute').innerText = data.route;
-      document.getElementById('drawerBadge').innerText = data.badge;
-      document.getElementById('drawerMethods').innerText = data.methods;
-      document.getElementById('drawerPayload').innerText = data.payload;
+      // 2. Clear all active connector animations
+      document.querySelectorAll('.flow-connector-v, .flow-connector-branch, .tree-svg-desktop path').forEach(conn => {
+        conn.classList.remove('active-flow');
+      });
 
-      const baseUrl = getViteBaseUrl();
-      document.getElementById('drawerLaunchBtn').href = baseUrl + data.launchUrl;
+      // 3. Highlight and pulse the connector line leading to this node
+      if (data.connectorId) {
+        const connEl = document.getElementById(data.connectorId);
+        if (connEl) {
+          connEl.classList.add('active-flow');
+        }
+      }
 
-      const drawer = document.getElementById('inspectorDrawer');
-      drawer.classList.add('active');
+      // 4. Update the redirect panel below the diagram with 180ms fade/slide
+      const panel = document.getElementById('redirectPanel');
+      if (panel) {
+        panel.classList.remove('animate-in');
+        void panel.offsetWidth; // force DOM reflow to retrigger animation
+        panel.classList.add('animate-in');
+
+        const screenNameEl = document.getElementById('panelScreenName');
+        const compTagEl = document.getElementById('panelComponentTag');
+        const descEl = document.getElementById('panelDesc');
+        const actionEl = document.getElementById('panelAction');
+        const triggerEl = document.getElementById('panelTrigger');
+        const effectEl = document.getElementById('panelEffect');
+        const launchBtn = document.getElementById('panelLaunchBtn');
+
+        if (screenNameEl) screenNameEl.innerText = data.screen;
+        if (compTagEl) compTagEl.innerText = data.component;
+        if (descEl) descEl.innerText = data.desc;
+        if (actionEl) actionEl.innerText = data.action;
+        if (triggerEl) triggerEl.innerText = data.trigger;
+        if (effectEl) effectEl.innerText = data.effect;
+
+        if (launchBtn) {
+          const baseUrl = typeof getViteBaseUrl === 'function' ? getViteBaseUrl() : '';
+          launchBtn.href = baseUrl + data.launchUrl;
+        }
+      }
+
+      currentActiveFlowNode = nodeKey;
     }
+
+    // Keyboard navigation (Enter / Space) for accessible node interaction
+    document.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement && document.activeElement.classList.contains('flow-node')) {
+        e.preventDefault();
+        document.activeElement.click();
+      }
+    });
 
     // Pure Web Audio API Kitchen Chime
     function playDemoSound() {
@@ -2161,8 +2468,10 @@ playKitchenKdsChime()</div>
     // Initialize on load
     window.addEventListener('DOMContentLoaded', () => {
       fixAppLinks();
+      selectFlowNode('new-order');
     });
     fixAppLinks();
+    selectFlowNode('new-order');
   </script>
 </body>
 </html>

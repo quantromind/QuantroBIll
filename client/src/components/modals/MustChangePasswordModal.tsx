@@ -12,7 +12,7 @@ export const MustChangePasswordModal: React.FC<MustChangePasswordModalProps> = (
   isOpen,
   onSuccess,
 }) => {
-  const { user, setAuthData } = useAuthStore();
+  const { user } = useAuthStore();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

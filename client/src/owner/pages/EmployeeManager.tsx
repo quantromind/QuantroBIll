@@ -21,6 +21,11 @@ import {
   Loader2,
   AlertCircle,
   UserCheck,
+  Smartphone,
+  Copy,
+  Check,
+  KeyRound,
+  ExternalLink,
 } from 'lucide-react';
 import type { OwnerEmployee } from '../types';
 import { apiClient } from '../../services/api';
@@ -66,7 +71,7 @@ const defaultRolePermissions: Record<string, OwnerEmployee['permissions']> = {
 };
 
 export const EmployeeManager: React.FC = () => {
-  const { user, tenant } = useAuthStore();
+  const { user, tenant, activeOutlet } = useAuthStore();
   const tenantId = user?.tenantId || tenant?.id || localStorage.getItem('quantrobill_tenant_id') || '';
 
   const [employees, setEmployees] = useState<OwnerEmployee[]>([]);
@@ -75,6 +80,22 @@ export const EmployeeManager: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAlert, setSavedAlert] = useState(false);
+
+  // Outlet code for Waiter Mobile App device pairing
+  const [outletCode, setOutletCode] = useState<string>(activeOutlet?.code || '');
+  const [outletName, setOutletName] = useState<string>(activeOutlet?.name || '');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, fieldName: string) => {
+    if (!text) return;
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch {
+      // fallback
+    }
+  };
 
   // Add Employee Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -93,6 +114,7 @@ export const EmployeeManager: React.FC = () => {
   const [editMenuCode, setEditMenuCode] = useState('');
   const [editContact, setEditContact] = useState('');
   const [editPassword, setEditPassword] = useState('');
+  const [editPin, setEditPin] = useState('');
 
   const selectedEmployee = employees.find((e) => e.id === selectedEmpId) || employees[0];
 
@@ -142,9 +164,9 @@ export const EmployeeManager: React.FC = () => {
       allowedSections: {
         fineDine: true,
         fineDineTables: 23,
-        takeAway: role !== 'KitchenStaff' && role !== 'Chef',
+        takeAway: role !== 'KitchenStaff',
         takeAwayCounters: 5,
-        homeDelivery: role !== 'KitchenStaff' && role !== 'Chef',
+        homeDelivery: role !== 'KitchenStaff',
         homeDeliveryZones: 10,
       },
       permissions: perms,
@@ -179,6 +201,20 @@ export const EmployeeManager: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      // Fetch Outlets to guarantee accurate Outlet Code for Waiter pairing
+      try {
+        const oRes = await apiClient.get<{ success: boolean; data: any[] }>(`/tenants/${resolvedTenantId}/outlets`);
+        if (oRes.data?.success && Array.isArray(oRes.data.data) && oRes.data.data.length > 0) {
+          const primary = oRes.data.data.find((o: any) => o.id === activeOutlet?.id) || oRes.data.data[0];
+          if (primary?.code) {
+            setOutletCode(primary.code);
+            setOutletName(primary.name || '');
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch outlet code:', err);
+      }
+
       const res = await apiClient.get<{ success: boolean; data: any[] }>(`/tenants/${resolvedTenantId}/users`);
       if (res.data?.success && Array.isArray(res.data.data)) {
         const mapped = res.data.data.map(mapBackendUserToEmployee);
@@ -189,6 +225,7 @@ export const EmployeeManager: React.FC = () => {
           setEditName(current.name);
           setEditMenuCode(current.menuCode);
           setEditContact(current.contact);
+          setEditPin(current.pin || (current.contact ? current.contact.replace(/\D/g, '').slice(0, 4) : ''));
           setEditPassword('');
         }
       }
@@ -198,7 +235,7 @@ export const EmployeeManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [tenantId, selectedEmpId]);
+  }, [tenantId, selectedEmpId, activeOutlet?.id]);
 
   useEffect(() => {
     fetchEmployees();
@@ -210,6 +247,7 @@ export const EmployeeManager: React.FC = () => {
     setEditName(emp.name);
     setEditMenuCode(emp.menuCode);
     setEditContact(emp.contact);
+    setEditPin(emp.pin || (emp.contact ? emp.contact.replace(/\D/g, '').slice(0, 4) : ''));
     setEditPassword('');
     setSavedAlert(false);
   };
@@ -249,6 +287,7 @@ export const EmployeeManager: React.FC = () => {
         phone: editContact.trim(),
         role: selectedEmployee.role,
         permissions: activePermissions,
+        pin: editPin.trim(),
       };
 
       if (editPassword.trim()) {
@@ -265,6 +304,7 @@ export const EmployeeManager: React.FC = () => {
               name: editName,
               menuCode: editMenuCode,
               contact: editContact,
+              pin: editPin.trim(),
             };
           }
           return emp;
@@ -401,7 +441,28 @@ export const EmployeeManager: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Outlet Code Badge for Waiter Device Pairing */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 shadow-2xs">
+            <Smartphone className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Pairing Outlet Code:</span>
+            <span className="text-xs font-black font-mono text-blue-950 tracking-wider">
+              {outletCode || activeOutlet?.code || 'OUT-724952'}
+            </span>
+            <button
+              type="button"
+              onClick={() => copyToClipboard(outletCode || activeOutlet?.code || 'OUT-724952', 'header_outlet_code')}
+              className="ml-1 p-1 hover:bg-blue-100 rounded text-blue-600 transition cursor-pointer"
+              title="Copy Outlet Code for Waiter App Pairing"
+            >
+              {copiedField === 'header_outlet_code' ? (
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+
           {savedAlert && (
             <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 animate-fade-in">
               <UserCheck className="w-3.5 h-3.5" />
@@ -497,9 +558,16 @@ export const EmployeeManager: React.FC = () => {
                         <p className={`text-xs font-bold leading-tight ${isSelected ? 'text-blue-900' : 'text-slate-900'}`}>
                           {emp.name}
                         </p>
-                        <p className={`text-[10px] ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}>
-                          {emp.lastActive}
-                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className={`text-[10px] ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}>
+                            {emp.lastActive}
+                          </p>
+                          {(emp.pin || emp.role === 'Waiter') && (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                              PIN: {emp.pin || (emp.contact ? emp.contact.replace(/\D/g, '').slice(0, 4) : '6263')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -524,21 +592,134 @@ export const EmployeeManager: React.FC = () => {
         <div className="lg:col-span-3 space-y-4">
           {selectedEmployee ? (
             <>
-              {/* Top Form: Menu Code, Username, Contact, Password & Section Assignment */}
-              <form onSubmit={handleSave} className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                      Menu Code / Code
-                    </label>
-                    <input
-                      type="text"
-                      value={editMenuCode}
-                      onChange={(e) => setEditMenuCode(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    />
+              {/* Dedicated Waiter Mobile App Credentials Card */}
+              <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white p-4 rounded-xl shadow-sm border border-blue-800/40 space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2.5 border-b border-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black tracking-wide uppercase text-white">Waiter Mobile App Credentials</span>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Live Terminal
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-blue-200/80">
+                        Use these exact details on Waiter Phone or Browser (<span className="text-amber-300 font-mono font-bold">http://localhost:8081</span>)
+                      </p>
+                    </div>
                   </div>
 
+                  <a
+                    href="http://localhost:8081"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-blue-300 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition border border-white/10"
+                  >
+                    <span>Launch Waiter Web</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  {/* 1. Outlet Code (Device Pairing ke liye) */}
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-blue-300/80 mb-0.5">
+                        Outlet Code (Pairing ke liye)
+                      </span>
+                      <span className="text-base font-black font-mono text-amber-300 tracking-wider">
+                        {outletCode || activeOutlet?.code || 'OUT-724952'}
+                      </span>
+                      <span className="block text-[9px] text-blue-200/60 mt-0.5">
+                        {outletName || activeOutlet?.name || 'Main Branch'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(outletCode || activeOutlet?.code || 'OUT-724952', 'outlet_card')}
+                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                      title="Copy Outlet Code"
+                    >
+                      {copiedField === 'outlet_card' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400 text-[10px]">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-blue-300" />
+                          <span className="text-[10px]">Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* 2. Waiter Name */}
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-blue-300/80 mb-0.5">
+                        Waiter Name
+                      </span>
+                      <span className="text-sm font-bold text-white truncate max-w-[150px] block">
+                        {selectedEmployee.name}
+                      </span>
+                      <span className="block text-[9px] text-blue-200/60 mt-0.5">
+                        Role: {selectedEmployee.role}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/20 text-[10px] font-bold uppercase">
+                      {selectedEmployee.role}
+                    </span>
+                  </div>
+
+                  {/* 3. Waiter 4-Digit PIN */}
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-blue-300/80 mb-0.5">
+                        Waiter 4-Digit PIN
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-lg font-black font-mono text-emerald-400 tracking-widest">
+                          {editPin || selectedEmployee.pin || (selectedEmployee.contact ? selectedEmployee.contact.replace(/\D/g, '').slice(0, 4) : '6263')}
+                        </span>
+                      </div>
+                      <span className="block text-[9px] text-emerald-300/70 mt-0.5">
+                        (Aapke phone number ke first 4 digits)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyToClipboard(
+                          editPin || selectedEmployee.pin || (selectedEmployee.contact ? selectedEmployee.contact.replace(/\D/g, '').slice(0, 4) : '6263'),
+                          'pin_card'
+                        )
+                      }
+                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                      title="Copy 4-Digit PIN"
+                    >
+                      {copiedField === 'pin_card' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400 text-[10px]">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-[10px]">Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Form: Menu Code, Username, Contact, Password & Section Assignment */}
+              <form onSubmit={handleSave} className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                       Full Name
@@ -558,7 +739,45 @@ export const EmployeeManager: React.FC = () => {
                     <input
                       type="text"
                       value={editContact}
-                      onChange={(e) => setEditContact(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditContact(val);
+                        if (!editPin && val.replace(/\D/g, '').length >= 4) {
+                          setEditPin(val.replace(/\D/g, '').slice(0, 4));
+                        }
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    <span className="text-[9px] text-slate-400">1st 4 digits: {editContact.replace(/\D/g, '').slice(0, 4) || '6263'}</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                      <span>Waiter 4-Digit PIN</span>
+                      <span className="text-[9px] font-normal text-slate-400">App Login</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        maxLength={4}
+                        placeholder="e.g. 6263"
+                        value={editPin}
+                        onChange={(e) => setEditPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        className="w-full px-2.5 py-1.5 bg-emerald-50/60 border border-emerald-300 rounded-lg font-mono font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 tracking-widest text-sm"
+                      />
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-600 absolute right-2.5 top-2.5" />
+                    </div>
+                    <span className="text-[9px] text-emerald-600 font-medium">For Waiter Mobile & POS PIN</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      Menu Code / Code
+                    </label>
+                    <input
+                      type="text"
+                      value={editMenuCode}
+                      onChange={(e) => setEditMenuCode(e.target.value)}
                       className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
@@ -784,9 +1003,16 @@ export const EmployeeManager: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. 9876543210"
+                    placeholder="e.g. 6263863340"
                     value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewPhone(val);
+                      const digits = val.replace(/\D/g, '').slice(0, 4);
+                      if (digits && (!newPin || newPin.length < 4)) {
+                        setNewPin(digits);
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -807,17 +1033,19 @@ export const EmployeeManager: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    POS Quick PIN (4 digits)
+                  <label className="block text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span>Waiter 4-Digit PIN</span>
+                    <span className="text-[9px] font-normal text-slate-400">Mobile & POS</span>
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     maxLength={4}
-                    placeholder="e.g. 1234"
+                    placeholder="e.g. 6263"
                     value={newPin}
-                    onChange={(e) => setNewPin(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="w-full px-3 py-2 bg-emerald-50/60 border border-emerald-300 rounded-lg font-mono font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 tracking-widest"
                   />
+                  <span className="text-[9px] text-slate-400 mt-0.5 block">Default: Phone number ke first 4 digits</span>
                 </div>
               </div>
 

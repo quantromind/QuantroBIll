@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { showAlert } from './src/utils/alert';
 import { PairDeviceScreen } from './src/screens/PairDeviceScreen';
 import { LoginPinScreen } from './src/screens/LoginPinScreen';
 import { FloorPlanScreen } from './src/screens/FloorPlanScreen';
@@ -125,21 +126,14 @@ export default function App() {
       });
 
       if (res.data?.success) {
-        Alert.alert(
+        setSelectedTable(null);
+        setCurrentScreen('FLOOR');
+        showAlert(
           'KOT Dispatched Successfully! 🔥',
-          `Order with ${items.length} item(s) sent to Kitchen KDS and synced to live Desktop POS for ${tableNum}.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setSelectedTable(null);
-                setCurrentScreen('FLOOR');
-              },
-            },
-          ]
+          `Order with ${items.length} item(s) sent to Kitchen KDS and synced to live Desktop POS for ${tableNum}.`
         );
       } else {
-        Alert.alert(
+        showAlert(
           'Order Submission Warning',
           res.data?.message || 'Server received the request with warnings.'
         );
@@ -149,7 +143,7 @@ export default function App() {
         err.response?.data?.message ||
         err.message ||
         'Failed to dispatch KOT order to server.';
-      Alert.alert('KOT Dispatch Failed', serverErrMsg);
+      showAlert('KOT Dispatch Failed', serverErrMsg);
     }
   };
 

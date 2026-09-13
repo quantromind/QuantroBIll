@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import type { MobileTable, MobileOrderItem } from '../types';
 import { mobileApiClient } from '../services/apiClient';
+import { showAlert } from '../utils/alert';
 
 interface OrderPunchScreenProps {
   table: MobileTable;
@@ -41,6 +42,7 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
   const [menu, setMenu] = useState<DishItem[]>([]);
   const [categories, setCategories] = useState<string[]>(['All']);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSending, setIsSending] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMenuItems = useCallback(async () => {
@@ -121,21 +123,27 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
   const subTotal = cart.reduce((acc, it) => acc + it.price * it.quantity, 0);
 
   const handleFireKOT = () => {
+    if (isSending) return;
     if (cart.length === 0) {
-      Alert.alert('Empty Order', 'Please add items before firing KOT to kitchen.');
+      showAlert('Empty Order', 'Please add items before firing KOT to kitchen.');
       return;
     }
 
-    Alert.alert(
+    showAlert(
       'Confirm KOT Dispatch',
-      `Send ${totalQuantity} items for ${table.tableNumber} directly to Kitchen KDS and live Desktop POS?`,
+      `Send ${totalQuantity} item(s) for ${table.tableNumber} directly to Kitchen KDS and live Desktop POS?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: '🔥 FIRE KOT',
           style: 'default',
-          onPress: () => {
-            onKOTFired(table.tableNumber, cart);
+          onPress: async () => {
+            try {
+              setIsSending(true);
+              await onKOTFired(table.tableNumber, cart);
+            } finally {
+              setIsSending(false);
+            }
           },
         },
       ]
@@ -167,9 +175,22 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
           <Text style={styles.tableSub}>{table.section} • {table.capacity} Seats</Text>
         </View>
 
-        <View style={styles.cartCountBadge}>
-          <Text style={styles.cartCountText}>{totalQuantity} Qty</Text>
-        </View>
+        <TouchableOpacity
+          onPress={handleFireKOT}
+          activeOpacity={0.7}
+          disabled={isSending || cart.length === 0}
+          style={[
+            styles.cartCountBadge,
+            { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 },
+            isSending && { opacity: 0.6 },
+          ]}
+        >
+          {isSending ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.cartCountText}>🔥 {totalQuantity} Send</Text>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Search Input */}
@@ -346,8 +367,16 @@ export const OrderPunchScreen: React.FC<OrderPunchScreenProps> = ({
             <Text style={styles.footerItems}>{totalQuantity} Items • Ready to Fire</Text>
           </View>
 
-          <TouchableOpacity onPress={handleFireKOT} style={styles.fireBtn}>
-            <Text style={styles.fireBtnText}>🔥 FIRE KOT TO KITCHEN</Text>
+          <TouchableOpacity
+            onPress={handleFireKOT}
+            style={[styles.fireBtn, isSending && { opacity: 0.7 }]}
+            disabled={isSending}
+          >
+            {isSending ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.fireBtnText}>🔥 FIRE KOT TO KITCHEN</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}

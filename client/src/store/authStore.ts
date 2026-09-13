@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import type { AuthResponse, OutletSummary, TenantSummary, UserProfile } from '../types';
 import { apiClient } from '../services/api';
@@ -152,7 +153,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (token.startsWith('quantrobill_demo_')) {
           const creds: Record<string, { identifier: string; pass: string }> = {
             Owner: { identifier: 'sourabh@gmail.com', pass: 'Owner@123' },
-            SuperAdmin: { identifier: 'admin@quantrobill.com', pass: 'SuperAdmin@123' },
+            SuperAdmin: { identifier: 'admin@quantrobill.com', pass: 'Admin@123' },
             Cashier: { identifier: 'biller@jaymalhar.com', pass: 'Cashier@123' },
             Manager: { identifier: 'manager@jaymalhar.com', pass: 'Manager@123' },
             Waiter: { identifier: 'waiter@jaymalhar.com', pass: 'Waiter@123' },

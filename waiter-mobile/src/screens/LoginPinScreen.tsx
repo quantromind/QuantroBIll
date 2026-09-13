@@ -7,8 +7,8 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../utils/alert';
 import { mobileApiClient, setAuthHeaders } from '../services/apiClient';
 import { PairedOutlet, setAuthSession } from '../services/pairingService';
 
@@ -96,7 +96,7 @@ export const LoginPinScreen: React.FC<LoginPinScreenProps> = ({
   };
 
   const confirmUnpair = () => {
-    Alert.alert(
+    showAlert(
       'Unpair This Device?',
       `Are you sure you want to unpair from "${pairedOutlet.outletName}"? You will need to enter an Outlet Code to pair again.`,
       [

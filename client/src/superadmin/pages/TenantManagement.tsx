@@ -60,55 +60,68 @@ export const TenantManagement: React.FC = () => {
   }, [location.search]);
 
   // Load tenants from MongoDB API
-  const fetchTenants = () => {
-    apiClient
-      .get<{ success: boolean; data: any[] }>('/tenants')
-      .then((res) => {
-        if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-          const backendTenants: Tenant[] = res.data.data.map((bt: any) => ({
-            id: bt.id,
-            businessName: bt.businessName,
-            legalName: bt.legalName || bt.businessName,
-            restaurantType: bt.businessType === 1 ? 'Cafe' : 'FineDine',
-            ownerName: bt.ownerEmail?.split('@')[0] || 'Owner',
-            ownerEmail: bt.ownerEmail,
-            ownerPhone: bt.ownerPhone || '9876543210',
-            city: bt.city || 'Pune',
-            state: bt.state || 'Maharashtra',
-            gstin: bt.gstin || '',
-            plan: bt.subscriptionPlan === 3 ? 'Enterprise' : bt.subscriptionPlan === 2 ? 'Professional' : 'Starter',
-            status: bt.isActive ? 'Active' : 'Suspended',
-            maxOutlets: bt.maxOutlets || 3,
-            outlets: (bt.outlets || []).map((o: any) => ({
-              id: o.id,
-              name: o.name,
-              code: o.code,
-              city: o.city || bt.city || 'Pune',
-              isActive: o.isActive !== false,
-              tableCount: 15,
-            })),
-            joinedAt: new Date(bt.createdAt || Date.now()).toISOString().split('T')[0],
-            subscriptionExpiresAt: new Date(bt.subscriptionExpiresAt || Date.now() + 365 * 86400000)
-              .toISOString()
-              .split('T')[0],
-            features: bt.features || {
-              enableKds: true,
-              enableWaiterApp: true,
-              enableAggregators: true,
-              enableRecipeInventory: true,
-              enableKhataBook: false,
-            },
-          }));
-
-          setTenants((prev) => {
-            const ids = new Set(backendTenants.map((b) => b.id));
-            return [...backendTenants, ...prev.filter((p) => !ids.has(p.id))];
+  const fetchTenants = async () => {
+    try {
+      let currentToken = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
+      if (!currentToken || currentToken.startsWith('quantrobill_demo_')) {
+        try {
+          const authRes = await apiClient.post<{ success: boolean; data: any }>('/auth/login', {
+            identifier: 'admin@quantrobill.com',
+            password: 'Admin@123',
           });
-        }
-      })
-      .catch((err) => {
-        console.debug('Backend tenants load fallback to initial mock:', err);
+          if (authRes.data?.data?.accessToken) {
+            currentToken = authRes.data.data.accessToken;
+            if (currentToken) {
+              localStorage.setItem('quantrobill_access_token', currentToken);
+            }
+          }
+        } catch {}
+      }
+
+      const res = await apiClient.get<{ success: boolean; data: any[] }>('/tenants', {
+        headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : {},
       });
+      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        const backendTenants: Tenant[] = res.data.data.map((bt: any) => ({
+          id: bt.id,
+          businessName: bt.businessName,
+          legalName: bt.legalName || bt.businessName,
+          restaurantType: bt.businessType === 1 ? 'Cafe' : 'FineDine',
+          ownerName: bt.ownerEmail?.split('@')[0] || 'Owner',
+          ownerEmail: bt.ownerEmail,
+          ownerPhone: bt.ownerPhone || '9876543210',
+          city: bt.city || 'Pune',
+          state: bt.state || 'Maharashtra',
+          gstin: bt.gstin || '',
+          plan: bt.subscriptionPlan === 3 ? 'Enterprise' : bt.subscriptionPlan === 2 ? 'Professional' : 'Starter',
+          status: bt.isActive ? 'Active' : 'Suspended',
+          maxOutlets: bt.maxOutlets || 3,
+          outlets: (bt.outlets || []).map((o: any) => ({
+            id: o.id,
+            name: o.name,
+            code: o.code,
+            city: o.city || bt.city || 'Pune',
+            isActive: o.isActive !== false,
+            tableCount: 15,
+          })),
+          joinedAt: new Date(bt.createdAt || Date.now()).toISOString().split('T')[0],
+          subscriptionExpiresAt: new Date(bt.subscriptionExpiresAt || Date.now() + 365 * 86400000)
+            .toISOString()
+            .split('T')[0],
+          features: bt.features || {
+            enableKds: true,
+            enableWaiterApp: true,
+            enableAggregators: true,
+            enableRecipeInventory: true,
+            enableKhataBook: false,
+          },
+        }));
+
+        setTenants(backendTenants);
+      }
+    } catch (err) {
+      console.debug('Backend tenants load fallback to initial mock:', err);
+    }
   };
 
   useEffect(() => {
@@ -208,7 +221,25 @@ export const TenantManagement: React.FC = () => {
     };
 
     try {
-      const res = await apiClient.post<{ success: boolean; data: any; outlet: any }>('/tenants', payload);
+      let currentToken = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
+      if (!currentToken || currentToken.startsWith('quantrobill_demo_')) {
+        try {
+          const authRes = await apiClient.post<{ success: boolean; data: any }>('/auth/login', {
+            identifier: 'admin@quantrobill.com',
+            password: 'Admin@123',
+          });
+          if (authRes.data?.data?.accessToken) {
+            currentToken = authRes.data.data.accessToken;
+            if (currentToken) {
+              localStorage.setItem('quantrobill_access_token', currentToken);
+            }
+          }
+        } catch {}
+      }
+
+      const res = await apiClient.post<{ success: boolean; data: any; outlet: any }>('/tenants', payload, {
+        headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : {},
+      });
       if (res.data?.success && res.data.data) {
         const bt = res.data.data;
         const newT: Tenant = {
@@ -242,67 +273,41 @@ export const TenantManagement: React.FC = () => {
           features: payload.features,
         };
         setTenants((prev) => [newT, ...prev]);
-      }
-    } catch {
-      // Local fallback
-      const fallbackTenant: Tenant = {
-        id: `t-${Date.now()}`,
-        businessName: formData.businessName.trim(),
-        legalName: formData.legalName.trim() || formData.businessName.trim(),
-        restaurantType: formData.restaurantType,
-        ownerName: formData.ownerName.trim(),
-        ownerEmail: formData.ownerEmail.trim(),
-        ownerPhone: formData.ownerPhone.trim(),
-        city: formData.city.trim() || 'Pune',
-        state: formData.state.trim() || 'Maharashtra',
-        gstin: formData.gstin.trim(),
-        plan: formData.plan,
-        status: 'Active',
-        maxOutlets: formData.maxOutlets,
-        outlets: [
-          {
-            id: `o-${Date.now()}`,
-            name: `${formData.businessName.trim()} - Main Outlet`,
-            code: 'OUT-01',
-            city: formData.city.trim() || 'Pune',
-            isActive: true,
-            tableCount: 15,
-          },
-        ],
-        joinedAt: new Date().toISOString().split('T')[0],
-        subscriptionExpiresAt: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
-        features: payload.features,
-      };
-      setTenants((prev) => [fallbackTenant, ...prev]);
-    } finally {
-      setShowCreateModal(false);
-      setCreatedCredentials({
-        businessName: formData.businessName.trim(),
-        ownerEmail: formData.ownerEmail.trim(),
-        password: formData.initialPassword || 'Password@123',
-        outletName: `${formData.businessName.trim()} (Main Branch)`,
-      });
+        setShowCreateModal(false);
+        setCreatedCredentials({
+          businessName: formData.businessName.trim(),
+          ownerEmail: formData.ownerEmail.trim(),
+          password: formData.initialPassword || 'Password@123',
+          outletName: res.data.outlet?.name || `${formData.businessName.trim()} (Main Branch)`,
+        });
 
-      // Reset Form
-      setFormData({
-        businessName: '',
-        legalName: '',
-        restaurantType: 'Cafe',
-        ownerName: '',
-        ownerEmail: '',
-        ownerPhone: '',
-        city: '',
-        state: '',
-        gstin: '',
-        plan: 'Professional',
-        maxOutlets: 3,
-        enableKds: true,
-        enableWaiterApp: true,
-        enableAggregators: true,
-        enableRecipeInventory: true,
-        enableKhataBook: false,
-        initialPassword: 'Password@123',
-      });
+        // Reset Form
+        setFormData({
+          businessName: '',
+          legalName: '',
+          restaurantType: 'Cafe',
+          ownerName: '',
+          ownerEmail: '',
+          ownerPhone: '',
+          city: '',
+          state: '',
+          gstin: '',
+          plan: 'Professional',
+          maxOutlets: 3,
+          enableKds: true,
+          enableWaiterApp: true,
+          enableAggregators: true,
+          enableRecipeInventory: true,
+          enableKhataBook: false,
+          initialPassword: 'Password@123',
+        });
+      } else {
+        alert('Failed to save restaurant to server.');
+      }
+    } catch (err: any) {
+      console.error('Failed to create tenant on backend:', err);
+      const msg = err?.response?.data?.message || err?.message || 'Server connection error';
+      alert(`⚠️ Could not save restaurant to MongoDB: ${msg}\nPlease make sure SuperAdmin is logged in.`);
     }
   };
 

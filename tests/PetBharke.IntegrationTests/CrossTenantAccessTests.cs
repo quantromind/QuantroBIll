@@ -76,7 +76,7 @@ public class CrossTenantAccessTests : IClassFixture<WebApplicationFactory<Progra
         _hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
         // Clean test database
-        await _dbContext.Database.DropDatabaseAsync(CancellationToken.None);
+        await _dbContext.Database.Client.DropDatabaseAsync(_dbContext.Database.DatabaseNamespace.DatabaseName, CancellationToken.None);
 
         // Seed Tenant A
         var tenantA = new Tenant
@@ -164,7 +164,7 @@ public class CrossTenantAccessTests : IClassFixture<WebApplicationFactory<Progra
             OutletId = _outletAId,
             BillNumber = "TEST-A-001",
             OrderType = OrderType.DineIn,
-            Status = OrderStatus.Placed,
+            Status = OrderStatus.KotCreated,
             TotalAmount = 100,
             SubTotal = 100,
             Items = new List<OrderItem>
@@ -260,8 +260,8 @@ public class CrossTenantAccessTests : IClassFixture<WebApplicationFactory<Progra
             TenantId = _tenantBId,
             OutletId = _outletBId,
             BillNumber = "TEST-B-001",
-            OrderType = OrderType.Takeaway,
-            Status = OrderStatus.Placed,
+            OrderType = OrderType.TakeAway,
+            Status = OrderStatus.KotCreated,
             TotalAmount = 200,
             SubTotal = 200,
             Items = new List<OrderItem>
