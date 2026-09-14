@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../services/api';
 import { useAuthStore, getHomeRouteForRole } from '../store/authStore';
-import type { AuthResponse, UserRole } from '../types';
+import type { AuthResponse } from '../types';
 import {
   Lock,
   User,
@@ -10,75 +10,8 @@ import {
   KeyRound,
   ArrowRight,
   AlertCircle,
-  Store,
-  ChefHat,
-  Smartphone,
-  Briefcase,
   Building2,
 } from 'lucide-react';
-
-// Demo fallbacks for full offline resilience
-const createDemoResponse = (
-  role: UserRole,
-  fullName: string,
-  email: string,
-  username: string,
-  businessName: string,
-  tenantId: string
-): AuthResponse => ({
-  accessToken: `quantrobill_demo_${role.toLowerCase()}_token`,
-  refreshToken: `quantrobill_demo_${role.toLowerCase()}_refresh`,
-  expiresAt: new Date(Date.now() + 86400000).toISOString(),
-  user: {
-    id: `u-${role.toLowerCase()}-1`,
-    username,
-    email,
-    fullName,
-    role,
-    permissions: ['all'],
-    tenantId: role === 'SuperAdmin' ? '' : tenantId,
-  },
-  tenant:
-    role === 'SuperAdmin'
-      ? null
-      : {
-          id: tenantId,
-          businessName,
-          businessType: 'Restaurant',
-          subscriptionPlan: 'Enterprise',
-        },
-  activeOutlet:
-    role === 'SuperAdmin'
-      ? null
-      : {
-          id: `outlet-${tenantId}`,
-          name: `${businessName} (Main Branch)`,
-          code: 'QB-01',
-          businessType: 'Restaurant',
-          address: 'Main Commercial High Street',
-          phone: '+91 98765 43210',
-          currency: '₹',
-          cgstPercentage: 2.5,
-          sgstPercentage: 2.5,
-        },
-  availableOutlets:
-    role === 'SuperAdmin'
-      ? []
-      : [
-          {
-            id: `outlet-${tenantId}`,
-            name: `${businessName} (Main Branch)`,
-            code: 'QB-01',
-            businessType: 'Restaurant',
-            address: 'Main Commercial High Street',
-            phone: '+91 98765 43210',
-            currency: '₹',
-            cgstPercentage: 2.5,
-            sgstPercentage: 2.5,
-          },
-        ],
-});
-
 import { MustChangePasswordModal } from '../components/modals/MustChangePasswordModal';
 
 export const Login: React.FC = () => {
@@ -151,86 +84,14 @@ export const Login: React.FC = () => {
         return;
       }
     } catch (err: any) {
-      // Check for offline/network disconnect fallback
-      const isConnectionOffline =
-        !err.response ||
-        err.code === 'ERR_NETWORK' ||
-        err.message?.includes('Network Error') ||
-        err.message?.includes('ERR_CONNECTION_REFUSED');
-
-      if (isConnectionOffline) {
-        console.warn('Network offline or backend unreachable. Engaging seamless role fallback.');
-        let fallbackResponse: AuthResponse;
-
-        if (cleanIdentifier.includes('superadmin') || cleanIdentifier.includes('admin@quantrobill.com')) {
-          fallbackResponse = createDemoResponse(
-            'SuperAdmin',
-            'System SuperAdmin',
-            'admin@quantrobill.com',
-            'superadmin',
-            'QuantroBill SaaS',
-            'tenant-saas'
-          );
-        } else if (cleanIdentifier.includes('sourabh') || cleanIdentifier.includes('jaymalhar') || cleanIdentifier.includes('owner')) {
-          fallbackResponse = createDemoResponse(
-            'Owner',
-            'Sourabh Dhangar',
-            'sourabh@gmail.com',
-            'sourabh',
-            'Jay Malhar',
-            '6aa53279b1398781a96b6719'
-          );
-        } else if (cleanIdentifier.includes('manager')) {
-          fallbackResponse = createDemoResponse(
-            'Manager',
-            'Store General Manager',
-            'manager@jaymalhar.com',
-            'manager',
-            'Jay Malhar',
-            '6aa53279b1398781a96b6719'
-          );
-        } else if (cleanIdentifier.includes('waiter')) {
-          fallbackResponse = createDemoResponse(
-            'Waiter',
-            'Ramesh (Steward)',
-            'waiter@jaymalhar.com',
-            'waiter',
-            'Jay Malhar',
-            '6aa53279b1398781a96b6719'
-          );
-        } else if (cleanIdentifier.includes('chef') || cleanIdentifier.includes('kitchen')) {
-          fallbackResponse = createDemoResponse(
-            'KitchenStaff',
-            'Chef Sanjeev',
-            'chef@jaymalhar.com',
-            'chef',
-            'Jay Malhar',
-            '6aa53279b1398781a96b6719'
-          );
-        } else {
-          fallbackResponse = createDemoResponse(
-            'Cashier',
-            'Raju (POS Cashier)',
-            'biller@jaymalhar.com',
-            'biller',
-            'Jay Malhar',
-            '6aa53279b1398781a96b6719'
-          );
-        }
-
-        setAuthData(fallbackResponse);
-        const route = getHomeRouteForRole(fallbackResponse.user.role);
-        navigate(route, { replace: true });
-        return;
-      }
-
-      setErrorMessage(err.response?.data?.message || 'Login failed. Please verify your credentials.');
+      const msg = err.response?.data?.message || err.message || 'Login failed. Please verify your credentials.';
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickLogin = async (userIdent: string, userPass: string, forcedRole?: UserRole) => {
+  const handleQuickLogin = async (userIdent: string, userPass: string) => {
     setIdentifier(userIdent);
     setPassword(userPass);
     setLoading(true);
@@ -249,26 +110,8 @@ export const Login: React.FC = () => {
         navigate(route, { replace: true });
         return;
       }
-    } catch {
-      // Offline fallback
-      let fallback: AuthResponse;
-      if (forcedRole === 'SuperAdmin' || userIdent.includes('admin@quantrobill.com')) {
-        fallback = createDemoResponse('SuperAdmin', 'System SuperAdmin', 'admin@quantrobill.com', 'superadmin', 'QuantroBill SaaS', 'saas');
-      } else if (forcedRole === 'Owner' || userIdent.includes('sourabh')) {
-        fallback = createDemoResponse('Owner', 'Sourabh Dhangar', 'sourabh@gmail.com', 'sourabh', 'Jay Malhar', '6aa53279b1398781a96b6719');
-      } else if (forcedRole === 'Manager') {
-        fallback = createDemoResponse('Manager', 'Store Manager', 'manager@jaymalhar.com', 'manager', 'Jay Malhar', '6aa53279b1398781a96b6719');
-      } else if (forcedRole === 'Waiter') {
-        fallback = createDemoResponse('Waiter', 'Steward Staff', 'waiter@jaymalhar.com', 'waiter', 'Jay Malhar', '6aa53279b1398781a96b6719');
-      } else if (forcedRole === 'KitchenStaff') {
-        fallback = createDemoResponse('KitchenStaff', 'Chef Staff', 'chef@jaymalhar.com', 'chef', 'Jay Malhar', '6aa53279b1398781a96b6719');
-      } else {
-        fallback = createDemoResponse('Cashier', 'Cashier Staff', 'biller@jaymalhar.com', 'biller', 'Jay Malhar', '6aa53279b1398781a96b6719');
-      }
-
-      setAuthData(fallback);
-      const route = getHomeRouteForRole(fallback.user.role);
-      navigate(route, { replace: true });
+    } catch (err: any) {
+      setErrorMessage(err.response?.data?.message || 'Login failed. Please verify server connectivity.');
     } finally {
       setLoading(false);
     }
@@ -345,7 +188,7 @@ export const Login: React.FC = () => {
                       required
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="e.g. sourabh@gmail.com or admin@quantrobill.com"
+                      placeholder="e.g. admin@quantromind.com"
                       className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-slate-400 font-medium"
                     />
                   </div>
@@ -412,83 +255,21 @@ export const Login: React.FC = () => {
               1-Click Instant Role Login & Testing
             </p>
 
-            <div className="grid grid-cols-2 gap-2">
-              {/* Restaurant Owner */}
+            <div className="flex flex-col gap-2">
+              {/* SuperAdmin SaaS Quick Login */}
               <button
                 type="button"
-                onClick={() => handleQuickLogin('sourabh@gmail.com', 'Owner@123', 'Owner')}
-                className="p-2 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200 text-left transition-all cursor-pointer shadow-2xs group"
+                onClick={() => handleQuickLogin('admin@quantromind.com', 'Quantromind@#9100')}
+                className="w-full p-2.5 rounded-xl bg-purple-50/70 hover:bg-purple-100/70 border border-purple-200 text-left transition-all cursor-pointer shadow-2xs group flex items-center justify-between"
               >
-                <div className="flex items-center space-x-1.5">
-                  <Store className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="text-xs font-bold text-emerald-900 truncate">Restaurant Owner</span>
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
+                  <div>
+                    <span className="text-xs font-bold text-purple-900 block">SuperAdmin Platform</span>
+                    <span className="text-[10px] text-purple-700 block">admin@quantromind.com</span>
+                  </div>
                 </div>
-                <p className="text-[10px] text-emerald-700 mt-0.5 truncate">Jay Malhar Portal</p>
-              </button>
-
-              {/* SuperAdmin SaaS */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@quantrobill.com', 'Admin@123', 'SuperAdmin')}
-                className="p-2 rounded-xl bg-purple-50/70 hover:bg-purple-100/70 border border-purple-200 text-left transition-all cursor-pointer shadow-2xs group"
-              >
-                <div className="flex items-center space-x-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span className="text-xs font-bold text-purple-900 truncate">SuperAdmin SaaS</span>
-                </div>
-                <p className="text-[10px] text-purple-700 mt-0.5 truncate">Multi-Tenant Platform</p>
-              </button>
-
-              {/* Cashier Staff */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('biller', 'Biller@123', 'Cashier')}
-                className="p-2 rounded-xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200 text-left transition-all cursor-pointer shadow-2xs group"
-              >
-                <div className="flex items-center space-x-1.5">
-                  <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="text-xs font-bold text-blue-900 truncate">Cashier / Biller</span>
-                </div>
-                <p className="text-[10px] text-blue-700 mt-0.5 truncate">POS Billing Station</p>
-              </button>
-
-              {/* Waiter Steward */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('waiter', 'Waiter@123', 'Waiter')}
-                className="p-2 rounded-xl bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200 text-left transition-all cursor-pointer shadow-2xs group"
-              >
-                <div className="flex items-center space-x-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-xs font-bold text-amber-900 truncate">Waiter / Steward</span>
-                </div>
-                <p className="text-[10px] text-amber-700 mt-0.5 truncate">Tables & KOT Floor</p>
-              </button>
-
-              {/* Store Manager */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('manager', 'Manager@123', 'Manager')}
-                className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-all cursor-pointer shadow-2xs group"
-              >
-                <div className="flex items-center space-x-1.5">
-                  <Briefcase className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-                  <span className="text-xs font-bold text-slate-900 truncate">Store Manager</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-0.5 truncate">Operations & Stock</p>
-              </button>
-
-              {/* Kitchen Chef */}
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('chef', 'Chef@123', 'KitchenStaff')}
-                className="p-2 rounded-xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200 text-left transition-all cursor-pointer shadow-2xs group"
-              >
-                <div className="flex items-center space-x-1.5">
-                  <ChefHat className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                  <span className="text-xs font-bold text-rose-900 truncate">Kitchen Chef</span>
-                </div>
-                <p className="text-[10px] text-rose-700 mt-0.5 truncate">Live KDS Display</p>
+                <span className="text-[11px] font-semibold text-purple-600 bg-purple-100/80 px-2 py-0.5 rounded-md">Fill & Login</span>
               </button>
             </div>
           </div>

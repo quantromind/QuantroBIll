@@ -152,11 +152,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Transparently upgrade demo session to real backend JWT session if available
         if (token.startsWith('quantrobill_demo_')) {
           const creds: Record<string, { identifier: string; pass: string }> = {
-            Owner: { identifier: 'sourabh@gmail.com', pass: 'Owner@123' },
-            SuperAdmin: { identifier: 'admin@quantrobill.com', pass: 'Admin@123' },
-            Cashier: { identifier: 'biller@jaymalhar.com', pass: 'Cashier@123' },
-            Manager: { identifier: 'manager@jaymalhar.com', pass: 'Manager@123' },
-            Waiter: { identifier: 'waiter@jaymalhar.com', pass: 'Waiter@123' },
+            SuperAdmin: { identifier: 'admin@quantromind.com', pass: 'Quantromind@#9100' },
           };
           const match = creds[user.role];
           if (match) {

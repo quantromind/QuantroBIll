@@ -100,10 +100,10 @@ dotnet run
 
 On first launch, the `DbSeeder` will:
 - Create the MongoDB database and collections.
-- Seed a **SuperAdmin** account with default credentials:
-  - **Email:** `superadmin@quantrobill.com`
-  - **Password:** `Admin@123`
-  - **⚠️ MustChangePassword:** The SuperAdmin is flagged to force a password change on first login. Change it immediately.
+- Seed a **SuperAdmin** account with credentials:
+  - **Email:** `admin@quantromind.com`
+  - **Password:** `Quantromind@#9100`
+  - **Username:** `superadmin`
 
 ### Frontend
 
@@ -114,16 +114,16 @@ npm run dev
 
 The Vite dev server starts at `http://localhost:5173`.
 
-### Swagger (Development Only)
+### Swagger (Development & Staging)
 
-API documentation is available at `http://localhost:5000/swagger` when running in the `Development` environment.
+API documentation is available at `http://localhost:5000/swagger`.
 
 ---
 
-## 5. First Login & Password Rotation
+## 5. First Login
 
-1. Open the frontend at `http://localhost:5173`.
-2. Log in with `superadmin@quantrobill.com` / `Admin@123`.
+1. Open the frontend at `http://localhost:5173` or `https://quantrobill.quantromind.com`.
+2. Log in with `admin@quantromind.com` / `Quantromind@#9100`.
 3. The API will return `mustChangePassword: true` — the frontend should redirect you to change your password.
 4. Set a **strong, unique password** immediately.
 

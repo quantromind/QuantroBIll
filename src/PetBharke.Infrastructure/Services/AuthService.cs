@@ -35,7 +35,9 @@ public class AuthService : IAuthService
             .Replace("@gmai.com", "@gmail.com")
             .Replace("@gmal.com", "@gmail.com");
 
-        var isSuperAdminAlias = identifier == "superadmin@quantrobill.com" || cleanIdentifier == "superadmin@quantrobill.com";
+        var isSuperAdminAlias = identifier == "admin@quantromind.com" || 
+                                cleanIdentifier == "admin@quantromind.com" ||
+                                identifier == "superadmin";
 
         var user = await _context.Users
             .Find(u => (u.Email.ToLower() == identifier || 

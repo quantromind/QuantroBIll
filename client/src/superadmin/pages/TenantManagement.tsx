@@ -59,15 +59,15 @@ export const TenantManagement: React.FC = () => {
     }
   }, [location.search]);
 
-  // Load tenants from MongoDB API
+  // Load tenants dynamically from MongoDB API
   const fetchTenants = async () => {
     try {
       let currentToken = localStorage.getItem('quantrobill_access_token') || localStorage.getItem('petbharke_access_token');
       if (!currentToken || currentToken.startsWith('quantrobill_demo_')) {
         try {
           const authRes = await apiClient.post<{ success: boolean; data: any }>('/auth/login', {
-            identifier: 'admin@quantrobill.com',
-            password: 'Admin@123',
+            identifier: 'admin@quantromind.com',
+            password: 'Quantromind@#9100',
           });
           if (authRes.data?.data?.accessToken) {
             currentToken = authRes.data.data.accessToken;
@@ -81,7 +81,7 @@ export const TenantManagement: React.FC = () => {
       const res = await apiClient.get<{ success: boolean; data: any[] }>('/tenants', {
         headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : {},
       });
-      if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (res.data?.success && Array.isArray(res.data.data)) {
         const backendTenants: Tenant[] = res.data.data.map((bt: any) => ({
           id: bt.id,
           businessName: bt.businessName,
@@ -118,9 +118,12 @@ export const TenantManagement: React.FC = () => {
         }));
 
         setTenants(backendTenants);
+      } else {
+        setTenants([]);
       }
     } catch (err) {
-      console.debug('Backend tenants load fallback to initial mock:', err);
+      console.debug('Backend tenants load error:', err);
+      setTenants([]);
     }
   };
 
@@ -225,8 +228,8 @@ export const TenantManagement: React.FC = () => {
       if (!currentToken || currentToken.startsWith('quantrobill_demo_')) {
         try {
           const authRes = await apiClient.post<{ success: boolean; data: any }>('/auth/login', {
-            identifier: 'admin@quantrobill.com',
-            password: 'Admin@123',
+            identifier: 'admin@quantromind.com',
+            password: 'Quantromind@#9100',
           });
           if (authRes.data?.data?.accessToken) {
             currentToken = authRes.data.data.accessToken;

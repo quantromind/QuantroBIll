@@ -67,14 +67,14 @@ export const SubscriptionPlans: React.FC = () => {
             },
           }));
 
-          setTenants((prev) => {
-            const ids = new Set(backendTenants.map((b) => b.id));
-            return [...backendTenants, ...prev.filter((p) => !ids.has(p.id))];
-          });
+          setTenants(backendTenants);
+        } else {
+          setTenants([]);
         }
       })
       .catch((err) => {
-        console.debug('Backend tenants load fallback to initial mock:', err);
+        console.debug('Backend tenants load error:', err);
+        setTenants([]);
       });
   };
 

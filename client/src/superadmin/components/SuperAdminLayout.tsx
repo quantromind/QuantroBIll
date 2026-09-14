@@ -76,7 +76,7 @@ export const SuperAdminLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-xs font-semibold text-slate-900 leading-tight">{user?.fullName || user?.username || 'SuperAdmin'}</p>
-              <p className="text-[10px] text-slate-400">{user?.email || 'admin@quantrobill.com'}</p>
+              <p className="text-[10px] text-slate-400">{user?.email || 'admin@quantromind.com'}</p>
             </div>
 
             <button

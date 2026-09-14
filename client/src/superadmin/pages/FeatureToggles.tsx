@@ -60,20 +60,19 @@ export const FeatureToggles: React.FC = () => {
             },
           }));
 
-          setTenants((prev) => {
-            const ids = new Set(backendTenants.map((b) => b.id));
-            const merged = [...backendTenants, ...prev.filter((p) => !ids.has(p.id))];
-            if (!selectedTenantId && merged.length > 0) {
-              setSelectedTenantId(merged[0].id);
-            }
-            return merged;
-          });
+          setTenants(backendTenants);
+          if (!selectedTenantId && backendTenants.length > 0) {
+            setSelectedTenantId(backendTenants[0].id);
+          }
+        } else {
+          setTenants([]);
         }
       })
-      .catch((err) => {
-        console.debug('Backend tenants load fallback to initial mock:', err);
-      });
-  };
+        .catch((err) => {
+          console.debug('Backend tenants load error:', err);
+          setTenants([]);
+        });
+    };
 
   useEffect(() => {
     fetchTenants();
