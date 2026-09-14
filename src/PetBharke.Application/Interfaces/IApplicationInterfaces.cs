@@ -35,7 +35,7 @@ public interface IRepository<T> where T : class
 
 public interface IJwtService
 {
-    string GenerateAccessToken(User user, string tenantId, string? outletId, string? outletName, string? tenantName);
+    string GenerateAccessToken(User user, string? tenantId, string? outletId, string? outletName, string? tenantName);
     string GenerateRefreshToken();
     (string? UserId, string? TenantId, string? OutletId, string? Role) ValidateToken(string token);
 }

@@ -35,11 +35,14 @@ public class AuthService : IAuthService
             .Replace("@gmai.com", "@gmail.com")
             .Replace("@gmal.com", "@gmail.com");
 
+        var isSuperAdminAlias = identifier == "superadmin@quantrobill.com" || cleanIdentifier == "superadmin@quantrobill.com";
+
         var user = await _context.Users
             .Find(u => (u.Email.ToLower() == identifier || 
                         u.Email.ToLower() == cleanIdentifier || 
                         u.Username.ToLower() == identifier ||
-                        u.Username.ToLower() == cleanIdentifier) && u.IsActive)
+                        u.Username.ToLower() == cleanIdentifier ||
+                        (isSuperAdminAlias && u.Role == UserRole.SuperAdmin)) && u.IsActive)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (user == null)

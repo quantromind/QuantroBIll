@@ -42,17 +42,17 @@ public class JwtService : IJwtService
         _expiryMinutes = int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var min) ? min : 720; // 12 hours
     }
 
-    public string GenerateAccessToken(User user, string tenantId, string? outletId, string? outletName, string? tenantName)
+    public string GenerateAccessToken(User user, string? tenantId, string? outletId, string? outletName, string? tenantName)
     {
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, user.FullName ?? user.Username),
+            new(JwtRegisteredClaimNames.Sub, user.Id ?? string.Empty),
+            new(JwtRegisteredClaimNames.UniqueName, user.Username ?? string.Empty),
+            new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new(ClaimTypes.NameIdentifier, user.Id ?? string.Empty),
+            new(ClaimTypes.Name, user.FullName ?? user.Username ?? string.Empty),
             new(ClaimTypes.Role, user.Role.ToString()),
-            new("tenantId", tenantId),
+            new("tenantId", tenantId ?? string.Empty),
             new("outletId", outletId ?? string.Empty),
             new("tenantName", tenantName ?? string.Empty),
             new("outletName", outletName ?? string.Empty),
