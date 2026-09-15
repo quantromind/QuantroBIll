@@ -20,9 +20,28 @@ public interface IMongoDbContext
     IMongoCollection<Discount> Discounts { get; }
     IMongoCollection<Feedback> Feedbacks { get; }
     IMongoCollection<AuditLog> AuditLogs { get; }
+    IMongoCollection<Plan> Plans { get; }
+    IMongoCollection<SubscriptionInvoice> SubscriptionInvoices { get; }
+    IMongoCollection<Announcement> Announcements { get; }
+    IMongoCollection<PlatformCoupon> PlatformCoupons { get; }
+    IMongoCollection<PlatformSetting> PlatformSettings { get; }
 
     Task<IClientSessionHandle> StartSessionAsync(CancellationToken cancellationToken = default);
 }
+
+public interface IAuditLogService
+{
+    Task LogAsync(
+        string action,
+        string details,
+        string? targetId = null,
+        string? targetType = null,
+        string? tenantId = null,
+        string? changesJson = null,
+        string status = "Success",
+        string? ipAddress = null);
+}
+
 
 public interface IRepository<T> where T : class
 {

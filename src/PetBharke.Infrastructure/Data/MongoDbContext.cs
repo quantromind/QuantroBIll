@@ -44,6 +44,11 @@ public class MongoDbContext : IMongoDbContext
     public IMongoCollection<Discount> Discounts => _database.GetCollection<Discount>("discounts");
     public IMongoCollection<Feedback> Feedbacks => _database.GetCollection<Feedback>("feedbacks");
     public IMongoCollection<AuditLog> AuditLogs => _database.GetCollection<AuditLog>("auditLogs");
+    public IMongoCollection<Plan> Plans => _database.GetCollection<Plan>("plans");
+    public IMongoCollection<SubscriptionInvoice> SubscriptionInvoices => _database.GetCollection<SubscriptionInvoice>("subscriptionInvoices");
+    public IMongoCollection<Announcement> Announcements => _database.GetCollection<Announcement>("announcements");
+    public IMongoCollection<PlatformCoupon> PlatformCoupons => _database.GetCollection<PlatformCoupon>("platformCoupons");
+    public IMongoCollection<PlatformSetting> PlatformSettings => _database.GetCollection<PlatformSetting>("platformSettings");
 
     public Task<IClientSessionHandle> StartSessionAsync(CancellationToken cancellationToken = default)
     {
@@ -104,6 +109,29 @@ public class MongoDbContext : IMongoDbContext
                 Builders<Order>.IndexKeys.Ascending(o => o.TenantId).Ascending(o => o.OutletId).Descending(o => o.PlacedAt),
                 new CreateIndexOptions { Sparse = true });
             await Orders.Indexes.CreateOneAsync(orderIndex);
+
+            // AuditLogs
+            var auditIndex = new CreateIndexModel<AuditLog>(
+                Builders<AuditLog>.IndexKeys.Descending(a => a.Timestamp).Ascending(a => a.Action));
+            await AuditLogs.Indexes.CreateOneAsync(auditIndex);
+
+            // Plans
+            var planIndex = new CreateIndexModel<Plan>(
+                Builders<Plan>.IndexKeys.Ascending(p => p.Code),
+                new CreateIndexOptions { Unique = true, Sparse = true });
+            await Plans.Indexes.CreateOneAsync(planIndex);
+
+            // SubscriptionInvoices
+            var invoiceIndex = new CreateIndexModel<SubscriptionInvoice>(
+                Builders<SubscriptionInvoice>.IndexKeys.Ascending(i => i.InvoiceNumber),
+                new CreateIndexOptions { Unique = true, Sparse = true });
+            await SubscriptionInvoices.Indexes.CreateOneAsync(invoiceIndex);
+
+            // Coupons
+            var couponIndex = new CreateIndexModel<PlatformCoupon>(
+                Builders<PlatformCoupon>.IndexKeys.Ascending(c => c.Code),
+                new CreateIndexOptions { Unique = true, Sparse = true });
+            await PlatformCoupons.Indexes.CreateOneAsync(couponIndex);
         }
         catch
         {

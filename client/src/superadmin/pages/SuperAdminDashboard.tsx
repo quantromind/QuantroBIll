@@ -103,7 +103,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const calculatedMrr = Math.round(calculatedArr / 12);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="space-y-6 w-full font-sans">
       {statusMessage && (
         <div className="fixed top-20 right-6 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl z-50 text-xs font-semibold flex items-center space-x-2 border border-slate-700 animate-in fade-in">
           <span className="w-2 h-2 rounded-full bg-blue-400"></span>

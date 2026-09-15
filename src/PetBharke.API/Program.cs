@@ -65,6 +65,7 @@ builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IPinRateLimiter, PinRateLimiter>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // Register generic repositories
 builder.Services.AddScoped<IRepository<Category>>(sp => 

@@ -234,7 +234,7 @@ export const SubscriptionPlans: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto font-sans">
+    <div className="space-y-6 w-full font-sans">
       {/* Header & ARR Highlights */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

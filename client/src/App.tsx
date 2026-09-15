@@ -19,8 +19,23 @@ import { ReceiptSettings } from './pages/ReceiptSettings';
 import { SuperAdminLayout } from './superadmin/components/SuperAdminLayout';
 import { SuperAdminDashboard } from './superadmin/pages/SuperAdminDashboard';
 import { TenantManagement } from './superadmin/pages/TenantManagement';
+import { TenantCreatePage } from './superadmin/pages/TenantCreatePage';
+import { TenantDetailPage } from './superadmin/pages/TenantDetailPage';
 import { SubscriptionPlans } from './superadmin/pages/SubscriptionPlans';
 import { FeatureToggles } from './superadmin/pages/FeatureToggles';
+import { PlansCatalog } from './superadmin/pages/PlansCatalog';
+import { PlanEditorPage } from './superadmin/pages/PlanEditorPage';
+import { PlatformBilling } from './superadmin/pages/PlatformBilling';
+import { InvoiceDetailPage } from './superadmin/pages/InvoiceDetailPage';
+import { AuditLogs } from './superadmin/pages/AuditLogs';
+import { TeamManagement } from './superadmin/pages/TeamManagement';
+import { TeamMemberEditorPage } from './superadmin/pages/TeamMemberEditorPage';
+import { Announcements } from './superadmin/pages/Announcements';
+import { AnnouncementEditorPage } from './superadmin/pages/AnnouncementEditorPage';
+import { CouponsPage } from './superadmin/pages/CouponsPage';
+import { AnalyticsPage } from './superadmin/pages/AnalyticsPage';
+import { SystemHealthPage } from './superadmin/pages/SystemHealthPage';
+import { SettingsPage } from './superadmin/pages/SettingsPage';
 
 import { OwnerLayout } from './owner/components/OwnerLayout';
 import { OwnerDashboard } from './owner/pages/OwnerDashboard';
@@ -196,9 +211,56 @@ export const App: React.FC = () => {
           >
             <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
             <Route path="dashboard" element={<SuperAdminDashboard />} />
+
+            {/* Restaurant Tenants */}
             <Route path="tenants" element={<TenantManagement />} />
+            <Route path="tenants/new" element={<TenantCreatePage />} />
+            <Route path="tenants/:id" element={<TenantDetailPage />} />
+
+            {/* Plans Catalog & Tier Configuration */}
+            <Route path="plans-catalog" element={<PlansCatalog />} />
+            <Route path="plans-catalog/new" element={<PlanEditorPage />} />
+            <Route path="plans-catalog/:id" element={<PlanEditorPage />} />
+
+            {/* Tenant Plans Assignment */}
             <Route path="subscriptions" element={<SubscriptionPlans />} />
+
+            {/* Feature Flags & Capabilities */}
             <Route path="features" element={<FeatureToggles />} />
+
+            {/* Invoices & Platform Billing */}
+            <Route path="billing" element={<PlatformBilling />} />
+            <Route path="billing/:id" element={<InvoiceDetailPage />} />
+
+            {/* Security Audit Trail */}
+            <Route path="audit-logs" element={<AuditLogs />} />
+
+            {/* SuperAdmin Team Management */}
+            <Route path="team" element={<TeamManagement />} />
+            <Route path="team/new" element={<TeamMemberEditorPage />} />
+            <Route path="team/:id" element={<TeamMemberEditorPage />} />
+
+            {/* Announcements & Broadcasts */}
+            <Route path="announcements" element={<Announcements />} />
+            <Route path="announcements/new" element={<AnnouncementEditorPage />} />
+            <Route path="announcements/:id" element={<AnnouncementEditorPage />} />
+
+            {/* Coupons & Promo Codes */}
+            <Route path="coupons" element={<CouponsPage />} />
+
+            {/* Platform Analytics */}
+            <Route path="analytics" element={<AnalyticsPage />} />
+
+            {/* Diagnostic System Health */}
+            <Route path="system-health" element={<SystemHealthPage />} />
+
+            {/* Platform Settings */}
+            <Route path="settings" element={<SettingsPage />} />
+
+            {/* Convenient Aliases */}
+            <Route path="audit" element={<Navigate to="/superadmin/audit-logs" replace />} />
+            <Route path="health" element={<Navigate to="/superadmin/system-health" replace />} />
+            <Route path="plans" element={<Navigate to="/superadmin/plans-catalog" replace />} />
           </Route>
 
           {/* =================================================== */}

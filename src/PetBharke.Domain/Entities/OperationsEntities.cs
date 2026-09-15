@@ -160,15 +160,31 @@ public class AuditLog
     [BsonElement("userName")]
     public string UserName { get; set; } = string.Empty;
 
+    [BsonElement("actorEmail")]
+    public string? ActorEmail { get; set; }
+
     [BsonElement("action")]
-    public string Action { get; set; } = string.Empty; // e.g. "CreateOrder", "CancelOrder", "ApplyDiscount"
+    public string Action { get; set; } = string.Empty; // e.g. "CreateTenant", "SuspendTenant", "UpdatePlan", "ToggleFeature", "ImpersonateTenant"
+
+    [BsonElement("targetId")]
+    public string? TargetId { get; set; }
+
+    [BsonElement("targetType")]
+    public string? TargetType { get; set; } // e.g. "Tenant", "Plan", "User", "Invoice"
 
     [BsonElement("details")]
     public string Details { get; set; } = string.Empty;
 
+    [BsonElement("changesJson")]
+    public string? ChangesJson { get; set; }
+
     [BsonElement("ipAddress")]
     public string? IpAddress { get; set; }
+
+    [BsonElement("status")]
+    public string Status { get; set; } = "Success"; // "Success", "Failed", "Warning"
 
     [BsonElement("timestamp")]
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
+

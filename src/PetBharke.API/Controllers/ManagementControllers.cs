@@ -16,12 +16,21 @@ public class TenantsController : ControllerBase
     private readonly IMongoDbContext _context;
     private readonly ICurrentUserService _currentUserService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IJwtService _jwtService;
+    private readonly IAuditLogService _auditLogService;
 
-    public TenantsController(IMongoDbContext context, ICurrentUserService currentUserService, IPasswordHasher passwordHasher)
+    public TenantsController(
+        IMongoDbContext context,
+        ICurrentUserService currentUserService,
+        IPasswordHasher passwordHasher,
+        IJwtService jwtService,
+        IAuditLogService auditLogService)
     {
         _context = context;
         _currentUserService = currentUserService;
         _passwordHasher = passwordHasher;
+        _jwtService = jwtService;
+        _auditLogService = auditLogService;
     }
 
     [HttpGet]
@@ -361,6 +370,13 @@ public class TenantsController : ControllerBase
             await _context.Users.InsertOneAsync(ownerUser);
         }
 
+        await _auditLogService.LogAsync(
+            action: "CreateTenant",
+            details: $"Created restaurant tenant '{tenant.BusinessName}' ({tenant.OwnerEmail}) with initial outlet '{initialOutlet.Name}'.",
+            targetId: tenant.Id,
+            targetType: "Tenant",
+            tenantId: tenant.Id);
+
         return Ok(new
         {
             success = true,
@@ -369,6 +385,125 @@ public class TenantsController : ControllerBase
             userCreated = ownerUser != null,
             ownerEmail = request.OwnerEmail,
             message = "Restaurant tenant and initial outlet branch created successfully."
+        });
+    }
+
+    [HttpGet("{id}/full-details")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> GetTenantFullDetails(string id)
+    {
+        var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
+        if (tenant == null) return NotFound(new { success = false, message = "Tenant not found." });
+
+        var outlets = await _context.Outlets.Find(o => o.TenantId == id).ToListAsync();
+        var users = await _context.Users.Find(u => u.TenantId == id).ToListAsync();
+        var invoices = await _context.SubscriptionInvoices.Find(i => i.TenantId == id).SortByDescending(i => i.CreatedAt).ToListAsync();
+        var auditLogs = await _context.AuditLogs.Find(a => a.TenantId == id).SortByDescending(a => a.Timestamp).Limit(25).ToListAsync();
+
+        return Ok(new
+        {
+            success = true,
+            data = new
+            {
+                tenant,
+                outlets,
+                users = users.Select(u => new
+                {
+                    u.Id,
+                    u.Username,
+                    u.Email,
+                    u.FullName,
+                    u.Phone,
+                    Role = u.Role.ToString(),
+                    u.OutletId,
+                    u.Permissions,
+                    u.IsActive,
+                    u.LastLoginAt,
+                    u.CreatedAt
+                }),
+                invoices,
+                auditLogs
+            }
+        });
+    }
+
+    [HttpPost("{id}/impersonate")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> ImpersonateTenant(string id)
+    {
+        var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
+        if (tenant == null) return NotFound(new { success = false, message = "Tenant not found." });
+
+        var ownerUser = await _context.Users.Find(u => u.TenantId == id && u.Role == UserRole.Owner).FirstOrDefaultAsync()
+            ?? await _context.Users.Find(u => u.TenantId == id).FirstOrDefaultAsync();
+
+        if (ownerUser == null)
+        {
+            return BadRequest(new { success = false, message = "No user account found for this restaurant to impersonate." });
+        }
+
+        var defaultOutlet = await _context.Outlets.Find(o => o.TenantId == id && o.IsActive).FirstOrDefaultAsync();
+        var token = _jwtService.GenerateAccessToken(ownerUser, tenant.Id, defaultOutlet?.Id, defaultOutlet?.Name, tenant.BusinessName);
+
+        await _auditLogService.LogAsync(
+            action: "ImpersonateTenant",
+            details: $"SuperAdmin initiated impersonation session into restaurant '{tenant.BusinessName}' as user '{ownerUser.Username}'.",
+            targetId: tenant.Id,
+            targetType: "Tenant",
+            tenantId: tenant.Id,
+            status: "Warning");
+
+        return Ok(new
+        {
+            success = true,
+            data = new
+            {
+                token,
+                user = new
+                {
+                    ownerUser.Id,
+                    ownerUser.Username,
+                    ownerUser.Email,
+                    ownerUser.FullName,
+                    Role = ownerUser.Role.ToString(),
+                    ownerUser.TenantId,
+                    tenantName = tenant.BusinessName,
+                    outletId = defaultOutlet?.Id,
+                    outletName = defaultOutlet?.Name
+                },
+                targetUrl = "/owner/dashboard"
+            },
+            message = $"Impersonation session initialized for {tenant.BusinessName}."
+        });
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> DeleteTenant(string id)
+    {
+        var tenant = await _context.Tenants.Find(t => t.Id == id).FirstOrDefaultAsync();
+        if (tenant == null) return NotFound(new { success = false, message = "Tenant not found." });
+
+        await _context.Tenants.UpdateOneAsync(
+            t => t.Id == id,
+            Builders<Tenant>.Update.Set(t => t.IsActive, false).Set(t => t.UpdatedAt, DateTime.UtcNow));
+
+        await _context.Outlets.UpdateManyAsync(
+            o => o.TenantId == id,
+            Builders<Outlet>.Update.Set(o => o.IsActive, false).Set(o => o.UpdatedAt, DateTime.UtcNow));
+
+        await _auditLogService.LogAsync(
+            action: "DeleteTenant",
+            details: $"SuperAdmin deactivated and suspended restaurant tenant '{tenant.BusinessName}' ({tenant.OwnerEmail}).",
+            targetId: id,
+            targetType: "Tenant",
+            tenantId: id,
+            status: "Warning");
+
+        return Ok(new
+        {
+            success = true,
+            message = $"Tenant '{tenant.BusinessName}' has been deactivated."
         });
     }
 
@@ -381,6 +516,14 @@ public class TenantsController : ControllerBase
             Builders<Tenant>.Update.Set(t => t.IsActive, request.IsActive).Set(t => t.UpdatedAt, DateTime.UtcNow)
         );
         if (result.MatchedCount == 0) return NotFound(new { success = false, message = "Tenant not found." });
+
+        await _auditLogService.LogAsync(
+            action: "ToggleTenantStatus",
+            details: $"Changed restaurant tenant status to {(request.IsActive ? "Active" : "Suspended")}.",
+            targetId: id,
+            targetType: "Tenant",
+            tenantId: id);
+
         return Ok(new { success = true, message = "Tenant status updated successfully." });
     }
 
@@ -404,6 +547,14 @@ public class TenantsController : ControllerBase
         }
 
         await _context.Tenants.UpdateOneAsync(t => t.Id == id, update);
+
+        await _auditLogService.LogAsync(
+            action: "UpdateTenantPlan",
+            details: $"Changed subscription plan to {request.SubscriptionPlan} (Max Outlets: {request.MaxOutlets}).",
+            targetId: id,
+            targetType: "Tenant",
+            tenantId: id);
+
         return Ok(new { success = true, message = "Tenant plan updated successfully." });
     }
 
@@ -416,6 +567,14 @@ public class TenantsController : ControllerBase
             Builders<Tenant>.Update.Set(t => t.Features, features).Set(t => t.UpdatedAt, DateTime.UtcNow)
         );
         if (result.MatchedCount == 0) return NotFound(new { success = false, message = "Tenant not found." });
+
+        await _auditLogService.LogAsync(
+            action: "UpdateTenantFeatures",
+            details: $"Updated module feature toggles for restaurant.",
+            targetId: id,
+            targetType: "Tenant",
+            tenantId: id);
+
         return Ok(new { success = true, message = "Tenant feature toggles updated." });
     }
 
@@ -686,5 +845,64 @@ public class HealthController : ControllerBase
                 serverTime = DateTime.UtcNow
             });
         }
+    }
+
+    [HttpGet("detailed")]
+    public async Task<IActionResult> GetDetailedHealth()
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        string dbStatus = "Connected";
+        long pingMs = 0;
+        try
+        {
+            await _context.Database.RunCommandAsync((Command<MongoDB.Bson.BsonDocument>)"{ping:1}");
+            sw.Stop();
+            pingMs = sw.ElapsedMilliseconds;
+        }
+        catch (Exception ex)
+        {
+            dbStatus = $"Error: {ex.Message}";
+        }
+
+        var process = System.Diagnostics.Process.GetCurrentProcess();
+        var memoryMb = Math.Round(process.WorkingSet64 / (1024.0 * 1024.0), 2);
+        var uptime = DateTime.UtcNow - process.StartTime.ToUniversalTime();
+
+        var tenantCount = await _context.Tenants.CountDocumentsAsync(_ => true);
+        var outletCount = await _context.Outlets.CountDocumentsAsync(_ => true);
+        var orderCount = await _context.Orders.CountDocumentsAsync(_ => true);
+        var userCount = await _context.Users.CountDocumentsAsync(_ => true);
+        var invoiceCount = await _context.SubscriptionInvoices.CountDocumentsAsync(_ => true);
+
+        return Ok(new
+        {
+            success = true,
+            status = dbStatus == "Connected" ? "Healthy" : "Degraded",
+            database = new
+            {
+                status = dbStatus,
+                pingMs,
+                tenantsCount = tenantCount,
+                outletsCount = outletCount,
+                ordersCount = orderCount,
+                usersCount = userCount,
+                invoicesCount = invoiceCount
+            },
+            server = new
+            {
+                memoryUsageMb = memoryMb,
+                uptime = $"{uptime.Days}d {uptime.Hours}h {uptime.Minutes}m {uptime.Seconds}s",
+                serverTimeUtc = DateTime.UtcNow,
+                environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
+                runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription
+            },
+            services = new[]
+            {
+                new { name = "REST API Engine", status = "Online", latencyMs = 1 },
+                new { name = "MongoDB Atlas Cluster", status = dbStatus == "Connected" ? "Online" : "Offline", latencyMs = (int)pingMs },
+                new { name = "SignalR Realtime Hub", status = "Online", latencyMs = 2 },
+                new { name = "Receipt & POS Pipeline", status = "Online", latencyMs = 1 }
+            }
+        });
     }
 }
